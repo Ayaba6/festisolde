@@ -20,11 +20,14 @@ export default function ProductDetail({ setCart }: { setCart: any }) {
   }, [id])
 
   if (loading) return (
-    <div className="h-screen flex items-center justify-center font-black text-indigo-600 animate-pulse text-2xl tracking-tighter">
-      CHARGEMENT DU PRODUIT...
+    <div className="h-screen flex items-center justify-center bg-white">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-gray-100 border-t-[#FF5A5A] rounded-full animate-spin"></div>
+      </div>
     </div>
   )
-  if (!product) return <div className="p-20 text-center font-bold">Produit introuvable.</div>
+
+  if (!product) return <div className="p-20 text-center font-medium text-gray-400">Produit introuvable.</div>
 
   const discount = product.promo_price 
     ? Math.round(((product.price - product.promo_price) / product.price) * 100) 
@@ -35,128 +38,130 @@ export default function ProductDetail({ setCart }: { setCart: any }) {
   const handleAddToCart = () => {
     setCart((prev: any) => {
       const existing = prev.find((item: any) => item.id === product.id)
+      let newCart;
       if (existing) {
-        return prev.map((item: any) => 
+        newCart = prev.map((item: any) => 
           item.id === product.id ? { ...item, quantity: item.quantity + quantity } : item
         )
+      } else {
+        newCart = [...prev, { ...product, quantity: quantity }]
       }
-      return [...prev, { ...product, quantity: quantity }]
+      // Sauvegarde automatique dans le localStorage
+      localStorage.setItem('festi-cart', JSON.stringify(newCart))
+      return newCart
     })
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10">
-      {/* Bouton Retour */}
+    <div className="max-w-6xl mx-auto px-6 py-8 lg:py-16 bg-white">
+      {/* Bouton Retour discret */}
       <button 
         onClick={() => navigate(-1)} 
-        className="flex items-center gap-2 text-gray-500 hover:text-gray-900 font-bold mb-8 transition-colors group"
+        className="flex items-center gap-2 text-gray-400 hover:text-gray-900 font-semibold mb-8 transition-colors text-sm"
       >
-        <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" /> 
-        Retour à la boutique
+        <ArrowLeft size={16} /> Retour
       </button>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
         
-        {/* COLONNE GAUCHE : IMAGE */}
-        <div className="relative rounded-[2rem] overflow-hidden bg-white border border-gray-100 shadow-sm aspect-square md:aspect-auto md:h-[600px]">
+        {/* IMAGE : Bordures arrondies ajustées selon festi9.PNG */}
+        <div className="relative rounded-[2.5rem] overflow-hidden bg-[#F9FAFB] aspect-square shadow-sm border border-gray-50">
           <img 
             src={product.images?.[0] || '/placeholder.png'} 
             alt={product.title} 
             className="w-full h-full object-cover" 
           />
           {discount && (
-            <div className="absolute top-6 left-6 bg-[#FF5A5A] text-white font-black px-4 py-2 rounded-xl shadow-lg text-lg">
+            <div className="absolute top-5 left-5 bg-[#FF5A5A] text-white font-bold px-3 py-1 rounded-lg text-sm shadow-lg">
               -{discount}%
             </div>
           )}
         </div>
 
-        {/* COLONNE DROITE : INFOS */}
-        <div className="flex flex-col">
-          {/* Catégorie */}
+        {/* CONTENU : Typographie affinée */}
+        <div className="flex flex-col pt-2">
           <div className="mb-4">
-            <span className="bg-gray-50 text-gray-400 text-[11px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-lg border border-gray-100">
-              {product.category}
+            <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded border border-gray-100 uppercase tracking-wider">
+              {product.category || 'Accessoires'}
             </span>
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-black text-[#1A1A1A] tracking-tighter mb-6">
+          <h1 className="text-3xl font-bold text-[#1A1A1A] leading-tight mb-4 tracking-tight">
             {product.title}
           </h1>
 
-          <p className="text-gray-500 text-lg leading-relaxed mb-8 max-w-lg">
-            {product.description || "Description de haute qualité pour ce produit exceptionnel disponible sur FestiSolde."}
+          <p className="text-gray-500 text-[15px] leading-relaxed mb-8 max-w-md">
+            {product.description || "Un produit d'exception sélectionné pour sa qualité et sa durabilité."}
           </p>
 
-          {/* SECTION PRIX */}
+          {/* PRIX : Style festi9.PNG en FCFA */}
           <div className="flex items-center gap-4 mb-6">
-            <span className="text-5xl font-black text-[#FF5A5A]">
-              {(product.promo_price || product.price).toLocaleString()} <small className="text-xl">€</small>
+            <span className="text-3xl font-bold text-[#FF5A5A]">
+              {(product.promo_price || product.price).toLocaleString()} F
             </span>
             {product.promo_price && (
-              <>
-                <span className="text-2xl text-gray-300 line-through font-bold">
-                  {product.price.toLocaleString()} €
+              <div className="flex items-center gap-3">
+                <span className="text-lg text-gray-300 line-through font-medium">
+                  {product.price.toLocaleString()} F
                 </span>
-                <span className="bg-[#E8F8F0] text-[#27AE60] text-xs font-bold px-3 py-1.5 rounded-lg border border-[#D1F2E1]">
-                  Économisez {savings.toLocaleString()} €
+                <span className="bg-[#E8F8F0] text-[#27AE60] text-[11px] font-bold px-2 py-1 rounded-md">
+                  Économisez {savings.toLocaleString()} F
                 </span>
-              </>
+              </div>
             )}
           </div>
 
-          <div className="flex items-center gap-2 mb-10 text-[#27AE60] font-bold">
-            <Check size={20} /> En stock
+          <div className="flex items-center gap-2 mb-8 text-[#27AE60] font-bold text-sm">
+            <Check size={16} /> En stock
           </div>
 
-          {/* SÉLECTEUR DE QUANTITÉ ET BOUTON */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-12">
-            <div className="flex items-center justify-between border-2 border-gray-100 rounded-2xl p-2 min-w-[140px]">
+          {/* ACTIONS : Sélecteur et Bouton */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 mb-10">
+            <div className="flex items-center border border-gray-100 rounded-xl p-1 bg-gray-50 w-full sm:w-auto">
               <button 
                 onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 rounded-xl transition-colors"
+                className="w-10 h-10 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-lg transition-all text-gray-500"
               >
-                <Minus size={18} />
+                <Minus size={16} />
               </button>
-              <span className="font-black text-xl">{quantity}</span>
+              <span className="font-bold text-sm px-6">{quantity}</span>
               <button 
                 onClick={() => setQuantity(q => q + 1)}
-                className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 rounded-xl transition-colors"
+                className="w-10 h-10 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-lg transition-all text-gray-500"
               >
-                <Plus size={18} />
+                <Plus size={16} />
               </button>
             </div>
 
             <button 
               onClick={handleAddToCart}
-              className="flex-grow bg-gradient-to-r from-[#FF5A5A] to-[#FF7B7B] text-white py-5 rounded-2xl font-black text-xl shadow-xl shadow-red-100 hover:shadow-red-200 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4"
+              className="w-full sm:flex-grow bg-gradient-to-r from-[#FF5A5A] to-[#FF7B7B] text-white py-4 rounded-xl font-bold text-sm shadow-lg shadow-rose-100 hover:shadow-rose-200 transition-all flex items-center justify-center gap-3"
             >
-              <ShoppingCart size={24} /> Ajouter au panier
+              <ShoppingCart size={18} /> Ajouter au panier
             </button>
           </div>
 
-          {/* RÉASSURANCE LIVRAISON */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-10 border-t border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-orange-50 text-orange-500 rounded-2xl">
-                <Truck size={24} />
+          {/* RASSURANCE : Icônes fines */}
+          <div className="grid grid-cols-3 gap-4 pt-8 border-t border-gray-100">
+            <div className="flex flex-col items-center sm:flex-row gap-2">
+              <div className="p-2 bg-orange-50 text-orange-400 rounded-lg">
+                <Truck size={18} />
               </div>
-              <span className="text-xs font-bold text-gray-500 leading-tight">Livraison<br/>rapide</span>
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Livraison<br/>rapide</span>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-orange-50 text-orange-500 rounded-2xl">
-                <ShieldCheck size={24} />
+            <div className="flex flex-col items-center sm:flex-row gap-2">
+              <div className="p-2 bg-orange-50 text-orange-400 rounded-lg">
+                <ShieldCheck size={18} />
               </div>
-              <span className="text-xs font-bold text-gray-500 leading-tight">Paiement<br/>sécurisé</span>
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Paiement<br/>sécurisé</span>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-orange-50 text-orange-500 rounded-2xl">
-                <RotateCcw size={24} />
+            <div className="flex flex-col items-center sm:flex-row gap-2">
+              <div className="p-2 bg-orange-50 text-orange-400 rounded-lg">
+                <RotateCcw size={18} />
               </div>
-              <span className="text-xs font-bold text-gray-500 leading-tight">Retour<br/>30 jours</span>
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Retour<br/>30 jours</span>
             </div>
           </div>
-
         </div>
       </div>
     </div>
