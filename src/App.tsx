@@ -5,7 +5,7 @@ import { supabase } from './lib/supabaseClient'
 // Pages et Composants
 import Home from './pages/Home/Home'
 import Shop from './pages/Shop/Shop'
-import ProductDetail from './pages/Shop/ProductDetail' // <--- AJOUTÉ
+import ProductDetail from './pages/Shop/ProductDetail'
 import Login from './pages/Auth/Login'
 import Register from './pages/Auth/Register'
 import Account from './pages/Account/AccountPage'
@@ -35,13 +35,19 @@ export default function App() {
     } catch (e) { return [] }
   })
 
-  // Sauvegarde automatique dans le localStorage (Demandé le 13-01-2026)
+  // Sauvegarde automatique (Synchronisée avec le Checkout)
   useEffect(() => {
     localStorage.setItem('festi_cart', JSON.stringify(cart))
   }, [cart])
 
+  // Compteur total d'articles
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0)
-  const totalAmount = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0)
+
+  // CALCUL DU TOTAL : Correction pour prendre en compte le prix promo
+  const totalAmount = cart.reduce((acc, item) => {
+    const currentPrice = item.promo_price || item.price
+    return acc + (currentPrice * item.quantity)
+  }, 0)
 
   const clearCart = () => {
     setCart([])
@@ -83,14 +89,14 @@ export default function App() {
   }, [])
 
   if (loading) return (
-    <div className="h-screen flex items-center justify-center font-black text-indigo-600 animate-pulse text-2xl tracking-tighter">
+    <div className="h-screen flex items-center justify-center font-black text-[#FF5A5A] animate-pulse text-2xl tracking-tighter">
       FESTISOLDE...
     </div>
   )
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Header avec bouton panier qui ouvre le drawer */}
+    <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
+      {/* Header */}
       <Header 
         user={user} 
         setUser={setUser} 
@@ -113,25 +119,32 @@ export default function App() {
           
           {/* BOUTIQUE ET DÉTAILS */}
           <Route path="/products" element={<Shop cart={cart} setCart={setCart} />} />
-          <Route path="/product/:id" element={<ProductDetail setCart={setCart} />} /> {/* <--- AJOUTÉ */}
+          <Route path="/product/:id" element={<ProductDetail setCart={setCart} />} />
 
-          {/* PAIEMENT */}
-          <Route path="/checkout" element={<Checkout cart={cart} total={totalAmount} clearCart={clearCart} />} />
+          {/* TUNNEL DE COMMANDE */}
+          <Route 
+            path="/checkout" 
+            element={<Checkout cart={cart} total={totalAmount} clearCart={clearCart} />} 
+          />
           <Route path="/order-success" element={<OrderSuccess />} />
 
-          {/* AUTH */}
+          {/* AUTHENTIFICATION */}
           <Route path="/auth/login" element={user ? <AuthRedirect user={user} /> : <Login setUser={setUser} />} />
           <Route path="/auth/register" element={user ? <AuthRedirect user={user} /> : <Register setUser={setUser} />} />
 
-          {/* PROTECTED ROUTES */}
+          {/* ROUTES PROTÉGÉES */}
           <Route path="/account" element={<ProtectedRoute user={user}><Account user={user} /></ProtectedRoute>} />
+          
+          {/* ROUTES VENDEURS */}
           <Route path="/vendor/dashboard" element={<VendorRoute user={user}><VendorDashboard /></VendorRoute>} />
           <Route path="/vendor/add-product" element={<VendorRoute user={user}><AddProduct /></VendorRoute>} />
           <Route path="/vendor/create-shop" element={<ProtectedRoute user={user}><CreateShop /></ProtectedRoute>} />
 
+          {/* REDIRECTION PAR DÉFAUT */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+
       <Footer />
     </div>
   )
