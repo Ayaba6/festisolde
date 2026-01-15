@@ -1,86 +1,68 @@
-import { ShieldCheck, Zap, ShoppingBag, Truck, Headphones } from 'lucide-react'
+import { ShieldCheck, Zap, ShoppingBag } from 'lucide-react'
 
 const BENEFITS = [
   {
     title: "Vendeurs certifiés",
-    desc: "Chaque boutique est auditée pour garantir l'origine et la qualité des produits.",
-    icon: <ShieldCheck size={32} />,
-    color: "indigo",
-    bgColor: "bg-indigo-50",
-    textColor: "text-indigo-600"
+    desc: "Chaque boutique est auditée par nos experts pour garantir l'origine et la qualité de produits.",
+    icon: <ShieldCheck size={48} strokeWidth={1.5} />,
+    // Style bleu lavande de l'image
+    cardBg: "bg-[#B8C6E8]", 
+    textColor: "text-[#1A1C21]"
   },
   {
     title: "Offres Flash",
-    desc: "Des réductions imbattables mises à jour quotidiennement sur vos marques préférées.",
-    icon: <Zap size={32} />,
-    color: "amber",
-    bgColor: "bg-amber-50",
-    textColor: "text-amber-600"
+    desc: "Des réductions exclusives négociées directement avec le meilleurs commerçants de Ouaga.",
+    icon: <Zap size={48} strokeWidth={1.5} />,
+    // Style orange corail de l'image
+    cardBg: "bg-[#F3834C]",
+    textColor: "text-white"
   },
   {
-    title: "Service Premium",
-    desc: "Paiement sécurisé via Orange Money ou Moov et support client réactif 7j/7.",
-    icon: <ShoppingBag size={32} />,
-    color: "emerald",
-    bgColor: "bg-emerald-50",
-    textColor: "text-emerald-600"
+    title: "Paiement Sécurisé",
+    desc: "Achetez en toute sérénité via Orange Money, Moov Money ou par carte bancaire.",
+    icon: <ShoppingBag size={48} strokeWidth={1.5} />,
+    // Style beige crème de l'image
+    cardBg: "bg-[#EFE9D9]",
+    textColor: "text-[#1A1C21]"
   }
 ]
 
 export default function BenefitsSection() {
   return (
-    <section className="max-w-7xl mx-auto px-6 py-24">
-      <div className="bg-white rounded-[2.5rem] p-8 md:p-16 border border-gray-100 shadow-xl shadow-gray-200/50 relative overflow-hidden">
-        
-        {/* Décoration de fond subtile */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50/50 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2" />
+    <section className="max-w-7xl mx-auto px-4 lg:px-6 py-16 lg:py-24">
+      {/* En-tête de section identique à l'image */}
+      <div className="text-center max-w-2xl mx-auto mb-16">
+        <h2 className="text-3xl lg:text-4xl font-bold text-[#1A1C21] mb-4">
+          Ils nous font confiance
+        </h2>
+        <p className="text-slate-500 font-medium text-base lg:text-lg">
+          Plus de 50 000 clients satisfaits. Découvrez leurs avis.
+        </p>
+      </div>
 
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl md:text-4xl font-black tracking-tight text-gray-900 mb-4">
-            L'excellence du e-commerce <br />
-            <span className="text-indigo-600">à portée de clic</span>
-          </h2>
-          <p className="text-gray-500 font-medium">
-            FestiSolde redéfinit la vente en ligne au Burkina Faso avec des standards de qualité internationaux.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
-          {BENEFITS.map((benefit, index) => (
-            <div 
-              key={index} 
-              className="group p-8 rounded-3xl transition-all duration-300 hover:bg-gray-50 border border-transparent hover:border-gray-200"
-            >
-              <div className={`w-20 h-20 mb-6 flex items-center justify-center rounded-2xl ${benefit.bgColor} ${benefit.textColor} transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3`}>
+      {/* Grille de cartes colorées */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+        {BENEFITS.map((benefit, index) => (
+          <div 
+            key={index} 
+            className={`${benefit.cardBg} rounded-[2rem] p-10 lg:p-12 flex flex-col items-center text-center transition-transform duration-300 hover:-translate-y-2 shadow-sm`}
+          >
+            {/* Icône entourée comme sur l'image */}
+            <div className={`mb-8 p-4 rounded-full border-2 ${benefit.textColor === 'text-white' ? 'border-white/30' : 'border-black/10'}`}>
+              <div className={benefit.textColor}>
                 {benefit.icon}
               </div>
-              
-              <h3 className="text-xl font-bold text-gray-900 mb-3 tracking-tight">
-                {benefit.title}
-              </h3>
-              
-              <p className="text-gray-500 text-sm leading-relaxed font-medium">
-                {benefit.desc}
-              </p>
-
-              {/* Petit indicateur de lien (optionnel) */}
-              <div className="mt-6 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                En savoir plus 
-                <span className="text-lg">→</span>
-              </div>
             </div>
-          ))}
-        </div>
-
-        {/* Barre de badges rapide en bas (facultatif) */}
-        <div className="mt-16 pt-10 border-t border-gray-100 flex flex-wrap justify-center gap-8 md:gap-16 grayscale opacity-60">
-           <div className="flex items-center gap-2 text-sm font-semibold">
-              <Truck size={18} /> Livraison 24h
-           </div>
-           <div className="flex items-center gap-2 text-sm font-semibold">
-              <Headphones size={18} /> Support Ouaga
-           </div>
-        </div>
+            
+            <h3 className={`text-2xl lg:text-3xl font-bold mb-6 ${benefit.textColor}`}>
+              {benefit.title}
+            </h3>
+            
+            <p className={`text-sm lg:text-base leading-relaxed font-medium opacity-90 ${benefit.textColor}`}>
+              {benefit.desc}
+            </p>
+          </div>
+        ))}
       </div>
     </section>
   )

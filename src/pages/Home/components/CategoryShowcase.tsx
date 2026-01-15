@@ -16,22 +16,23 @@ export default function CategoryShowcase() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Données de secours stylisées selon festi10.PNG
-  const fallbackCategories = [
-    { id: '1', name: 'Mode & Vêtements', slug: 'mode', image_url: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8', promo_text: 'Jusqu\'à -60%', color_gradient: 'from-rose-500/80 to-pink-600/90' },
+  // Liste étendue à 6 catégories pour le fallback
+  const fallbackCategories: Category[] = [
+    { id: '1', name: 'Mode & Vêtements', slug: 'mode', image_url: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8', promo_text: 'Jusqu\'à -60%', color_gradient: 'from-brand-primary/80 to-pink-600/90' },
     { id: '2', name: 'Électronique', slug: 'electronics', image_url: 'https://images.unsplash.com/photo-1498049794561-7780e7231661', promo_text: 'Jusqu\'à -50%', color_gradient: 'from-blue-600/80 to-indigo-700/90' },
-    { id: '3', name: 'Maison & Déco', slug: 'maison', image_url: 'https://images.unsplash.com/photo-1484101403633-562f891dc89a', promo_text: 'Jusqu\'à -45%', color_gradient: 'from-orange-400/80 to-red-500/90' }
+    { id: '3', name: 'Maison & Déco', slug: 'maison', image_url: 'https://images.unsplash.com/photo-1484101403633-562f891dc89a', promo_text: 'Jusqu\'à -45%', color_gradient: 'from-orange-400/80 to-red-500/90' },
+    { id: '4', name: 'Alimentation', slug: 'alimentation', image_url: 'https://images.unsplash.com/photo-1542838132-92c53300491e', promo_text: 'Frais & Bio', color_gradient: 'from-emerald-500/80 to-teal-700/90' },
+    { id: '5', name: 'Santé & Beauté', slug: 'sante', image_url: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9', promo_text: 'Soin Intense', color_gradient: 'from-purple-500/80 to-fuchsia-700/90' },
+    { id: '6', name: 'Sport & Loisirs', slug: 'sport', image_url: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438', promo_text: 'Performance', color_gradient: 'from-yellow-500/80 to-orange-600/90' }
   ]
 
   useEffect(() => {
     async function fetchCategories() {
       try {
         setLoading(true)
-        const { data, error } = await supabase
-          .from('categories')
-          .select('*')
-          .limit(3)
-
+        // On récupère 6 catégories au lieu de 3
+        const { data, error } = await supabase.from('categories').select('*').limit(6)
+        
         if (error || !data || data.length === 0) {
           setCategories(fallbackCategories)
         } else {
@@ -47,52 +48,54 @@ export default function CategoryShowcase() {
   }, [])
 
   return (
-    <section className="py-24 bg-white overflow-hidden">
-      <div className="max-w-7xl mx-auto px-6">
-        {/* HEADER DE LA SECTION */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter mb-4">
-            Explorer par catégorie
+    <section className="py-12 lg:py-20 bg-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 lg:px-6">
+        
+        {/* HEADER */}
+        <div className="text-center mb-10 lg:mb-16">
+          <h2 className="text-3xl lg:text-5xl font-black text-gray-900 mb-3 tracking-tighter italic">
+            Explorer par <span className="text-brand-primary">catégorie</span>
           </h2>
-          <p className="text-gray-500 font-bold text-lg max-w-2xl mx-auto">
-            Trouvez les meilleures offres dans votre catégorie préférée
+          <p className="text-gray-500 max-w-xl mx-auto font-medium">
+            Trouvez les meilleures offres de Ouagadougou dans votre catégorie préférée.
           </p>
         </div>
 
-        {/* GRILLE DE CATÉGORIES STYLISÉES */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* GRILLE : Responsive 1 -> 2 -> 3 colonnes */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8">
           {loading ? (
-            Array(3).fill(0).map((_, i) => (
-              <div key={i} className="h-80 bg-gray-100 animate-pulse rounded-[2.5rem]" />
+            Array(6).fill(0).map((_, i) => (
+              <div key={i} className="h-64 lg:h-80 bg-slate-50 animate-pulse rounded-[2rem]" />
             ))
           ) : (
             categories.map((cat) => (
               <Link
                 key={cat.id}
-                to={`/category/${cat.slug}`}
-                className="group relative h-80 overflow-hidden rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all duration-500"
+                to={`/products?category=${cat.name}`} // Lien vers la boutique avec filtre
+                className="group relative h-64 lg:h-80 overflow-hidden rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500"
               >
                 {/* Image de fond */}
                 <img 
                   src={cat.image_url} 
                   alt={cat.name} 
-                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 />
                 
-                {/* Overlay Coloré avec Dégradé */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${cat.color_gradient} opacity-90 group-hover:opacity-95 transition-opacity`} />
+                {/* Overlay dynamique */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${cat.color_gradient} opacity-70 group-hover:opacity-85 transition-opacity duration-500`} />
                 
                 {/* Contenu Texte */}
-                <div className="absolute inset-0 p-10 flex flex-col justify-end text-left text-white">
-                  <span className="text-xs font-black uppercase tracking-widest mb-2 opacity-80">
+                <div className="absolute inset-0 p-8 flex flex-col justify-end text-white">
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] mb-2 opacity-90 drop-shadow-sm">
                     {cat.promo_text}
                   </span>
+                  
                   <div className="flex items-center justify-between">
-                    <h3 className="text-3xl font-black leading-tight tracking-tight">
+                    <h3 className="text-2xl lg:text-3xl font-black leading-tight tracking-tighter italic">
                       {cat.name}
                     </h3>
-                    <div className="bg-white/20 p-2 rounded-full backdrop-blur-md translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all">
-                      <ChevronRight size={24} />
+                    <div className="bg-white text-gray-900 p-3 rounded-2xl shadow-xl opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500">
+                      <ChevronRight size={20} />
                     </div>
                   </div>
                 </div>

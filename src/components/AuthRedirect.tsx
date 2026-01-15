@@ -9,31 +9,51 @@ export default function AuthRedirect({ user }: { user: any }) {
     if (!user) return
 
     const handleAiguillage = async () => {
-      // On vérifie si l'utilisateur possède déjà une boutique
-      const { data: shop } = await supabase
-        .from('shops')
-        .select('id')
-        .eq('owner_id', user.id)
-        .single()
-
-      if (shop) {
-        // S'il a une boutique, c'est un vendeur confirmé -> Dashboard
-        navigate('/vendor/dashboard')
-      } else {
-        // S'il n'a pas de boutique, peu importe son rôle actuel, 
-        // on l'envoie la créer s'il a cliqué sur "Ouvrir ma boutique"
-        navigate('/vendor/create-shop')
+      // 1. PRIORITÉ ABSOLUE : SUPER ADMIN
+      // On redirige vers la nouvelle console générale
+      if (user.role === 'admin') {
+        navigate('/admin-general') 
+        return
       }
+
+      // 2. CAS VENDEUR (OU FUTUR VENDEUR)
+      if (user.role === 'vendor') {
+        const { data: shop } = await supabase
+          .from('shops')
+          .select('id')
+          .eq('owner_id', user.id)
+          .single()
+
+        if (shop) {
+          navigate('/vendor/dashboard')
+        } else {
+          // Si le rôle est 'vendor' mais qu'il n'a pas fini de créer sa boutique
+          navigate('/vendor/create-shop')
+        }
+        return
+      }
+
+      // 3. CAS CLIENT (VISITOR/CUSTOMER)
+      // On le renvoie vers l'accueil pour qu'il puisse faire son shopping
+      navigate('/')
     }
 
     handleAiguillage()
   }, [user, navigate])
 
   return (
-    <div className="h-screen flex items-center justify-center bg-[#0f172a]">
+    <div className="h-screen flex items-center justify-center bg-gray-900">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto mb-4"></div>
-        <p className="text-white font-bold">Préparation de votre espace...</p>
+        {/* Un loader plus moderne et assorti au style FestiSolde */}
+        <div className="relative w-16 h-16 mx-auto mb-6">
+          <div className="absolute inset-0 rounded-full border-4 border-brand-primary/20"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-t-brand-primary animate-spin"></div>
+        </div>
+        
+        <p className="text-white font-black uppercase tracking-[0.3em] text-[10px]">
+          Synchronisation <span className="text-brand-primary">{user?.role}</span>
+        </p>
+        <p className="text-gray-500 text-[9px] mt-2 font-bold uppercase">Chargement de votre environnement...</p>
       </div>
     </div>
   )

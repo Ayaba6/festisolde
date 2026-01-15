@@ -2,39 +2,39 @@ import React from 'react'
 
 export default function ProductCardSkeleton() {
   return (
-    <div className="group bg-white rounded-[2rem] overflow-hidden border border-gray-50 flex flex-col relative animate-pulse">
+    <div className="group bg-white rounded-[2rem] p-3 border border-gray-50 flex flex-col h-full animate-pulse">
       
-      {/* 1. Placeholder Image (Zone grise) */}
-      <div className="relative aspect-[4/5] bg-gray-100 overflow-hidden">
-        {/* Petit badge placeholder en haut à gauche */}
-        <div className="absolute top-3 left-3 w-12 h-5 bg-gray-200 rounded-lg" />
+      {/* 1. Zone Image Placeholder */}
+      <div className="relative aspect-[4/5] bg-gray-100 rounded-[1.5rem] overflow-hidden">
+        {/* Badge promo placeholder */}
+        <div className="absolute top-3 left-3 w-10 h-5 bg-gray-200 rounded-lg" />
       </div>
 
-      {/* 2. Placeholder Contenu Textuel */}
-      <div className="p-5 flex flex-col flex-grow text-left">
+      {/* 2. Zone Contenu Textuel */}
+      <div className="pt-5 pb-2 px-2 flex flex-col flex-grow text-left">
         
-        {/* Catégorie Placeholder (Petite barre) */}
+        {/* Catégorie Placeholder */}
         <div className="mb-3">
-          <div className="h-2 w-16 bg-gray-100 rounded-full" />
+          <div className="h-3 w-16 bg-gray-100 rounded-md" />
         </div>
 
-        {/* Titre Placeholder (Deux barres de longueurs différentes) */}
-        <div className="space-y-2 mb-6">
-          <div className="h-4 w-full bg-gray-100 rounded-full" />
-          <div className="h-4 w-2/3 bg-gray-100 rounded-full" />
+        {/* Titre Placeholder (Deux lignes pour simuler le line-clamp-2) */}
+        <div className="space-y-2 mb-4 h-10">
+          <div className="h-3.5 w-full bg-gray-100 rounded-full" />
+          <div className="h-3.5 w-3/4 bg-gray-100 rounded-full" />
         </div>
 
-        {/* Bas de carte : Prix et Bouton */}
+        {/* Bas de carte : Prix et Bouton Plus */}
         <div className="mt-auto flex items-center justify-between">
-          <div className="flex flex-col gap-2">
-            {/* Prix Placeholder */}
-            <div className="h-6 w-24 bg-gray-200 rounded-lg" />
-            {/* Promo Placeholder */}
-            <div className="h-3 w-12 bg-gray-100 rounded-full" />
+          <div className="space-y-2">
+            {/* Simulation prix promo (optionnel) */}
+            <div className="h-2.5 w-12 bg-gray-50 rounded-full" />
+            {/* Prix principal */}
+            <div className="h-6 w-28 bg-gray-200 rounded-xl" />
           </div>
 
-          {/* Bouton Plus Placeholder (Le carré arrondi) */}
-          <div className="w-12 h-12 bg-gray-200 rounded-2xl" />
+          {/* Bouton Action Placeholder */}
+          <div className="w-11 h-11 bg-gray-200 rounded-2xl" />
         </div>
       </div>
     </div>

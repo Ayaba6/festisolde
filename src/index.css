@@ -1,3 +1,48 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased text-brand-slate-900 bg-white;
+  }
+}
+
+@layer components {
+  /* Titres */
+  .title-main { @apply text-festi-h1 font-black text-white; }
+  .title-section { @apply text-festi-h2 font-black text-brand-slate-900; }
+  
+  /* Textes */
+  .text-p { @apply text-festi-base text-brand-slate-500 font-medium; }
+  .text-caption { @apply text-festi-xs font-bold uppercase tracking-wider text-brand-slate-500; }
+
+  /* Boutons plus fins */
+  .btn-primary {
+    @apply px-5 py-2.5 bg-brand-primary text-white text-festi-sm font-bold rounded-brand 
+           transition-all active:scale-95 flex items-center justify-center gap-2 hover:brightness-105;
+  }
+
+  .btn-dark {
+    @apply px-5 py-2.5 bg-brand-slate-900 text-white text-festi-sm font-bold rounded-brand 
+           transition-all active:scale-95 flex items-center justify-center gap-2;
+  }
+
+  /* Carte Produit */
+  .card-product {
+    @apply bg-white border border-slate-100 rounded-brand p-2 transition-shadow hover:shadow-md;
+  }
+}
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-infinite-scroll {
+  animation: scroll 20s linear infinite;
+}
+
+/* Pause l'animation au survol pour que l'utilisateur puisse voir un logo */
+.animate-infinite-scroll:hover {
+  animation-play-state: paused;
+}
