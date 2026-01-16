@@ -34,19 +34,27 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
   // Vérification du statut vendeur
   useEffect(() => {
     const checkVendorStatus = async () => {
-      if (!user) {
+      if (!user?.id) {
         setIsVendor(false)
         return
       }
-      const { data } = await supabase
+
+      const { data, error } = await supabase
         .from('shops')
         .select('id')
         .eq('owner_id', user.id)
-        .single()
-      if (data) setIsVendor(true)
+        .maybeSingle() 
+
+      if (error) {
+        console.error("Erreur checkVendorStatus:", error.message)
+        return
+      }
+
+      setIsVendor(!!data)
     }
+
     checkVendorStatus()
-  }, [user])
+  }, [user?.id])
 
   // Fermer les menus lors du changement de page
   useEffect(() => { 
@@ -60,7 +68,7 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
     navigate('/auth/login')
   }
 
-  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Utilisateur'
+  const displayName = user?.full_name || user?.email?.split('@')[0] || 'Utilisateur'
   const initial = displayName.charAt(0).toUpperCase()
   const isAdmin = user?.role === 'admin'
 
@@ -154,7 +162,6 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
                       </div>
 
                       <div className="space-y-1">
-                        {/* LIEN CONSOLE ADMIN */}
                         {isAdmin && (
                           <MenuLink 
                             to="/admin-general" 
@@ -163,6 +170,9 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
                             primary 
                           />
                         )}
+
+                        {/* LIEN VERS LA PAGE ACCOUNT */}
+                        <MenuLink to="/account" icon={<UserIcon size={18} />} label="Mon Profil" />
 
                         <MenuLink to="/orders" icon={<Package size={18} />} label="Mes commandes" />
                         
@@ -204,6 +214,14 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
             <Link to="/" className="text-3xl font-black text-brand-dark">Accueil</Link>
             <Link to="/products" className="text-3xl font-black text-brand-dark">Boutique</Link>
             
+            {user && (
+              <>
+                <div className="h-px bg-slate-100 my-2" />
+                <Link to="/account" className="text-2xl font-bold text-slate-600">Mon Profil</Link>
+                <Link to="/orders" className="text-2xl font-bold text-slate-600">Mes Commandes</Link>
+              </>
+            )}
+
             {isAdmin && (
               <Link to="/admin" className="text-3xl font-black text-amber-500 italic">Console Admin</Link>
             )}

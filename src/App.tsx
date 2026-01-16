@@ -8,7 +8,11 @@ import Shop from './pages/Shop/Shop'
 import ProductDetail from './pages/Shop/ProductDetail'
 import Login from './pages/Auth/Login'
 import Register from './pages/Auth/Register'
-import Account from './pages/Account/AccountPage'
+
+// --- IMPORT DE LA PAGE COMPTE CORRIGÉE ---
+import Account from './pages/Account/AccountPage' 
+
+import Orders from './pages/Account/Orders'
 import Checkout from './pages/Checkout/Checkout'
 import OrderSuccess from './pages/Checkout/OrderSuccess'
 
@@ -19,9 +23,9 @@ import EditProduct from './pages/Vendor/EditProduct'
 import CreateShop from './pages/Vendor/CreateShop'
 
 // --- PAGES ADMINISTRATEUR (SUPER ADMIN) ---
-import AdminGeneral from './pages/Administrator/AdminGeneral' // Dashboard Global
-import AdminProducts from './pages/Administrator/AdminProducts' // Gestion produits
-import AdminShops from './pages/Administrator/AdminShops' // Gestion boutiques
+import AdminGeneral from './pages/Administrator/AdminGeneral'
+import AdminProducts from './pages/Administrator/AdminProducts'
+import AdminShops from './pages/Administrator/AdminShops'
 
 // --- COMPOSANTS UI ---
 import Header from './components/Header'
@@ -33,7 +37,6 @@ import AuthRedirect from './components/AuthRedirect'
 
 /**
  * COMPOSANT DE PROTECTION ADMIN
- * Vérifie si l'utilisateur est connecté ET possède le rôle 'admin'
  */
 const AdminRoute = ({ user, children }: { user: any, children: React.ReactNode }) => {
   if (!user) return <Navigate to="/auth/login" replace />
@@ -51,10 +54,12 @@ export default function App() {
     const savedCart = localStorage.getItem('festi_cart')
     try {
       return savedCart ? JSON.parse(savedCart) : []
-    } catch (e) { return [] }
+    } catch (e) { 
+      return [] 
+    }
   })
 
-  // Sauvegarde automatique du panier à chaque modification
+  // Sauvegarde automatique du panier
   useEffect(() => {
     localStorage.setItem('festi_cart', JSON.stringify(cart))
   }, [cart])
@@ -74,47 +79,54 @@ export default function App() {
   // --- GESTION DE L'UTILISATEUR & PROFIL ---
   const loadUserWithProfile = async () => {
     setLoading(true)
-    const { data } = await supabase.auth.getUser()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
     
-    if (!data.user) {
+    if (!authUser) {
       setUser(null)
       setLoading(false)
       return
     }
 
-    // Récupération du rôle depuis la table 'profiles'
+    // On récupère le rôle et le nom dans la table 'profiles'
     const { data: profile } = await supabase
       .from('profiles')
       .select('role, full_name')
-      .eq('id', data.user.id)
-      .single()
+      .eq('id', authUser.id)
+      .maybeSingle() 
 
     setUser({
-      ...data.user,
+      ...authUser,
       role: profile?.role || 'customer',
-      full_name: profile?.full_name ?? '',
+      full_name: profile?.full_name || authUser.user_metadata?.full_name || '',
     })
     setLoading(false)
   }
 
   useEffect(() => {
     loadUserWithProfile()
+
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) setUser(null)
-      else loadUserWithProfile()
+      if (!session) {
+        setUser(null)
+        setLoading(false)
+      } else {
+        loadUserWithProfile()
+      }
     })
-    return () => listener.subscription.unsubscribe()
+
+    return () => {
+      listener.subscription.unsubscribe()
+    }
   }, [])
 
   if (loading) return (
-    <div className="h-screen flex items-center justify-center font-black text-[#FF5A5A] animate-pulse text-2xl tracking-tighter italic">
+    <div className="h-screen flex items-center justify-center font-black text-brand-primary animate-pulse text-2xl tracking-tighter italic bg-white">
       FESTISOLDE...
     </div>
   )
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
-      {/* Header reçoit l'utilisateur et les infos du panier */}
       <Header 
         user={user} 
         setUser={setUser} 
@@ -145,18 +157,22 @@ export default function App() {
           <Route path="/auth/login" element={user ? <AuthRedirect user={user} /> : <Login setUser={setUser} />} />
           <Route path="/auth/register" element={user ? <AuthRedirect user={user} /> : <Register setUser={setUser} />} />
 
-          {/* --- COMPTE CLIENT --- */}
-          <Route path="/account" element={<ProtectedRoute user={user}><Account user={user} /></ProtectedRoute>} />
+          {/* --- COMPTE CLIENT & COMMANDES --- */}
+          <Route 
+            path="/account" 
+            element={
+              <ProtectedRoute user={user}>
+                {/* Passage des props user et setUser pour la page AccountPage */}
+                <Account user={user} setUser={setUser} />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="/orders" element={<ProtectedRoute user={user}><Orders /></ProtectedRoute>} />
           
-          {/* --- ROUTES SUPER-ADMIN (GESTION GLOBALE) --- */}
-          {/* La console générale qui récapitule tout */}
+          {/* --- ROUTES SUPER-ADMIN --- */}
           <Route path="/admin-general" element={<AdminRoute user={user}><AdminGeneral /></AdminRoute>} />
-          
-          {/* Sous-pages de gestion administrative */}
           <Route path="/admin/products" element={<AdminRoute user={user}><AdminProducts /></AdminRoute>} />
           <Route path="/admin/shops" element={<AdminRoute user={user}><AdminShops /></AdminRoute>} />
-          
-          {/* Redirection automatique de /admin vers la console générale */}
           <Route path="/admin" element={<Navigate to="/admin-general" replace />} />
           
           {/* --- ROUTES VENDEURS --- */}

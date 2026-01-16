@@ -20,7 +20,7 @@ export default function PromoBanner() {
         <span className="hidden md:block opacity-30">|</span>
         
         <span className="hidden md:block">
-          Support Client 24/7 : <span className="text-brand-primary">+226 XX XX XX XX</span>
+          Support Client 24/7 : <span className="text-brand-primary">+226 70 18 99 12</span>
         </span>
       </div>
     </div>
