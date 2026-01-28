@@ -81,15 +81,14 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 py-3 lg:px-6 transition-all">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           
-          {/* LOGO PREMIUM */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-primary/20 group-hover:scale-110 transition-transform">
-              <span className="text-xl font-black italic">f</span>
-            </div>
-            <div className="flex flex-col leading-none">
-              <span className="font-black text-2xl tracking-tighter text-brand-dark">
-                Festi <span className="text-brand-primary">Solde</span>
-              </span>
+          {/* LOGO PRIX CASSÉ / FESTISOLDE */}
+          <Link to="/" className="flex items-center group">
+            <div className="h-[95px] w-auto transition-all duration-300 group-hover:scale-105 active:scale-95">
+              <img 
+                src="/logo-festisolde.png" 
+                alt="FestiSolde - Le festival de la liquidation" 
+                className="h-full w-full object-contain drop-shadow-sm"
+              />
             </div>
           </Link>
 
@@ -153,10 +152,10 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
                     <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-slate-100 py-3 z-20 animate-in fade-in slide-in-from-top-2">
                       <div className="px-6 py-4 border-b border-slate-50 mb-2 text-left">
                         <div className="flex items-center justify-between mb-1">
-                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mon Compte</p>
-                           {isAdmin && (
-                             <span className="bg-amber-100 text-amber-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">Admin</span>
-                           )}
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mon Compte</p>
+                            {isAdmin && (
+                              <span className="bg-amber-100 text-amber-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">Admin</span>
+                            )}
                         </div>
                         <p className="text-sm font-bold text-brand-dark truncate">{user.email}</p>
                       </div>
@@ -171,9 +170,7 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
                           />
                         )}
 
-                        {/* LIEN VERS LA PAGE ACCOUNT */}
                         <MenuLink to="/account" icon={<UserIcon size={18} />} label="Mon Profil" />
-
                         <MenuLink to="/orders" icon={<Package size={18} />} label="Mes commandes" />
                         
                         {isVendor ? (
@@ -210,7 +207,7 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
 
         {/* MOBILE NAV OVERLAY */}
         {menuOpen && (
-          <nav className="md:hidden absolute top-full left-0 w-full bg-white border-t border-slate-100 p-8 flex flex-col gap-5 shadow-2xl animate-in slide-in-from-top-5">
+          <nav className="md:hidden absolute top-full left-0 w-full bg-white border-t border-slate-100 p-8 flex flex-col gap-5 shadow-2xl animate-in slide-in-from-top-5 text-left">
             <Link to="/" className="text-3xl font-black text-brand-dark">Accueil</Link>
             <Link to="/products" className="text-3xl font-black text-brand-dark">Boutique</Link>
             
@@ -235,7 +232,7 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
             {!user ? (
               <Link to="/auth/login" className="btn-primary text-center py-5 rounded-2xl font-black">SE CONNECTER</Link>
             ) : (
-              <button onClick={handleLogout} className="text-rose-500 font-black py-4 border-2 border-rose-500 rounded-2xl">DÉCONNEXION</button>
+              <button onClick={handleLogout} className="text-rose-500 font-black py-4 border-2 border-rose-500 rounded-2xl text-center">DÉCONNEXION</button>
             )}
           </nav>
         )}

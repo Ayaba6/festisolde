@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Facebook, Twitter, Instagram, Mail, Phone, MapPin } from 'lucide-react'
 
-// Imports des logos avec les bonnes extensions
+// Imports des logos de paiement
 import LogoOM from '../assets/OM.png'
 import LogoMM from '../assets/MM.png'
 import LogoTM from '../assets/TM.png' 
@@ -15,15 +15,19 @@ export default function Footer() {
       {/* SECTION PRINCIPALE */}
       <div className="max-w-7xl mx-auto px-6 py-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
         
-        {/* Colonne 1 : À propos */}
+        {/* Colonne 1 : À propos + LOGO */}
         <div className="space-y-6">
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center text-white font-black italic shadow-lg shadow-brand-primary/20">f</div>
-            <span className="text-white font-black text-2xl tracking-tighter">
-              Festi<span className="text-brand-primary">Solde</span>
-            </span>
+          <Link to="/" className="flex items-center group">
+            {/* Utilisation du logo officiel */}
+            <div className="h-[95px] w-auto transition-transform duration-300 group-hover:scale-105">
+              <img 
+                src="/logo-festisolde1.png" 
+                alt="FestiSolde" 
+                className="h-full w-full object-contain brightness-110" 
+              />
+            </div>
           </Link>
-          <p className="text-sm leading-relaxed pr-4">
+          <p className="text-sm leading-relaxed pr-4 text-slate-400">
             La première plateforme de déstockage certifiée au Burkina Faso. 
             Nous connectons les meilleures boutiques de Ouagadougou avec des acheteurs exigeants.
           </p>
@@ -73,16 +77,16 @@ export default function Footer() {
           
           {/* Grille des logos de paiement */}
           <div className="flex flex-wrap gap-4 items-center">
-            <img src={LogoOM} alt="Orange Money" className="h-7 w-auto hover:scale-110 transition-transform" />
-            <img src={LogoMM} alt="Moov Money" className="h-7 w-auto hover:scale-110 transition-transform" />
-            <img src={LogoTM} alt="Telecel Money" className="h-9 w-auto hover:scale-110 transition-transform" />
-            <img src={LogoMC} alt="Mastercard" className="h-8 w-auto hover:scale-110 transition-transform" />
+            <img src={LogoOM} alt="Orange Money" className="h-7 w-auto hover:scale-110 transition-transform grayscale hover:grayscale-0" />
+            <img src={LogoMM} alt="Moov Money" className="h-7 w-auto hover:scale-110 transition-transform grayscale hover:grayscale-0" />
+            <img src={LogoTM} alt="Telecel Money" className="h-9 w-auto hover:scale-110 transition-transform grayscale hover:grayscale-0" />
+            <img src={LogoMC} alt="Mastercard" className="h-8 w-auto hover:scale-110 transition-transform grayscale hover:grayscale-0" />
           </div>
           
-          <div className="mt-4 flex items-center gap-2 opacity-50">
-            <div className="h-px flex-1 bg-white/10"></div>
+          <div className="mt-4 flex items-center gap-2 opacity-30">
+            <div className="h-px flex-1 bg-white"></div>
             <span className="text-[9px] font-black uppercase tracking-widest">Garanti SSL</span>
-            <div className="h-px flex-1 bg-white/10"></div>
+            <div className="h-px flex-1 bg-white"></div>
           </div>
         </div>
       </div>
@@ -118,7 +122,7 @@ function SocialLink({ href, icon, label }: { href: string, icon: React.ReactNode
   return (
     <a 
       href={href} 
-      className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center hover:bg-brand-primary hover:text-white transition-all duration-300 border border-white/5"
+      className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center hover:bg-brand-primary hover:text-white transition-all duration-300 border border-white/5 text-white"
       aria-label={label}
     >
       {icon}
