@@ -4,18 +4,19 @@ import { useEffect } from 'react'
 import HeroSection from './components/HeroSection' 
 import TrustSection from './components/TrustSection'
 import FlashDeals from './components/FlashDeals'
+import PackeoSection from './components/PackeoSection' // Nouvelle section ajoutée
 import CategoryShowcase from './components/CategoryShowcase'
 import FeaturedProducts from './components/FeaturedProducts'
 import BenefitsSection from './components/BenefitsSection'
 import NewsletterSection from './components/NewsletterSection'
-import PartnersBanner from './components/PartnersBanner' // Import de la nouvelle section
+import PartnersBanner from './components/PartnersBanner'
 
 export default function Home() {
 
   useEffect(() => { 
-    // SCRIPT AUTO-SAUVEGARDE DU PANIER (Instructions du 2026-01-13)
+    // SCRIPT AUTO-SAUVEGARDE DU PANIER
     const handleSaveCart = () => {
-       const currentCart = localStorage.getItem('festi_cart'); // Mis à jour pour correspondre à ta clé principale
+       const currentCart = localStorage.getItem('festi_cart');
        if (currentCart) {
          localStorage.setItem('festi_cart_backup', currentCart);
        }
@@ -27,6 +28,7 @@ export default function Home() {
   return (
     <div className="bg-white min-h-screen">
       {/* 1. HERO & INTRODUCTION */}
+      {/* On peut maintenant y mentionner l'arrivée des packs dans le texte du Hero */}
       <HeroSection />
       
       {/* 2. RÉASSURANCE CLIENT RAPIDE */}
@@ -35,19 +37,23 @@ export default function Home() {
       {/* 3. OFFRES TEMPORAIRES (Ventes Flash) */}
       <FlashDeals />
 
-      {/* 4. EXPLORER PAR CATÉGORIE */}
+      {/* 4. SECTION PACKEO (Ventes en lots : Chemise + Pantalon + etc.) */}
+      {/* Placée ici pour créer une rupture visuelle avec son fond sombre */}
+      <PackeoSection />
+
+      {/* 5. EXPLORER PAR CATÉGORIE */}
       <CategoryShowcase />
 
-      {/* 5. PRODUITS VEDETTES */}
+      {/* 6. PRODUITS VEDETTES */}
       <FeaturedProducts />
 
-      {/* 6. EXPÉRIENCE & ENGAGEMENT */}
+      {/* 7. EXPÉRIENCE & ENGAGEMENT */}
       <BenefitsSection />
 
-      {/* 7. NEWSLETTER & FIDÉLISATION */}
+      {/* 8. NEWSLETTER & FIDÉLISATION */}
       <NewsletterSection />
 
-      {/* 8. PARTENAIRES & BOUTIQUES DE CONFIANCE */}
+      {/* 9. PARTENAIRES & BOUTIQUES DE CONFIANCE */}
       <PartnersBanner />
     </div>
   )

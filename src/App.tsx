@@ -8,10 +8,7 @@ import Shop from './pages/Shop/Shop'
 import ProductDetail from './pages/Shop/ProductDetail'
 import Login from './pages/Auth/Login'
 import Register from './pages/Auth/Register'
-
-// --- IMPORT DE LA PAGE COMPTE CORRIGÉE ---
 import Account from './pages/Account/AccountPage' 
-
 import Orders from './pages/Account/Orders'
 import Checkout from './pages/Checkout/Checkout'
 import OrderSuccess from './pages/Checkout/OrderSuccess'
@@ -22,7 +19,7 @@ import AddProduct from './pages/Vendor/AddProduct'
 import EditProduct from './pages/Vendor/EditProduct' 
 import CreateShop from './pages/Vendor/CreateShop'
 
-// --- PAGES ADMINISTRATEUR (SUPER ADMIN) ---
+// --- PAGES ADMINISTRATEUR ---
 import AdminGeneral from './pages/Administrator/AdminGeneral'
 import AdminProducts from './pages/Administrator/AdminProducts'
 import AdminShops from './pages/Administrator/AdminShops'
@@ -49,7 +46,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [isCartOpen, setIsCartOpen] = useState(false)
   
-  // --- LOGIQUE DU PANIER AVEC PERSISTANCE (localStorage) ---
+  // --- LOGIQUE DU PANIER ---
   const [cart, setCart] = useState<any[]>(() => {
     const savedCart = localStorage.getItem('festi_cart')
     try {
@@ -59,7 +56,6 @@ export default function App() {
     }
   })
 
-  // Sauvegarde automatique du panier
   useEffect(() => {
     localStorage.setItem('festi_cart', JSON.stringify(cart))
   }, [cart])
@@ -76,9 +72,8 @@ export default function App() {
     localStorage.removeItem('festi_cart')
   }
 
-  // --- GESTION DE L'UTILISATEUR & PROFIL ---
+  // --- GESTION UTILISATEUR ---
   const loadUserWithProfile = async () => {
-    setLoading(true)
     const { data: { user: authUser } } = await supabase.auth.getUser()
     
     if (!authUser) {
@@ -87,7 +82,6 @@ export default function App() {
       return
     }
 
-    // On récupère le rôle et le nom dans la table 'profiles'
     const { data: profile } = await supabase
       .from('profiles')
       .select('role, full_name')
@@ -120,13 +114,21 @@ export default function App() {
   }, [])
 
   if (loading) return (
-    <div className="h-screen flex items-center justify-center font-black text-brand-primary animate-pulse text-2xl tracking-tighter italic bg-white">
-      FESTISOLDE...
+    <div className="h-screen flex items-center justify-center bg-white">
+      <div className="flex flex-col items-center gap-4">
+        <span className="text-4xl font-black text-brand-primary animate-pulse italic tracking-tighter">
+          FESTISOLDE
+        </span>
+        <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
+          <div className="w-full h-full bg-brand-primary animate-loading-bar"></div>
+        </div>
+      </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
+    <div className="min-h-screen flex flex-col bg-slate-50/50 font-sans">
+      {/* HEADER : On passe les fonctions du panier et l'user */}
       <Header 
         user={user} 
         setUser={setUser} 
@@ -134,6 +136,7 @@ export default function App() {
         onOpenCart={() => setIsCartOpen(true)} 
       />
       
+      {/* PANIER LATÉRAL (DRAWER) */}
       <CartDrawer 
         isOpen={isCartOpen} 
         onClose={() => setIsCartOpen(false)}
@@ -144,44 +147,32 @@ export default function App() {
       
       <main className="flex-grow">
         <Routes>
-          {/* --- ROUTES PUBLIQUES --- */}
           <Route path="/" element={<Home />} />
           <Route path="/products" element={<Shop cart={cart} setCart={setCart} />} />
           <Route path="/product/:id" element={<ProductDetail setCart={setCart} />} />
-
-          {/* --- CHECKOUT --- */}
           <Route path="/checkout" element={<Checkout cart={cart} total={totalAmount} clearCart={clearCart} />} />
           <Route path="/order-success" element={<OrderSuccess />} />
 
-          {/* --- AUTHENTIFICATION --- */}
+          {/* AUTHENTIFICATION */}
           <Route path="/auth/login" element={user ? <AuthRedirect user={user} /> : <Login setUser={setUser} />} />
           <Route path="/auth/register" element={user ? <AuthRedirect user={user} /> : <Register setUser={setUser} />} />
 
-          {/* --- COMPTE CLIENT & COMMANDES --- */}
-          <Route 
-            path="/account" 
-            element={
-              <ProtectedRoute user={user}>
-                {/* Passage des props user et setUser pour la page AccountPage */}
-                <Account user={user} setUser={setUser} />
-              </ProtectedRoute>
-            } 
-          />
+          {/* COMPTE CLIENT */}
+          <Route path="/account" element={<ProtectedRoute user={user}><Account user={user} setUser={setUser} /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute user={user}><Orders /></ProtectedRoute>} />
           
-          {/* --- ROUTES SUPER-ADMIN --- */}
+          {/* ADMIN */}
           <Route path="/admin-general" element={<AdminRoute user={user}><AdminGeneral /></AdminRoute>} />
           <Route path="/admin/products" element={<AdminRoute user={user}><AdminProducts /></AdminRoute>} />
           <Route path="/admin/shops" element={<AdminRoute user={user}><AdminShops /></AdminRoute>} />
           <Route path="/admin" element={<Navigate to="/admin-general" replace />} />
           
-          {/* --- ROUTES VENDEURS --- */}
+          {/* VENDEUR */}
           <Route path="/vendor/dashboard" element={<VendorRoute user={user}><VendorDashboard /></VendorRoute>} />
           <Route path="/vendor/add-product" element={<VendorRoute user={user}><AddProduct /></VendorRoute>} />
           <Route path="/vendor/edit-product/:id" element={<VendorRoute user={user}><EditProduct /></VendorRoute>} />
           <Route path="/vendor/create-shop" element={<ProtectedRoute user={user}><CreateShop /></ProtectedRoute>} />
 
-          {/* --- REDIRECTION PAR DÉFAUT --- */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
