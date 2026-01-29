@@ -6,10 +6,10 @@ import { ChevronRight, Package, ArrowRight } from 'lucide-react'
 
 // Tes images locales
 import imgMode from '@/assets/categorie/mode.jpg'
-import imgSante from '@/assets/categorie/santé.jpg'
+import imgSante from '@/assets/categorie/sante.jpg'
 import imgElectronique from '@/assets/categorie/electronique.jpg'
 import imgPackeo from '@/assets/categorie/packeo.jpg'
-import imgBeaute from '@/assets/categorie/beauté.jpg'
+import imgBeaute from '@/assets/categorie/beaute.jpg'
 import imgAutres from '@/assets/categorie/autres.jpg'
 
 interface Category {
