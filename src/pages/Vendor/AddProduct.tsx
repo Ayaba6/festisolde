@@ -1,12 +1,15 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useNavigate } from 'react-router-dom'
-import { Upload, X, Package, Tag, Info, Image as ImageIcon, ListFilter, ArrowLeft, Sparkles } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  Upload, X, ArrowLeft, Sparkles, 
+  ChevronDown, Tag, Plus 
+} from 'lucide-react'
 import { toast } from 'sonner'
 
-// AJOUT DE PACKEO DANS LA LISTE
 const CATEGORIES = [
-  "Packeo", // Ajouté en premier pour le mettre en avant
+  "Packeo", 
   "Électronique", "Mode & Beauté", "Maison & Déco", 
   "Alimentation", "Santé", "Sport", "Services", "Autres"
 ]
@@ -23,6 +26,11 @@ export default function AddProduct() {
   const [promoPrice, setPromoPrice] = useState<number | ''>('')
   const [stock, setStock] = useState<number | ''>('')
   
+  const [colors, setColors] = useState<string[]>([])
+  const [sizes, setSizes] = useState<string[]>([])
+  const [newColor, setNewColor] = useState('')
+  const [newSize, setNewSize] = useState('')
+
   const [images, setImages] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
@@ -39,7 +47,7 @@ export default function AddProduct() {
         .single()
 
       if (!shop) {
-        navigate('/vendor/create-shop')
+        navigate('/vendor/setup')
         return
       }
       setShopId(shop.id)
@@ -49,6 +57,10 @@ export default function AddProduct() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files ? Array.from(e.target.files) : []
+    if (images.length + files.length > 4) {
+      toast.error("Maximum 4 photos autorisées")
+      return
+    }
     setImages((prev) => [...prev, ...files])
     const newPreviews = files.map((file) => URL.createObjectURL(file))
     setPreviews((prev) => [...prev, ...newPreviews])
@@ -59,14 +71,30 @@ export default function AddProduct() {
     setPreviews(previews.filter((_, i) => i !== index))
   }
 
+  const addVariant = (type: 'color' | 'size') => {
+    if (type === 'color' && newColor.trim()) {
+      setColors([...colors, newColor.trim()])
+      setNewColor('')
+    } else if (type === 'size' && newSize.trim()) {
+      setSizes([...sizes, newSize.trim()])
+      setNewSize('')
+    }
+  }
+
   const uploadImages = async () => {
     if (!shopId) return []
     const uploadedUrls: string[] = []
+    
     for (const file of images) {
       const ext = file.name.split('.').pop()
       const fileName = `${shopId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`
-      const { error: uploadError } = await supabase.storage.from('products').upload(fileName, file)
-      if (uploadError) throw uploadError
+      
+      const { error: uploadError } = await supabase.storage
+        .from('products')
+        .upload(fileName, file)
+
+      if (uploadError) throw new Error("Échec de l'envoi des images")
+      
       const { data } = supabase.storage.from('products').getPublicUrl(fileName)
       uploadedUrls.push(data.publicUrl)
     }
@@ -77,174 +105,191 @@ export default function AddProduct() {
     e.preventDefault()
     if (images.length === 0) return toast.error("Ajoutez au moins une photo")
     if (!category) return toast.error("Choisissez une catégorie")
+    
     setLoading(true)
     try {
       const imageUrls = await uploadImages()
-      const { error } = await supabase.from('products').insert({
-        shop_id: shopId, title, description, category,
-        price: Number(price), promo_price: promoPrice ? Number(promoPrice) : null,
-        stock: Number(stock), images: imageUrls,
-      })
+      
+      // CORRECTION ICI : Alignement sur les noms de colonnes Supabase
+      const productData = {
+        shop_id: shopId,
+        title: title, // Utilisation de 'title' au lieu de 'nom'
+        description: description,
+        category: category,
+        price: Number(price), // Utilisation de 'price' au lieu de 'prix_original'
+        promo_price: promoPrice !== '' ? Number(promoPrice) : null,
+        stock: Number(stock),
+        images: imageUrls,
+        colors: colors,
+        sizes: sizes,
+        is_featured: category === "Packeo"
+      }
+
+      const { error } = await supabase
+        .from('products')
+        .insert([productData])
+
       if (error) throw error
-      toast.success('Produit publié !')
+
+      toast.success('Produit publié avec succès !')
       navigate('/vendor/dashboard')
     } catch (err: any) {
-      toast.error(err.message)
+      console.error("Erreur complète:", err)
+      toast.error(err.message || "Erreur de publication")
     } finally {
       setLoading(false)
     }
   }
 
-  if (!shopId) return <div className="h-screen flex items-center justify-center font-bold">Chargement...</div>
+  const labelStyle = "block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3 ml-1"
+  const inputStyle = "w-full bg-slate-50 border-2 border-slate-100 focus:border-brand-primary focus:bg-white focus:ring-4 focus:ring-brand-primary/5 rounded-2xl px-6 py-4 outline-none font-bold text-gray-900 transition-all placeholder:text-gray-300"
 
-  const inputStyle = "w-full bg-white border-2 border-gray-300 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 rounded-[1.2rem] px-6 py-5 outline-none font-bold text-gray-900 transition-all shadow-sm placeholder:text-gray-400"
+  if (!shopId) return (
+    <div className="h-screen flex items-center justify-center bg-white italic font-black uppercase tracking-widest text-brand-primary">
+      Synchronisation de la boutique...
+    </div>
+  )
 
   return (
-    <div className="min-h-screen bg-gray-100 py-10 px-4">
+    <div className="min-h-screen bg-slate-50/50 py-12 px-4">
       <div className="max-w-3xl mx-auto">
-        
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 font-black text-xs uppercase tracking-widest mb-6">
-          <ArrowLeft size={18} /> Retour
-        </button>
+        <div className="flex items-center justify-between mb-8">
+          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-400 hover:text-gray-900 transition-colors font-black text-[10px] uppercase tracking-widest">
+            <ArrowLeft size={16} /> Retour Dashboard
+          </button>
+        </div>
 
-        <div className="bg-white rounded-[2.5rem] shadow-2xl p-8 md:p-12 border border-gray-200 relative overflow-hidden">
-          
-          {/* PETIT BADGE VISUEL SI PACKEO SELECTIONNÉ */}
-          {category === "Packeo" && (
-            <div className="absolute top-0 right-0 bg-brand-primary text-white px-8 py-2 rotate-45 translate-x-8 translate-y-4 font-black text-[10px] uppercase shadow-lg flex items-center gap-2">
-              <Sparkles size={12} fill="white" /> PACK SPÉCIAL
-            </div>
-          )}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-[3rem] shadow-xl shadow-slate-200/50 p-8 md:p-14 border border-white relative overflow-hidden"
+        >
+          <AnimatePresence>
+            {category === "Packeo" && (
+              <motion.div 
+                initial={{ y: -100 }} animate={{ y: 0 }} exit={{ y: -100 }}
+                className="absolute top-0 left-0 right-0 bg-brand-primary text-white py-3 px-8 flex items-center justify-center gap-3 font-black text-[10px] uppercase tracking-[0.3em]"
+              >
+                <Sparkles size={14} fill="white" /> Configuration Pack Spécial
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <header className="mb-10">
-            <h1 className="text-4xl font-black text-gray-900 tracking-tighter mb-2 text-center md:text-left">
-              {category === "Packeo" ? "Créer un Packeo" : "Nouveau Produit"}
+          <header className={`mb-12 ${category === "Packeo" ? "mt-8" : ""}`}>
+            <h1 className="text-4xl lg:text-5xl font-black text-gray-900 tracking-tighter italic uppercase leading-none">
+              Mettre en <span className="text-brand-primary">Vente</span>
             </h1>
-            <p className="text-gray-500 font-bold text-center md:text-left">
-              {category === "Packeo" 
-                ? "Regroupez plusieurs articles dans une seule offre imbattable." 
-                : "Remplissez les champs ci-dessous pour vendre."}
-            </p>
           </header>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            
+          <form onSubmit={handleSubmit} className="space-y-10">
             {/* PHOTOS */}
-            <div className="space-y-3">
-              <label className="block text-xs font-black uppercase tracking-widest text-gray-700 ml-1">Photos du produit</label>
+            <div className="space-y-4">
+              <label className={labelStyle}>Photos du produit (Max 4)</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {previews.map((src, index) => (
-                  <div key={src} className="relative aspect-square rounded-2xl overflow-hidden border-2 border-gray-200">
+                  <div key={src} className="relative aspect-square rounded-[1.5rem] overflow-hidden shadow-md group">
                     <img src={src} className="w-full h-full object-cover" alt="" />
-                    <button type="button" onClick={() => removeImage(index)} className="absolute top-1 right-1 p-1.5 bg-red-600 text-white rounded-lg shadow-lg">
-                      <X size={16} />
+                    <button type="button" onClick={() => removeImage(index)} className="absolute inset-0 bg-rose-600/80 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                      <X size={24} strokeWidth={3} />
                     </button>
                   </div>
                 ))}
                 {images.length < 4 && (
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="aspect-square rounded-2xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center bg-gray-50 hover:bg-indigo-50 hover:border-indigo-400 transition-all text-gray-400">
-                    <Upload size={24} />
-                    <span className="text-[10px] font-black uppercase mt-1">Ajouter</span>
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="aspect-square rounded-[1.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center bg-slate-50 hover:bg-white hover:border-brand-primary hover:text-brand-primary transition-all">
+                    <Upload size={20} />
+                    <span className="text-[9px] font-black uppercase mt-2">Ajouter</span>
                   </button>
                 )}
               </div>
               <input type="file" ref={fileInputRef} multiple accept="image/*" className="hidden" onChange={handleImageChange} />
             </div>
 
-            {/* TITRE */}
-            <div>
-              <label className="block text-xs font-black uppercase tracking-widest text-gray-700 mb-2 ml-1">Nom du produit / Pack</label>
-              <input
-                type="text"
-                placeholder={category === "Packeo" ? "Ex: Pack Gentleman Slim" : "Entrez le nom de l'article"}
-                className={inputStyle}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* CATEGORIE */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="md:col-span-2">
+                <label className={labelStyle}>Nom de l'article</label>
+                <input type="text" placeholder="Ex: Pack Gentleman Slim" className={inputStyle} value={title} onChange={(e) => setTitle(e.target.value)} required />
+              </div>
               <div>
-                <label className="block text-xs font-black uppercase tracking-widest text-gray-700 mb-2 ml-1">Catégorie</label>
+                <label className={labelStyle}>Catégorie</label>
                 <div className="relative">
-                  <select 
-                    className={`${inputStyle} ${category === "Packeo" ? "border-brand-primary bg-indigo-50/30" : ""}`} 
-                    value={category} 
-                    onChange={(e) => setCategory(e.target.value)} 
-                    required
-                  >
-                    <option value="">Choisir...</option>
+                  <select className={`${inputStyle} appearance-none`} value={category} onChange={(e) => setCategory(e.target.value)} required>
+                    <option value="">Sélectionner...</option>
                     {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
-                  <ListFilter size={20} className="absolute right-6 top-5.5 text-gray-400 pointer-events-none" />
+                  <ChevronDown size={18} className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 </div>
               </div>
-
-              {/* STOCK */}
               <div>
-                <label className="block text-xs font-black uppercase tracking-widest text-gray-700 mb-2 ml-1">Quantité Stock</label>
-                <input
-                  type="number"
-                  placeholder="Ex: 10"
-                  className={inputStyle}
-                  value={stock}
-                  onChange={(e) => setStock(e.target.value === '' ? '' : Number(e.target.value))}
-                  min={1} required
-                />
+                <label className={labelStyle}>Stock</label>
+                <input type="number" placeholder="Quantité" className={inputStyle} value={stock} onChange={(e) => setStock(e.target.value === '' ? '' : Number(e.target.value))} required />
               </div>
             </div>
 
-            {/* DESCRIPTION */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <label className={labelStyle}>Couleurs (Optionnel)</label>
+                <div className="flex gap-2 mb-3">
+                  <input 
+                    type="text" placeholder="Ex: Noir" className={`${inputStyle} !py-3 !text-xs`} 
+                    value={newColor} onChange={(e) => setNewColor(e.target.value)}
+                    onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); addVariant('color'); }}}
+                  />
+                  <button type="button" onClick={() => addVariant('color')} className="bg-gray-900 text-white px-4 rounded-xl hover:bg-brand-primary transition-colors"><Plus size={18} /></button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {colors.map((c, i) => (
+                    <span key={i} className="bg-slate-100 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase flex items-center gap-2">
+                      {c} <X size={12} className="cursor-pointer text-rose-500" onClick={() => setColors(colors.filter((_, idx) => idx !== i))} />
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className={labelStyle}>Tailles (Optionnel)</label>
+                <div className="flex gap-2 mb-3">
+                  <input 
+                    type="text" placeholder="Ex: XL ou 42" className={`${inputStyle} !py-3 !text-xs`} 
+                    value={newSize} onChange={(e) => setNewSize(e.target.value)}
+                    onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); addVariant('size'); }}}
+                  />
+                  <button type="button" onClick={() => addVariant('size')} className="bg-gray-900 text-white px-4 rounded-xl hover:bg-brand-primary transition-colors"><Plus size={18} /></button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {sizes.map((s, i) => (
+                    <span key={i} className="bg-brand-primary/10 text-brand-primary px-3 py-1.5 rounded-lg text-[10px] font-black uppercase flex items-center gap-2">
+                      {s} <X size={12} className="cursor-pointer" onClick={() => setSizes(sizes.filter((_, idx) => idx !== i))} />
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div>
-              <label className="block text-xs font-black uppercase tracking-widest text-gray-700 mb-2 ml-1">Description</label>
-              <textarea
-                placeholder={category === "Packeo" ? "Listez les articles du pack (Ex: 1 Chemise + 1 Pantalon + 1 Montre)" : "Décrivez votre article..."}
-                className={`${inputStyle} min-h-[120px] resize-none font-medium`}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-              />
+              <label className={labelStyle}>Description</label>
+              <textarea placeholder="Détails du produit..." className={`${inputStyle} min-h-[120px] resize-none`} value={description} onChange={(e) => setDescription(e.target.value)} required />
             </div>
 
-            {/* PRIX */}
-            <div className="p-6 bg-gray-50 rounded-3xl border-2 border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-xs font-black uppercase tracking-widest text-gray-600 mb-2">Prix total habituel (F CFA)</label>
-                <input
-                  type="number"
-                  className={`${inputStyle} text-2xl`}
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                  required
-                />
+            <div className={`p-8 rounded-[2.5rem] border-2 ${category === "Packeo" ? "bg-brand-primary/5 border-brand-primary/10" : "bg-slate-50 border-slate-50"}`}>
+              <div className="flex items-center gap-2 mb-6 font-black uppercase text-xs italic">
+                <Tag size={16} className="text-brand-primary" /> Tarification
               </div>
-              <div>
-                <label className="block text-xs font-black uppercase tracking-widest text-indigo-600 mb-2">
-                  {category === "Packeo" ? "Prix spécial Packeo (F CFA)" : "Prix Promotionnel (Optionnel)"}
-                </label>
-                <input
-                  type="number"
-                  className={`${inputStyle} text-2xl text-indigo-600 border-indigo-200`}
-                  value={promoPrice}
-                  onChange={(e) => setPromoPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                  required={category === "Packeo"} // Obligatoire pour un pack
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase">Prix habituel</label>
+                  <input type="number" className={`${inputStyle} !bg-white`} value={price} onChange={(e) => setPrice(e.target.value === '' ? '' : Number(e.target.value))} required />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-brand-primary mb-2 uppercase">Prix de vente final</label>
+                  <input type="number" className={`${inputStyle} !bg-white border-brand-primary/20 text-brand-primary`} value={promoPrice} onChange={(e) => setPromoPrice(e.target.value === '' ? '' : Number(e.target.value))} required={category === "Packeo"} />
+                </div>
               </div>
             </div>
 
-            <button 
-              type="submit" 
-              disabled={loading} 
-              className={`w-full py-6 rounded-[1.5rem] font-black text-lg uppercase tracking-widest transition-all shadow-xl flex items-center justify-center gap-4 disabled:opacity-50 active:scale-95 ${
-                category === "Packeo" ? "bg-brand-primary text-white shadow-brand-primary/20" : "bg-indigo-600 text-white shadow-indigo-200"
-              }`}
-            >
-              {loading ? <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin" /> : "Mettre en ligne"}
+            <button type="submit" disabled={loading} className={`w-full py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 ${category === "Packeo" ? "bg-brand-primary text-white shadow-xl shadow-brand-primary/20" : "bg-gray-900 text-white"}`}>
+              {loading ? <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" /> : "Publier l'article"}
             </button>
           </form>
-        </div>
+        </motion.div>
       </div>
     </div>
   )

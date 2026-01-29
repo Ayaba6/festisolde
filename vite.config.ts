@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
-import path from 'path' // 1. On importe path pour gérer les chemins
+import path from 'path'
 
 export default defineConfig({
   plugins: [
@@ -37,10 +37,26 @@ export default defineConfig({
       }
     })
   ],
-  // 2. AJOUTER CETTE SECTION RESOLVE
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  /* --- AJOUT DE LA SECTION BUILD POUR FIXER L'ERREUR VERCEL --- */
+  build: {
+    chunkSizeWarningLimit: 1000, // Augmente la limite à 1000ko
+    rollupOptions: {
+      output: {
+        // Cette fonction sépare les grosses bibliothèques (vendor) du code de ton app
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('framer-motion')) return 'animations';
+            if (id.includes('lucide-react')) return 'icons';
+            if (id.includes('@supabase')) return 'database';
+            return 'vendor';
+          }
+        },
+      },
     },
   },
 })
