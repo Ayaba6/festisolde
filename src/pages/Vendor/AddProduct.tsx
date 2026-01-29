@@ -1,10 +1,12 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useNavigate } from 'react-router-dom'
-import { Upload, X, Package, Tag, Info, Image as ImageIcon, ListFilter, ArrowLeft } from 'lucide-react'
+import { Upload, X, Package, Tag, Info, Image as ImageIcon, ListFilter, ArrowLeft, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 
+// AJOUT DE PACKEO DANS LA LISTE
 const CATEGORIES = [
+  "Packeo", // Ajouté en premier pour le mettre en avant
   "Électronique", "Mode & Beauté", "Maison & Déco", 
   "Alimentation", "Santé", "Sport", "Services", "Autres"
 ]
@@ -95,7 +97,6 @@ export default function AddProduct() {
 
   if (!shopId) return <div className="h-screen flex items-center justify-center font-bold">Chargement...</div>
 
-  // Style commun pour tous les champs pour assurer la visibilité
   const inputStyle = "w-full bg-white border-2 border-gray-300 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 rounded-[1.2rem] px-6 py-5 outline-none font-bold text-gray-900 transition-all shadow-sm placeholder:text-gray-400"
 
   return (
@@ -106,11 +107,24 @@ export default function AddProduct() {
           <ArrowLeft size={18} /> Retour
         </button>
 
-        <div className="bg-white rounded-[2.5rem] shadow-2xl p-8 md:p-12 border border-gray-200">
+        <div className="bg-white rounded-[2.5rem] shadow-2xl p-8 md:p-12 border border-gray-200 relative overflow-hidden">
           
+          {/* PETIT BADGE VISUEL SI PACKEO SELECTIONNÉ */}
+          {category === "Packeo" && (
+            <div className="absolute top-0 right-0 bg-brand-primary text-white px-8 py-2 rotate-45 translate-x-8 translate-y-4 font-black text-[10px] uppercase shadow-lg flex items-center gap-2">
+              <Sparkles size={12} fill="white" /> PACK SPÉCIAL
+            </div>
+          )}
+
           <header className="mb-10">
-            <h1 className="text-4xl font-black text-gray-900 tracking-tighter mb-2 text-center md:text-left">Nouveau Produit</h1>
-            <p className="text-gray-500 font-bold text-center md:text-left">Remplissez les champs ci-dessous pour vendre.</p>
+            <h1 className="text-4xl font-black text-gray-900 tracking-tighter mb-2 text-center md:text-left">
+              {category === "Packeo" ? "Créer un Packeo" : "Nouveau Produit"}
+            </h1>
+            <p className="text-gray-500 font-bold text-center md:text-left">
+              {category === "Packeo" 
+                ? "Regroupez plusieurs articles dans une seule offre imbattable." 
+                : "Remplissez les champs ci-dessous pour vendre."}
+            </p>
           </header>
 
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -139,10 +153,10 @@ export default function AddProduct() {
 
             {/* TITRE */}
             <div>
-              <label className="block text-xs font-black uppercase tracking-widest text-gray-700 mb-2 ml-1">Nom du produit</label>
+              <label className="block text-xs font-black uppercase tracking-widest text-gray-700 mb-2 ml-1">Nom du produit / Pack</label>
               <input
                 type="text"
-                placeholder="Entrez le nom de l'article"
+                placeholder={category === "Packeo" ? "Ex: Pack Gentleman Slim" : "Entrez le nom de l'article"}
                 className={inputStyle}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -155,7 +169,12 @@ export default function AddProduct() {
               <div>
                 <label className="block text-xs font-black uppercase tracking-widest text-gray-700 mb-2 ml-1">Catégorie</label>
                 <div className="relative">
-                  <select className={inputStyle} value={category} onChange={(e) => setCategory(e.target.value)} required>
+                  <select 
+                    className={`${inputStyle} ${category === "Packeo" ? "border-brand-primary bg-indigo-50/30" : ""}`} 
+                    value={category} 
+                    onChange={(e) => setCategory(e.target.value)} 
+                    required
+                  >
                     <option value="">Choisir...</option>
                     {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
@@ -181,7 +200,7 @@ export default function AddProduct() {
             <div>
               <label className="block text-xs font-black uppercase tracking-widest text-gray-700 mb-2 ml-1">Description</label>
               <textarea
-                placeholder="Décrivez votre article..."
+                placeholder={category === "Packeo" ? "Listez les articles du pack (Ex: 1 Chemise + 1 Pantalon + 1 Montre)" : "Décrivez votre article..."}
                 className={`${inputStyle} min-h-[120px] resize-none font-medium`}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -189,10 +208,10 @@ export default function AddProduct() {
               />
             </div>
 
-            {/* PRIX (ZONE GRISE POUR BIEN SEPARER) */}
+            {/* PRIX */}
             <div className="p-6 bg-gray-50 rounded-3xl border-2 border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-black uppercase tracking-widest text-gray-600 mb-2">Prix de vente (F CFA)</label>
+                <label className="block text-xs font-black uppercase tracking-widest text-gray-600 mb-2">Prix total habituel (F CFA)</label>
                 <input
                   type="number"
                   className={`${inputStyle} text-2xl`}
@@ -202,12 +221,15 @@ export default function AddProduct() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase tracking-widest text-indigo-600 mb-2">Prix Promotionnel (Optionnel)</label>
+                <label className="block text-xs font-black uppercase tracking-widest text-indigo-600 mb-2">
+                  {category === "Packeo" ? "Prix spécial Packeo (F CFA)" : "Prix Promotionnel (Optionnel)"}
+                </label>
                 <input
                   type="number"
                   className={`${inputStyle} text-2xl text-indigo-600 border-indigo-200`}
                   value={promoPrice}
                   onChange={(e) => setPromoPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                  required={category === "Packeo"} // Obligatoire pour un pack
                 />
               </div>
             </div>
@@ -215,7 +237,9 @@ export default function AddProduct() {
             <button 
               type="submit" 
               disabled={loading} 
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 rounded-[1.5rem] font-black text-lg uppercase tracking-widest transition-all shadow-xl shadow-indigo-200 flex items-center justify-center gap-4 disabled:opacity-50 active:scale-95"
+              className={`w-full py-6 rounded-[1.5rem] font-black text-lg uppercase tracking-widest transition-all shadow-xl flex items-center justify-center gap-4 disabled:opacity-50 active:scale-95 ${
+                category === "Packeo" ? "bg-brand-primary text-white shadow-brand-primary/20" : "bg-indigo-600 text-white shadow-indigo-200"
+              }`}
             >
               {loading ? <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin" /> : "Mettre en ligne"}
             </button>

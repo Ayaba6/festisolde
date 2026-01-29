@@ -2,44 +2,27 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Navigation, Pagination, EffectFade } from 'swiper/modules';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-// Imports des images depuis assets/slider
 import shoes1 from "../../../assets/slider/shoes_1.jpg";
 import shoes2 from "../../../assets/slider/shoes_2.jpg";
 import shoes3 from "../../../assets/slider/shoes_3.jpg";
 import shoes4 from "../../../assets/slider/shoes_4.jpg";
 
-// Styles Swiper
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 
 const SLIDES = [
-  {
-    image: shoes1,
-    title: "Performance Air",
-    tag: "Nouvelle Collection"
-  },
-  {
-    image: shoes2,
-    title: "Style Urbain",
-    tag: "Édition Limitée"
-  },
-  {
-    image: shoes3,
-    title: "Confort Absolu",
-    tag: "Premium Leather"
-  },
-  {
-    image: shoes4,
-    title: "Design Futuriste",
-    tag: "Exclusivité Web"
-  }
+  { image: shoes1, title: "Performance Air", tag: "Nouvelle Collection" },
+  { image: shoes2, title: "Style Urbain", tag: "Édition Limitée" },
+  { image: shoes3, title: "Confort Absolu", tag: "Premium Leather" },
+  { image: shoes4, title: "Design Futuriste", tag: "Exclusivité Web" }
 ];
 
 export default function HeroSlider() {
   return (
-    <div className="relative group w-full h-[450px] lg:h-[600px]">
+    // AJUSTEMENT : On passe en h-full pour obéir au parent (HeroSection)
+    <div className="relative group w-full h-full">
       <Swiper
         modules={[Autoplay, Navigation, Pagination, EffectFade]}
         effect="fade"
@@ -51,25 +34,28 @@ export default function HeroSlider() {
           prevEl: '.swiper-prev',
         }}
         loop={true}
-        className="w-full h-full rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl"
+        // HARMONISATION : On réduit l'arrondi pour qu'il s'emboîte dans le parent [20px]
+        className="w-full h-full rounded-[18px] overflow-hidden shadow-2xl"
       >
         {SLIDES.map((slide, index) => (
           <SwiperSlide key={index}>
             <div className="relative w-full h-full overflow-hidden">
               <img 
                 src={slide.image} 
-                className="w-full h-full object-cover transform scale-100 animate-slow-zoom" 
+                // object-cover est crucial ici pour le format panoramique
+                className="w-full h-full object-cover object-center transform scale-100" 
                 alt={slide.title} 
               />
               
-              {/* Overlay progressif plus sombre en bas pour la lisibilité */}
-              <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/90 via-transparent to-transparent opacity-80" />
+              {/* Overlay plus discret pour format réduit */}
+              <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/80 via-brand-dark/20 to-transparent" />
               
-              <div className="absolute bottom-12 left-12 right-12 text-left">
-                 <span className="inline-block text-brand-primary font-bold text-[10px] uppercase tracking-[0.4em] mb-2">
+              {/* Texte réajusté pour la petite hauteur */}
+              <div className="absolute bottom-6 left-8 right-8 text-left">
+                 <span className="inline-block text-brand-primary font-bold text-[8px] uppercase tracking-[0.3em] mb-1">
                    {slide.tag}
                  </span>
-                 <h3 className="text-3xl font-bold text-white leading-tight">
+                 <h3 className="text-xl lg:text-2xl font-black text-white leading-tight uppercase italic">
                    {slide.title}
                  </h3>
               </div>
@@ -77,14 +63,24 @@ export default function HeroSlider() {
           </SwiperSlide>
         ))}
 
-        {/* Boutons de navigation */}
-        <button className="swiper-prev absolute left-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-brand-primary text-white">
-          <ChevronLeft size={24} />
+        {/* Boutons de navigation plus petits et élégants */}
+        <button className="swiper-prev absolute left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-brand-dark/40 backdrop-blur-md border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-brand-primary text-white">
+          <ChevronLeft size={18} />
         </button>
-        <button className="swiper-next absolute right-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-brand-primary text-white">
-          <ChevronRight size={24} />
+        <button className="swiper-next absolute right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-brand-dark/40 backdrop-blur-md border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-brand-primary text-white">
+          <ChevronRight size={18} />
         </button>
       </Swiper>
+      
+      {/* Style pour les bullets de pagination (à mettre dans ton index.css idéalement) */}
+      <style jsx global>{`
+        .swiper-pagination-bullet-active {
+          background: #ff5a5a !important; /* Ta couleur brand-primary */
+        }
+        .swiper-pagination-bullet {
+          background: rgba(255,255,255,0.5);
+        }
+      `}</style>
     </div>
   );
 }

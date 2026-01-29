@@ -1,155 +1,142 @@
 import { useState, useEffect } from 'react'
-import { Plus, ShoppingCart, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
+import { supabase } from '@/lib/supabaseClient'
+import { ShoppingCart, ChevronLeft, ChevronRight, Sparkles, ArrowRight } from 'lucide-react'
+import { useNavigate, Link } from 'react-router-dom' // Ajout de Link
 
 export default function PackeoSection() {
+  const [packs, setPacks] = useState([])
+  const [loading, setLoading] = useState(true)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
+  const navigate = useNavigate()
 
-  const packs = [
-    {
-      id: 1,
-      title: "Pack Élégance Urbaine",
-      slogan: "Le style sans effort, de la tête aux pieds.",
-      oldPrice: 65000,
-      newPrice: 42500,
-      image: "https://images.unsplash.com/photo-1594932224828-b4b059b8fe0e?q=80&w=600",
-      items: ["Chemise Slim", "Pantalon Chino", "Mocassins Cuir", "Montre Classique"]
-    },
-    {
-      id: 2,
-      title: "Pack Casual Chic",
-      slogan: "Confort et tendance pour toutes vos sorties.",
-      oldPrice: 55000,
-      newPrice: 35000,
-      image: "https://images.unsplash.com/photo-1552831388-6a0b3575b32a?q=80&w=600",
-      items: ["T-shirt Premium", "Jean Cargo", "Sneakers Blanches", "Casquette Design"]
-    },
-    {
-      id: 3,
-      title: "Pack Business Femme",
-      slogan: "Affirmez votre professionnalisme avec audace.",
-      oldPrice: 75000,
-      newPrice: 45000,
-      image: "https://images.unsplash.com/photo-1544441893-675973e31985?q=80&w=600",
-      items: ["Veste Ajustée", "Jupe Crayon", "Escarpins Confort", "Sac à Main Cuir"]
-    },
-    {
-      id: 4,
-      title: "Pack Sport & Détente",
-      slogan: "Pour vos sessions training ou vos moments chill.",
-      oldPrice: 40000,
-      newPrice: 25000,
-      image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=600",
-      items: ["Ensemble Athlétique", "Gourde Isotherme", "Running Pro", "Montre Connectée"]
+  useEffect(() => {
+    async function fetchPackeos() {
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('category', 'Packeo')
+          .order('created_at', { ascending: false })
+
+        if (error) throw error
+        setPacks(data || [])
+      } catch (error) {
+        console.error('Erreur:', error.message)
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
+    fetchPackeos()
+  }, [])
 
-  const maxIndex = packs.length - 2
-
+  // LOGIQUE CARROUSEL
+  const maxIndex = packs.length > 2 ? packs.length - 2 : 0
   const nextSlide = () => setCurrentIndex((prev) => (prev >= maxIndex ? 0 : prev + 1))
   const prevSlide = () => setCurrentIndex((prev) => (prev <= 0 ? maxIndex : prev - 1))
 
   useEffect(() => {
-    if (isPaused) return
+    if (isPaused || packs.length <= 2) return
     const interval = setInterval(() => nextSlide(), 5000)
     return () => clearInterval(interval)
-  }, [currentIndex, isPaused])
+  }, [currentIndex, isPaused, packs.length])
 
-  const formatPrice = (p) => new Intl.NumberFormat('fr-FR').format(p) + ' F CFA'
+  const formatPrice = (p) => new Intl.NumberFormat('fr-FR').format(p) + ' F'
+
+  if (loading || packs.length === 0) return null 
 
   return (
-    <section className="py-20 bg-brand-dark text-white border-y border-white/5">
-      <div className="max-w-7xl mx-auto px-4 lg:px-6">
+    <section className="py-12 bg-brand-dark text-white border-y border-white/5">
+      <div className="max-w-7xl mx-auto px-6">
         
-        {/* HEADER */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-6">
-          <div className="text-left">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles size={16} className="text-brand-primary" fill="currentColor" />
-              <span className="text-[11px] font-black uppercase tracking-widest text-brand-primary">L'art du bon plan</span>
+        {/* HEADER COMPACT */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="bg-brand-primary/10 p-2 rounded-xl">
+              <Sparkles size={20} className="text-brand-primary" fill="currentColor" />
             </div>
-            <h2 className="text-4xl lg:text-5xl font-black text-white tracking-tighter">
-              Les <span className="text-brand-primary italic">Packeo</span> du moment
-            </h2>
-            <p className="text-slate-400 max-w-md mt-3 text-lg">
-              Créez votre style complet sans casser la tirelire. Des tenues parfaites à prix déstockés.
-            </p>
+            <div>
+              <h2 className="text-2xl lg:text-3xl font-black tracking-tighter uppercase italic">
+                Les <span className="text-brand-primary">Packeo</span>
+              </h2>
+              <button 
+                onClick={() => navigate('/category/packeo')}
+                className="group flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 hover:text-brand-primary transition-colors"
+              >
+                Voir tout <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
           </div>
 
-          <div className="flex gap-3">
-            <button onClick={prevSlide} className="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-brand-primary hover:text-brand-dark transition-all active:scale-90">
-              <ChevronLeft size={20} />
+          <div className="flex gap-2">
+            <button onClick={prevSlide} className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-brand-primary transition-all">
+              <ChevronLeft size={18} />
             </button>
-            <button onClick={nextSlide} className="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-brand-primary hover:text-brand-dark transition-all active:scale-90">
-              <ChevronRight size={20} />
+            <button onClick={nextSlide} className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-brand-primary transition-all">
+              <ChevronRight size={18} />
             </button>
           </div>
         </div>
 
-        {/* CARROUSEL CONTAINER */}
+        {/* CARROUSEL */}
         <div 
           className="relative overflow-hidden"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
           <div 
-            className="flex transition-transform duration-700 ease-out"
+            className="flex transition-transform duration-700 ease-in-out"
             style={{ transform: `translateX(-${currentIndex * (window.innerWidth >= 1024 ? 50 : 100)}%)` }}
           >
             {packs.map((pack) => (
-              <div key={pack.id} className="w-full lg:w-1/2 flex-shrink-0 px-3">
-                <div className="flex flex-col gap-5 p-5 rounded-2xl border border-white/10 bg-white/5 hover:border-brand-primary/50 transition-all group">
+              <div key={pack.id} className="w-full lg:w-1/2 flex-shrink-0 px-2">
+                <div className="flex items-center gap-4 p-3 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all group">
                   
-                  {/* IMAGE */}
-                  <div className="w-full h-64 sm:h-72 lg:h-80 overflow-hidden rounded-xl bg-white/10">
+                  {/* IMAGE CLIQUABLE */}
+                  <Link 
+                    to={`/product/${pack.id}`} 
+                    className="w-32 h-32 sm:w-40 sm:h-40 overflow-hidden rounded-xl flex-shrink-0 bg-white/5 block"
+                  >
                     <img 
-                      src={pack.image} 
+                      src={pack.images?.[0] || '/placeholder.png'} 
                       alt={pack.title} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
                     />
-                  </div>
+                  </Link>
 
-                  {/* INFOS */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-black text-white text-2xl truncate mb-2">{pack.title}</h3>
-                    <p className="text-slate-400 text-sm mb-4">{pack.slogan}</p>
-                    
-                    <div className="flex flex-wrap gap-2 mb-5">
-                      {pack.items.map((item, i) => (
-                        <span key={i} className="text-[10px] font-medium bg-white/10 text-slate-300 px-3 py-1 rounded-md border border-white/10">
-                          {item}
+                  {/* TEXTE ET PRIX */}
+                  <div className="flex flex-col justify-between h-32 sm:h-40 py-1 flex-1">
+                    <div>
+                      <Link to={`/product/${pack.id}`}>
+                        <h3 className="font-black text-white text-base sm:text-lg truncate uppercase mb-1 tracking-tight group-hover:text-brand-primary transition-colors">
+                          {pack.title}
+                        </h3>
+                      </Link>
+                      <p className="text-slate-500 text-[11px] leading-snug line-clamp-2 italic">
+                        {pack.description}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-auto">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-slate-600 line-through font-bold">{formatPrice(pack.price)}</span>
+                        <span className="text-xl font-black text-brand-primary tracking-tighter">
+                          {formatPrice(pack.promo_price || pack.price)}
                         </span>
-                      ))}
+                      </div>
+                      
+                      <button className="p-2.5 bg-brand-primary text-brand-dark rounded-lg hover:bg-white transition-all shadow-lg shadow-brand-primary/10 active:scale-90">
+                        <ShoppingCart size={16} strokeWidth={3} />
+                      </button>
                     </div>
                   </div>
 
-                  {/* PRIX ET BOUTON */}
-                  <div className="flex items-center justify-between gap-4 mt-auto border-t border-white/10 pt-4">
-                    <div className="flex flex-col">
-                      <span className="text-xs text-slate-500 line-through font-bold">{formatPrice(pack.oldPrice)}</span>
-                      <span className="text-3xl font-black text-brand-primary tracking-tighter">{formatPrice(pack.newPrice)}</span>
-                    </div>
-                    <button className="flex items-center gap-2 bg-brand-primary text-brand-dark px-6 py-3 rounded-xl text-sm font-black hover:bg-white hover:scale-105 transition-all shadow-lg shadow-brand-primary/20">
-                      <ShoppingCart size={18} strokeWidth={2.5} />
-                      <span className="hidden sm:inline">Je profite</span>
-                    </button>
-                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* INDICATEURS */}
-        <div className="flex justify-center gap-2 mt-12">
-          {[...Array(maxIndex + 1)].map((_, i) => (
-            <button 
-              key={i} 
-              onClick={() => setCurrentIndex(i)}
-              className={`h-1.5 rounded-full transition-all ${currentIndex === i ? 'w-10 bg-brand-primary' : 'w-3 bg-white/10'}`}
-            />
-          ))}
-        </div>
       </div>
     </section>
   )
