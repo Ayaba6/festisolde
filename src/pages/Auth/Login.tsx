@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
-import { useNavigate } from 'react-router-dom' // Ajout de l'import
+import { useNavigate } from 'react-router-dom'
+import { LogIn, Loader2, Sparkles } from 'lucide-react'
 
 interface LoginProps {
   setUser: (user: any) => void
@@ -11,7 +12,7 @@ export default function Login({ setUser }: LoginProps) {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const navigate = useNavigate() // Initialisation du hook
+  const navigate = useNavigate()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,7 +20,6 @@ export default function Login({ setUser }: LoginProps) {
     setError(null)
 
     try {
-      // 1. Authentification Supabase
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -27,7 +27,6 @@ export default function Login({ setUser }: LoginProps) {
       if (loginError) throw loginError
       if (!data.user) throw new Error('Utilisateur non trouvé')
 
-      // 2. Récupérer le profil pour avoir le rôle
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role, full_name')
@@ -39,9 +38,7 @@ export default function Login({ setUser }: LoginProps) {
       const userData = { ...data.user, role: profile.role, full_name: profile.full_name ?? '' }
       setUser(userData)
 
-      // 3. LOGIQUE DE REDIRECTION INTELLIGENTE
       if (profile.role === 'vendor') {
-        // Vérifier si le vendeur a déjà une boutique
         const { data: shop } = await supabase
           .from('shops')
           .select('id')
@@ -49,12 +46,11 @@ export default function Login({ setUser }: LoginProps) {
           .single()
 
         if (shop) {
-          navigate('/vendor/dashboard') // Boutique existe -> Dashboard
+          navigate('/vendor/dashboard')
         } else {
-          navigate('/vendor/create-shop') // Pas de boutique -> Création
+          navigate('/vendor/create-shop')
         }
       } else {
-        // Client classique
         navigate('/') 
       }
 
@@ -66,27 +62,35 @@ export default function Login({ setUser }: LoginProps) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-xl p-10 border border-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB] px-4">
+      <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl shadow-gray-200/50 p-10 border border-gray-100">
+        
+        {/* LOGO & TITRE */}
         <div className="text-center mb-10">
-            <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl font-black mx-auto mb-4">F</div>
-            <h1 className="text-3xl font-black text-gray-900">Bon retour !</h1>
-            <p className="text-gray-500 font-medium mt-2">Connectez-vous à votre espace FestiSolde</p>
+            <div className="w-20 h-20 bg-gray-900 rounded-[1.8rem] flex items-center justify-center text-white mx-auto mb-6 shadow-xl rotate-3 hover:rotate-0 transition-transform duration-500">
+                <Sparkles size={32} className="text-brand-primary" fill="currentColor" />
+            </div>
+            <h1 className="text-4xl font-black text-gray-900 italic tracking-tighter uppercase leading-none">
+              Bon <span className="text-brand-primary">Retour</span>
+            </h1>
+            <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest mt-4">Accédez à FestiSolde Burkina</p>
         </div>
 
+        {/* ERREUR */}
         {error && (
-            <div className="bg-red-50 text-red-600 text-sm font-bold p-4 rounded-2xl mb-6 border border-red-100">
+            <div className="bg-rose-50 text-rose-600 text-xs font-black p-4 rounded-2xl mb-8 border border-rose-100 flex items-center gap-3 animate-shake">
+                <div className="w-2 h-2 bg-rose-600 rounded-full animate-pulse" />
                 {error}
             </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Email</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-4">Email Professionnel</label>
             <input
                 type="email"
-                placeholder="nom@exemple.com"
-                className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-medium transition-all"
+                placeholder="votre@email.com"
+                className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:border-brand-primary focus:bg-white outline-none font-bold text-gray-900 transition-all placeholder:text-gray-300"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -94,11 +98,11 @@ export default function Login({ setUser }: LoginProps) {
           </div>
           
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Mot de passe</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-4">Mot de passe</label>
             <input
                 type="password"
                 placeholder="••••••••"
-                className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-medium transition-all"
+                className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:border-brand-primary focus:bg-white outline-none font-bold text-gray-900 transition-all placeholder:text-gray-300"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -108,21 +112,30 @@ export default function Login({ setUser }: LoginProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+            className="w-full bg-gray-900 text-white py-5 rounded-[1.5rem] font-black text-sm uppercase tracking-widest hover:bg-brand-primary hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-gray-200 flex items-center justify-center gap-3 disabled:opacity-50 mt-6"
           >
-            {loading ? 'Connexion en cours...' : 'Se connecter'}
+            {loading ? (
+              <Loader2 className="animate-spin" size={20} />
+            ) : (
+              <>
+                Se connecter <LogIn size={18} />
+              </>
+            )}
           </button>
         </form>
 
-        <p className="text-center text-gray-500 font-bold mt-8">
-          Pas encore de compte ?{' '}
+        {/* FOOTER */}
+        <div className="mt-10 pt-8 border-t border-gray-50 text-center">
+          <p className="text-gray-400 text-xs font-bold uppercase tracking-tight">
+            Pas encore de compte ?
+          </p>
           <button 
             onClick={() => navigate('/auth/register')} 
-            className="text-indigo-600 hover:underline"
+            className="text-brand-primary font-black uppercase text-xs tracking-widest mt-2 hover:underline"
           >
             S'inscrire gratuitement
           </button>
-        </p>
+        </div>
       </div>
     </div>
   )

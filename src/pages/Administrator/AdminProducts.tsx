@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '../../lib/supabaseClient'
-import { Star, Edit, Trash2, Plus, Loader2, Package } from 'lucide-react'
+import { Star, Edit, Trash2, Plus, Loader2, Package, LayoutGrid, X } from 'lucide-react'
 import { toast } from 'sonner'
 import AddProductModal from './AddProductModal'
 
@@ -12,7 +12,6 @@ interface Product {
   price: number
   is_featured: boolean
   description?: string
-  created_at?: string
 }
 
 export default function AdminProducts() {
@@ -21,9 +20,10 @@ export default function AdminProducts() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
 
-  // Utilisation de useCallback pour stabiliser la fonction
+  // CHARGEMENT DES PRODUITS
   const fetchProducts = useCallback(async () => {
     try {
+      setLoading(true)
       const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -31,9 +31,9 @@ export default function AdminProducts() {
       
       if (error) throw error
       setProducts(data || [])
-    } catch (error) {
-      console.error(error)
-      toast.error("Erreur de synchronisation")
+    } catch (error: any) {
+      console.error("Erreur fetch:", error.message)
+      toast.error("Erreur de chargement")
     } finally {
       setLoading(false)
     }
@@ -43,157 +43,158 @@ export default function AdminProducts() {
     fetchProducts()
   }, [fetchProducts])
 
-  const handleAddProduct = () => {
-    setSelectedProduct(null)
-    setIsModalOpen(true)
-  }
+  // FILTRAGE VEDETTES (Calculé dynamiquement)
+  const featuredProducts = useMemo(() => 
+    products.filter(p => p.is_featured === true), 
+  [products])
 
-  const handleEditProduct = (product: Product) => {
-    setSelectedProduct(product)
-    setIsModalOpen(true)
-  }
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false)
-    setSelectedProduct(null)
-  }
-
-  // Basculer l'état "Vedette" directement depuis la liste
+  // FONCTION DE SAUVEGARDE (CORRIGÉE)
   const toggleFeatured = async (id: string, currentStatus: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('products')
-        .update({ is_featured: !currentStatus })
-        .eq('id', id)
+    const nextStatus = !currentStatus;
 
-      if (error) throw error
-      
-      // Mise à jour locale immédiate de l'UI
+    // 1. Mise à jour visuelle immédiate
+    setProducts(prev => prev.map(p => 
+      p.id === id ? { ...p, is_featured: nextStatus } : p
+    ));
+
+    try {
+      // 2. Envoi à Supabase
+      const { data, error, status } = await supabase
+        .from('products')
+        .update({ is_featured: nextStatus })
+        .eq('id', id)
+        .select(); // Important pour vérifier que la ligne a bien été modifiée
+
+      if (error) throw error;
+
+      // 3. Vérification si une ligne a réellement été touchée
+      if (!data || data.length === 0) {
+        throw new Error("Aucune ligne modifiée. Vérifiez vos permissions RLS ou l'ID.");
+      }
+
+      toast.success(nextStatus ? "Produit mis en vedette" : "Retiré des vedettes");
+      console.log("Succès Supabase, status:", status, "Data:", data);
+
+    } catch (err: any) {
+      // 4. Rollback en cas d'échec
       setProducts(prev => prev.map(p => 
-        p.id === id ? { ...p, is_featured: !currentStatus } : p
-      ))
+        p.id === id ? { ...p, is_featured: currentStatus } : p
+      ));
       
-      toast.success(!currentStatus ? "Mis en vedette !" : "Retiré des vedettes")
-    } catch (err) {
-      toast.error("Erreur de mise à jour")
+      console.error("DÉTAIL ERREUR SUPABASE:", err.message);
+      toast.error(`Erreur: ${err.message}`);
     }
   }
 
   const deleteProduct = async (id: string) => {
-    if (!confirm("Voulez-vous vraiment supprimer ce produit ?")) return
+    if (!confirm("Supprimer ce produit ?")) return
     try {
       const { error } = await supabase.from('products').delete().eq('id', id)
       if (error) throw error
       setProducts(prev => prev.filter(p => p.id !== id))
       toast.success("Produit supprimé")
-    } catch (error) {
+    } catch (error: any) {
       toast.error("Erreur de suppression")
     }
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-6 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-brand-primary/10 rounded-lg text-brand-primary">
-              <Package size={24} />
-            </div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight italic">
-              Inventaire <span className="text-brand-primary">Produits</span>
-            </h1>
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-10">
+      
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="p-4 bg-gray-900 text-white rounded-2xl shadow-lg">
+            <Package size={28} />
           </div>
-          <p className="text-gray-500 font-medium">
-            Vous gérez <span className="text-brand-dark font-bold">{products.length}</span> articles.
-          </p>
+          <div>
+            <h1 className="text-3xl font-black text-gray-900 italic tracking-tighter uppercase">Gestion <span className="text-brand-primary">Stocks</span></h1>
+            <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">{products.length} Articles</p>
+          </div>
         </div>
         <button 
-          onClick={handleAddProduct}
-          className="w-full md:w-auto bg-gray-900 text-white px-8 py-4 rounded-2xl font-black flex items-center justify-center gap-3 shadow-xl hover:bg-brand-primary transition-all active:scale-95"
+          onClick={() => { setSelectedProduct(null); setIsModalOpen(true); }}
+          className="bg-brand-primary text-white px-8 py-4 rounded-2xl font-black flex items-center gap-3 shadow-xl hover:scale-105 transition-all"
         >
-          <Plus size={20} /> Ajouter un produit
+          <Plus size={20} /> NOUVEAU PRODUIT
         </button>
       </div>
 
-      {/* Table Container */}
-      <div className="bg-white rounded-[2.5rem] shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
-        {loading ? (
-          <div className="p-32 flex flex-col items-center justify-center gap-4">
-            <Loader2 className="animate-spin text-brand-primary" size={48} />
-            <span className="font-black uppercase tracking-[0.3em] text-[10px] text-gray-400">Chargement des données...</span>
+      {/* SECTION VEDETTES (Aperçu) */}
+      {featuredProducts.length > 0 && (
+        <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex items-center gap-2 px-2">
+            <Star size={18} className="text-amber-500 fill-amber-500" />
+            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-gray-400 italic">En Vedette sur le site</h2>
           </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {featuredProducts.map(p => (
+              <div key={p.id} className="group relative bg-white p-2 rounded-[2rem] border-2 border-amber-100 shadow-sm overflow-hidden">
+                <div className="aspect-square rounded-[1.5rem] overflow-hidden mb-2">
+                  <img src={p.images?.[0]} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+                </div>
+                <button 
+                  onClick={() => toggleFeatured(p.id, true)}
+                  className="absolute top-3 right-3 p-1.5 bg-white rounded-full text-rose-500 shadow-md hover:bg-rose-500 hover:text-white transition-all"
+                >
+                  <X size={12} strokeWidth={3} />
+                </button>
+                <p className="px-2 font-black text-[9px] text-gray-900 truncate uppercase tracking-tight">{p.title}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* TABLEAU PRINCIPAL */}
+      <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden">
+        <div className="p-8 border-b border-gray-50 flex items-center gap-2">
+            <LayoutGrid size={18} className="text-gray-400"/>
+            <h3 className="font-black text-gray-400 text-xs uppercase tracking-widest">Liste Globale</h3>
+        </div>
+
+        {loading ? (
+          <div className="p-20 flex justify-center"><Loader2 className="animate-spin text-brand-primary" size={40} /></div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table className="w-full">
               <thead>
                 <tr className="bg-gray-50/50">
-                  <th className="px-8 py-6 font-black text-gray-400 uppercase text-[10px] tracking-[0.2em] text-left">Détails Produit</th>
-                  <th className="px-8 py-6 font-black text-gray-400 uppercase text-[10px] tracking-[0.2em] text-left">Tarification</th>
-                  <th className="px-8 py-6 font-black text-gray-400 uppercase text-[10px] tracking-[0.2em] text-center">Vedette</th>
-                  <th className="px-8 py-6 font-black text-gray-400 uppercase text-[10px] tracking-[0.2em] text-right">Actions</th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black uppercase text-gray-400 tracking-widest">Produit</th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black uppercase text-gray-400 tracking-widest">Prix</th>
+                  <th className="px-8 py-5 text-center text-[10px] font-black uppercase text-gray-400 tracking-widest">Statut Vedette</th>
+                  <th className="px-8 py-5 text-right text-[10px] font-black uppercase text-gray-400 tracking-widest">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {products.length === 0 ? (
-                  <tr><td colSpan={4} className="p-20 text-center text-gray-300 font-black uppercase italic tracking-widest">Aucun article trouvé</td></tr>
-                ) : (
-                  products.map((p) => (
-                    <tr key={p.id} className="hover:bg-gray-50/80 transition-all duration-200 group">
-                      <td className="px-8 py-5">
-                        <div className="flex items-center gap-5">
-                          <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-100 border border-gray-100">
-                            <img 
-                              src={(p.images && p.images.length > 0) ? p.images[0] : 'https://via.placeholder.com/150'} 
-                              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" 
-                              alt={p.title}
-                            />
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-bold text-gray-900 text-lg truncate">{p.title || 'Sans nom'}</span>
-                            <span className="font-mono text-[10px] text-gray-400 bg-gray-100 w-fit px-2 py-0.5 rounded">ID: {p.id.slice(0, 8).toUpperCase()}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-8 py-5">
-                        <div className="flex flex-col">
-                          <span className="text-xl font-black text-gray-900">{p.promo_price.toLocaleString()} FCFA</span>
-                          {p.price > p.promo_price && (
-                            <span className="text-xs text-red-400 line-through font-bold">{p.price.toLocaleString()} FCFA</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-8 py-5 text-center">
-                        <button 
-                          onClick={() => toggleFeatured(p.id, p.is_featured)}
-                          className={`p-3 rounded-2xl transition-all ${
-                            p.is_featured 
-                            ? 'bg-amber-50 text-amber-500 shadow-inner' 
-                            : 'bg-gray-50 text-gray-200 hover:text-gray-400'
-                          }`}
-                        >
-                          <Star size={22} fill={p.is_featured ? "currentColor" : "none"} />
-                        </button>
-                      </td>
-                      <td className="px-8 py-5 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button 
-                            onClick={() => handleEditProduct(p)}
-                            className="p-3 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                          >
-                            <Edit size={20} />
-                          </button>
-                          <button 
-                            onClick={() => deleteProduct(p.id)}
-                            className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                          >
-                            <Trash2 size={20} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                {products.map((p) => (
+                  <tr key={p.id} className="group hover:bg-gray-50/50 transition-colors">
+                    <td className="px-8 py-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100"><img src={p.images?.[0]} className="w-full h-full object-cover" /></div>
+                        <span className="font-bold text-gray-900">{p.title}</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-5 font-black text-brand-primary">{p.promo_price.toLocaleString()} F</td>
+                    <td className="px-8 py-5 text-center">
+                      <button 
+                        onClick={() => toggleFeatured(p.id, p.is_featured)}
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-full font-black text-[9px] uppercase transition-all ${
+                          p.is_featured ? 'bg-amber-500 text-white shadow-lg' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                        }`}
+                      >
+                        <Star size={12} fill={p.is_featured ? "white" : "none"} />
+                        {p.is_featured ? "EN VEDETTE" : "METTRE EN VEDETTE"}
+                      </button>
+                    </td>
+                    <td className="px-8 py-5 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => { setSelectedProduct(p); setIsModalOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600"><Edit size={18} /></button>
+                        <button onClick={() => deleteProduct(p.id)} className="p-2 text-gray-400 hover:text-rose-600"><Trash2 size={18} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -202,8 +203,8 @@ export default function AdminProducts() {
 
       <AddProductModal 
         isOpen={isModalOpen} 
-        onClose={handleCloseModal} 
-        onSuccess={fetchProducts} // Recharge la liste après modification
+        onClose={() => { setIsModalOpen(false); setSelectedProduct(null); }} 
+        onSuccess={fetchProducts}
         product={selectedProduct}
       />
     </div>
