@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { 
   Plus, Package, Wallet, Store, Edit3, Trash2, 
   BarChart3, ArrowUpRight, ShoppingBag, RefreshCw,
-  LayoutDashboard, Settings
+  LayoutDashboard, Settings, Info
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -94,20 +94,20 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50/50 pb-20">
-      {/* BARRE DE NAVIGATION VENDEUR SIMPLIFIÉE */}
+      {/* BARRE DE NAVIGATION VENDEUR */}
       <div className="bg-white border-b border-gray-100 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 font-black italic text-xl tracking-tighter">
-            <div className="bg-brand-primary p-1.5 rounded-lg text-white">
+            <div className="bg-brand-primary p-1.5 rounded-lg text-white shadow-lg shadow-brand-primary/20">
               <LayoutDashboard size={18} />
             </div>
-            PACKEO <span className="text-brand-primary">PRO</span>
+            FESTI<span className="text-brand-primary">SOLDE PRO</span>
           </div>
           <div className="flex items-center gap-4">
              <button className="text-gray-400 hover:text-brand-primary transition-colors">
                 <Settings size={20} />
              </button>
-             <div className="w-8 h-8 rounded-full bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-brand-primary font-black text-xs">
+             <div className="w-8 h-8 rounded-full bg-brand-primary text-white flex items-center justify-center font-black text-xs shadow-md">
                {shop.name.charAt(0).toUpperCase()}
              </div>
           </div>
@@ -120,48 +120,66 @@ export default function Dashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
           <div>
             <h1 className="text-4xl lg:text-5xl font-black tracking-tighter italic uppercase">
-              Tableau de <span className="text-brand-primary">Bord</span>
+              Mon <span className="text-brand-primary">Espace Vendeur</span>
             </h1>
             <p className="text-gray-500 font-bold text-sm italic mt-1 uppercase tracking-wider opacity-70">
-               {shop.name} — Ouagadougou, BF
+               {shop.name} — Partenaire Officiel FestiSolde
             </p>
           </div>
           <Link to="/vendor/add-product" className="group flex items-center gap-3 px-8 py-4 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-brand-primary transition-all shadow-xl shadow-gray-200">
             <Plus size={18} strokeWidth={3} className="group-hover:rotate-90 transition-transform" /> 
-            Nouveau Produit
+            Ajouter un Article
           </Link>
         </div>
 
-        {/* STATS : DESIGN ÉPURÉ */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <StatCard title="Produits Actifs" value={stats.products} icon={<Package size={22} />} trend="Inventaire" />
-          <StatCard title="Ventes Totales" value={stats.orders} icon={<BarChart3 size={22} />} trend="Performance" />
-          <StatCard title="Chiffre d'Affaires" value={`${stats.sales.toLocaleString()} F`} icon={<Wallet size={22} />} isHighlight />
+        {/* STATS SECTION */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <StatCard title="Articles en ligne" value={stats.products} icon={<Package size={22} />} trend="Stock actif" />
+          <StatCard title="Ventes conclues" value={stats.orders} icon={<BarChart3 size={22} />} trend="+12% ce mois" />
+          <StatCard title="Gains totaux" value={`${stats.sales.toLocaleString()} F`} icon={<Wallet size={22} />} isHighlight />
+        </div>
+
+        {/* BANNIÈRE STRATÉGIQUE (Nouveau) */}
+        <div className="bg-brand-primary/5 rounded-[2rem] p-6 mb-12 border border-brand-primary/10 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-brand-primary shadow-sm">
+              <Info size={22} />
+            </div>
+            <div>
+              <p className="text-brand-dark font-black text-sm uppercase italic leading-none mb-1">Boostez votre visibilité</p>
+              <p className="text-slate-500 text-[11px] font-bold">Les articles avec un prix promo s'affichent en priorité sur la page d'accueil.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-black uppercase tracking-widest bg-white px-4 py-2 rounded-xl text-slate-400 border border-slate-100 shadow-sm">
+              Commission : 10%
+            </span>
+          </div>
         </div>
 
         {/* SECTION INVENTAIRE */}
         <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h3 className="text-xl font-black uppercase italic tracking-tight">Inventaire Produits</h3>
+            <h3 className="text-xl font-black uppercase italic tracking-tight">Gestion du Stock</h3>
             <button 
               onClick={loadDashboardData} 
               disabled={refreshing}
               className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-primary bg-brand-primary/5 px-4 py-2 rounded-xl hover:bg-brand-primary/10 transition-all"
             >
               <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
-              Actualiser
+              Actualiser les données
             </button>
           </div>
 
           <div className="overflow-x-auto">
             {products.length > 0 ? (
-              <table className="w-full text-left">
+              <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="text-gray-400 text-[10px] uppercase tracking-[0.2em] font-black bg-slate-50/50">
-                    <th className="px-8 py-4">Article</th>
-                    <th className="px-6 py-4">Stock</th>
-                    <th className="px-6 py-4">Ventes</th>
-                    <th className="px-8 py-4 text-right">Actions</th>
+                    <th className="px-8 py-4">Désignation</th>
+                    <th className="px-6 py-4">État Stock</th>
+                    <th className="px-6 py-4">Vendus</th>
+                    <th className="px-8 py-4 text-right">Modifier</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -175,20 +193,22 @@ export default function Dashboard() {
                     >
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-4">
-                          <div className="w-14 h-14 rounded-2xl bg-gray-100 overflow-hidden shrink-0 border border-gray-100">
+                          <div className="w-14 h-14 rounded-2xl bg-slate-100 overflow-hidden shrink-0 border border-slate-200">
                             <img src={p.images?.[0] || '/placeholder.png'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
                           </div>
                           <div className="flex flex-col">
                             <span className="font-black text-gray-900 leading-tight uppercase italic text-sm">{p.nom || p.title}</span>
-                            <span className="text-xs font-bold text-brand-primary mt-1">{p.prix_solde?.toLocaleString() || p.price?.toLocaleString()} FCFA</span>
+                            <span className="text-xs font-bold text-brand-primary mt-1">
+                              {p.promo_price ? p.promo_price.toLocaleString() : p.price?.toLocaleString()} FCFA
+                            </span>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-5">
-                        <span className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-lg border ${
+                        <span className={`text-[9px] font-black uppercase px-3 py-1.5 rounded-lg border ${
                           p.stock > 5 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'
                         }`}>
-                          {p.stock > 0 ? `${p.stock} en stock` : 'Rupture'}
+                          {p.stock > 0 ? `${p.stock} Unités` : 'Rupture'}
                         </span>
                       </td>
                       <td className="px-6 py-5">
@@ -218,11 +238,11 @@ export default function Dashboard() {
               </table>
             ) : (
               <div className="py-24 flex flex-col items-center justify-center text-center">
-                 <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-4 text-gray-300">
+                 <div className="w-20 h-20 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mb-4 text-gray-300">
                     <ShoppingBag size={32} />
                  </div>
-                 <p className="font-black uppercase italic text-gray-400 tracking-tighter">Votre rayon est vide</p>
-                 <Link to="/vendor/add-product" className="text-brand-primary font-black uppercase text-[10px] mt-2 tracking-widest hover:underline">Ajouter mon premier article</Link>
+                 <p className="font-black uppercase italic text-gray-400 tracking-tighter">Aucun article enregistré</p>
+                 <Link to="/vendor/add-product" className="text-brand-primary font-black uppercase text-[10px] mt-2 tracking-widest hover:underline">Ouvrir mon rayon maintenant</Link>
               </div>
             )}
           </div>
@@ -237,9 +257,9 @@ function StatCard({ title, value, icon, isHighlight, trend }: any) {
     <div className={`p-8 rounded-[2.5rem] border transition-all duration-300 ${
       isHighlight 
       ? 'bg-gray-900 border-gray-900 text-white shadow-2xl shadow-gray-200' 
-      : 'bg-white border-gray-100 shadow-sm hover:shadow-md'
+      : 'bg-white border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-1'
     }`}>
-      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 ${
+      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 shadow-sm ${
         isHighlight ? 'bg-brand-primary text-white' : 'bg-brand-primary/10 text-brand-primary'
       }`}>
         {icon}
@@ -266,9 +286,9 @@ function NoShopView() {
         <Store size={40} />
       </motion.div>
       <h2 className="text-4xl lg:text-5xl font-black text-gray-900 mb-4 tracking-tighter italic uppercase">Propulsez votre <span className="text-brand-primary">Commerce</span></h2>
-      <p className="text-gray-500 mb-10 max-w-sm font-medium italic">Rejoignez la communauté des vendeurs Packeo à Ouagadougou et commencez à vendre en 2 minutes.</p>
+      <p className="text-gray-500 mb-10 max-w-sm font-medium italic">Rejoignez FestiSolde et vendez vos articles aux milliers de clients qui attendent vos promos.</p>
       <Link to="/vendor/setup" className="bg-gray-900 text-white px-12 py-5 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-2xl hover:bg-brand-primary transition-all active:scale-95 flex items-center gap-3">
-        Lancer ma boutique <Plus size={18} />
+        Créer ma Boutique <Plus size={18} />
       </Link>
     </div>
   )

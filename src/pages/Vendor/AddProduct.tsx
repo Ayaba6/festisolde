@@ -8,9 +8,10 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
+// Catégories alignées sur ta stratégie
 const CATEGORIES = [
-  "Packeo", 
-  "Électronique", "Mode & Beauté", "Maison & Déco", 
+  "Pack FestiSolde", // Catégorie Premium / Featured
+  "Mode & Beauté", "Électronique", "Maison & Déco", 
   "Alimentation", "Santé", "Sport", "Services", "Autres"
 ]
 
@@ -106,23 +107,27 @@ export default function AddProduct() {
     if (images.length === 0) return toast.error("Ajoutez au moins une photo")
     if (!category) return toast.error("Choisissez une catégorie")
     
+    // Validation de prix logique pour éviter les erreurs de saisie
+    if (promoPrice !== '' && Number(promoPrice) >= Number(price)) {
+      return toast.error("Le prix promo doit être inférieur au prix normal")
+    }
+    
     setLoading(true)
     try {
       const imageUrls = await uploadImages()
       
-      // CORRECTION ICI : Alignement sur les noms de colonnes Supabase
       const productData = {
         shop_id: shopId,
-        title: title, // Utilisation de 'title' au lieu de 'nom'
+        title: title, 
         description: description,
         category: category,
-        price: Number(price), // Utilisation de 'price' au lieu de 'prix_original'
+        price: Number(price), 
         promo_price: promoPrice !== '' ? Number(promoPrice) : null,
         stock: Number(stock),
         images: imageUrls,
         colors: colors,
         sizes: sizes,
-        is_featured: category === "Packeo"
+        is_featured: category === "Pack FestiSolde"
       }
 
       const { error } = await supabase
@@ -131,7 +136,7 @@ export default function AddProduct() {
 
       if (error) throw error
 
-      toast.success('Produit publié avec succès !')
+      toast.success('Félicitations ! Votre article est en ligne.')
       navigate('/vendor/dashboard')
     } catch (err: any) {
       console.error("Erreur complète:", err)
@@ -146,7 +151,7 @@ export default function AddProduct() {
 
   if (!shopId) return (
     <div className="h-screen flex items-center justify-center bg-white italic font-black uppercase tracking-widest text-brand-primary">
-      Synchronisation de la boutique...
+      Préparation de votre rayon...
     </div>
   )
 
@@ -155,7 +160,7 @@ export default function AddProduct() {
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-400 hover:text-gray-900 transition-colors font-black text-[10px] uppercase tracking-widest">
-            <ArrowLeft size={16} /> Retour Dashboard
+            <ArrowLeft size={16} /> Annuler et quitter
           </button>
         </div>
 
@@ -165,26 +170,26 @@ export default function AddProduct() {
           className="bg-white rounded-[3rem] shadow-xl shadow-slate-200/50 p-8 md:p-14 border border-white relative overflow-hidden"
         >
           <AnimatePresence>
-            {category === "Packeo" && (
+            {category === "Pack FestiSolde" && (
               <motion.div 
                 initial={{ y: -100 }} animate={{ y: 0 }} exit={{ y: -100 }}
                 className="absolute top-0 left-0 right-0 bg-brand-primary text-white py-3 px-8 flex items-center justify-center gap-3 font-black text-[10px] uppercase tracking-[0.3em]"
               >
-                <Sparkles size={14} fill="white" /> Configuration Pack Spécial
+                <Sparkles size={14} fill="white" /> Option visibilité maximum activée
               </motion.div>
             )}
           </AnimatePresence>
 
-          <header className={`mb-12 ${category === "Packeo" ? "mt-8" : ""}`}>
+          <header className={`mb-12 ${category === "Pack FestiSolde" ? "mt-8" : ""}`}>
             <h1 className="text-4xl lg:text-5xl font-black text-gray-900 tracking-tighter italic uppercase leading-none">
-              Mettre en <span className="text-brand-primary">Vente</span>
+              Nouvel <span className="text-brand-primary">Article</span>
             </h1>
           </header>
 
           <form onSubmit={handleSubmit} className="space-y-10">
             {/* PHOTOS */}
             <div className="space-y-4">
-              <label className={labelStyle}>Photos du produit (Max 4)</label>
+              <label className={labelStyle}>Photos du produit (Format carré recommandé)</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {previews.map((src, index) => (
                   <div key={src} className="relative aspect-square rounded-[1.5rem] overflow-hidden shadow-md group">
@@ -195,8 +200,8 @@ export default function AddProduct() {
                   </div>
                 ))}
                 {images.length < 4 && (
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="aspect-square rounded-[1.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center bg-slate-50 hover:bg-white hover:border-brand-primary hover:text-brand-primary transition-all">
-                    <Upload size={20} />
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="aspect-square rounded-[1.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center bg-slate-50 hover:bg-white hover:border-brand-primary hover:text-brand-primary transition-all group">
+                    <Upload size={20} className="group-hover:-translate-y-1 transition-transform" />
                     <span className="text-[9px] font-black uppercase mt-2">Ajouter</span>
                   </button>
                 )}
@@ -206,11 +211,11 @@ export default function AddProduct() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="md:col-span-2">
-                <label className={labelStyle}>Nom de l'article</label>
-                <input type="text" placeholder="Ex: Pack Gentleman Slim" className={inputStyle} value={title} onChange={(e) => setTitle(e.target.value)} required />
+                <label className={labelStyle}>Titre de l'annonce</label>
+                <input type="text" placeholder="Ex: Montre de luxe - Solde Flash" className={inputStyle} value={title} onChange={(e) => setTitle(e.target.value)} required />
               </div>
               <div>
-                <label className={labelStyle}>Catégorie</label>
+                <label className={labelStyle}>Rayon / Catégorie</label>
                 <div className="relative">
                   <select className={`${inputStyle} appearance-none`} value={category} onChange={(e) => setCategory(e.target.value)} required>
                     <option value="">Sélectionner...</option>
@@ -220,17 +225,17 @@ export default function AddProduct() {
                 </div>
               </div>
               <div>
-                <label className={labelStyle}>Stock</label>
-                <input type="number" placeholder="Quantité" className={inputStyle} value={stock} onChange={(e) => setStock(e.target.value === '' ? '' : Number(e.target.value))} required />
+                <label className={labelStyle}>Quantité disponible</label>
+                <input type="number" placeholder="Stock" className={inputStyle} value={stock} onChange={(e) => setStock(e.target.value === '' ? '' : Number(e.target.value))} required />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <label className={labelStyle}>Couleurs (Optionnel)</label>
+                <label className={labelStyle}>Variantes : Couleurs</label>
                 <div className="flex gap-2 mb-3">
                   <input 
-                    type="text" placeholder="Ex: Noir" className={`${inputStyle} !py-3 !text-xs`} 
+                    type="text" placeholder="Ex: Rouge" className={`${inputStyle} !py-3 !text-xs`} 
                     value={newColor} onChange={(e) => setNewColor(e.target.value)}
                     onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); addVariant('color'); }}}
                   />
@@ -245,10 +250,10 @@ export default function AddProduct() {
                 </div>
               </div>
               <div>
-                <label className={labelStyle}>Tailles (Optionnel)</label>
+                <label className={labelStyle}>Variantes : Tailles</label>
                 <div className="flex gap-2 mb-3">
                   <input 
-                    type="text" placeholder="Ex: XL ou 42" className={`${inputStyle} !py-3 !text-xs`} 
+                    type="text" placeholder="Ex: 44 ou XL" className={`${inputStyle} !py-3 !text-xs`} 
                     value={newSize} onChange={(e) => setNewSize(e.target.value)}
                     onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); addVariant('size'); }}}
                   />
@@ -265,28 +270,28 @@ export default function AddProduct() {
             </div>
 
             <div>
-              <label className={labelStyle}>Description</label>
-              <textarea placeholder="Détails du produit..." className={`${inputStyle} min-h-[120px] resize-none`} value={description} onChange={(e) => setDescription(e.target.value)} required />
+              <label className={labelStyle}>Présentation (Description)</label>
+              <textarea placeholder="Donnez envie aux clients de Ouaga..." className={`${inputStyle} min-h-[120px] resize-none`} value={description} onChange={(e) => setDescription(e.target.value)} required />
             </div>
 
-            <div className={`p-8 rounded-[2.5rem] border-2 ${category === "Packeo" ? "bg-brand-primary/5 border-brand-primary/10" : "bg-slate-50 border-slate-50"}`}>
+            <div className={`p-8 rounded-[2.5rem] border-2 ${category === "Pack FestiSolde" ? "bg-brand-primary/5 border-brand-primary/10 shadow-inner" : "bg-slate-50 border-slate-100"}`}>
               <div className="flex items-center gap-2 mb-6 font-black uppercase text-xs italic">
-                <Tag size={16} className="text-brand-primary" /> Tarification
+                <Tag size={16} className="text-brand-primary" /> Configuration des Prix (FCFA)
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase">Prix habituel</label>
+                  <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Prix habituel (Barré)</label>
                   <input type="number" className={`${inputStyle} !bg-white`} value={price} onChange={(e) => setPrice(e.target.value === '' ? '' : Number(e.target.value))} required />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-brand-primary mb-2 uppercase">Prix de vente final</label>
-                  <input type="number" className={`${inputStyle} !bg-white border-brand-primary/20 text-brand-primary`} value={promoPrice} onChange={(e) => setPromoPrice(e.target.value === '' ? '' : Number(e.target.value))} required={category === "Packeo"} />
+                  <label className="block text-[10px] font-black text-brand-primary mb-2 uppercase tracking-widest">Prix FestiSolde (Promo)</label>
+                  <input type="number" className={`${inputStyle} !bg-white border-brand-primary/30 text-brand-primary`} value={promoPrice} onChange={(e) => setPromoPrice(e.target.value === '' ? '' : Number(e.target.value))} required />
                 </div>
               </div>
             </div>
 
-            <button type="submit" disabled={loading} className={`w-full py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 ${category === "Packeo" ? "bg-brand-primary text-white shadow-xl shadow-brand-primary/20" : "bg-gray-900 text-white"}`}>
-              {loading ? <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" /> : "Publier l'article"}
+            <button type="submit" disabled={loading} className={`w-full py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 ${category === "Pack FestiSolde" ? "bg-brand-primary text-white shadow-xl shadow-brand-primary/30" : "bg-gray-900 text-white hover:bg-brand-primary"}`}>
+              {loading ? <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" /> : "Mettre en vente maintenant"}
             </button>
           </form>
         </motion.div>
