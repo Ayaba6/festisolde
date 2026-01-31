@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Facebook, Twitter, Instagram, Mail, Phone, MapPin } from 'lucide-react'
+import { Facebook, Twitter, Instagram, Mail, Phone, MapPin, Store, CheckCircle } from 'lucide-react'
 
 // Imports des logos de paiement
 import LogoOM from '../assets/OM.png'
@@ -18,7 +18,6 @@ export default function Footer() {
         {/* Colonne 1 : À propos + LOGO */}
         <div className="space-y-6">
           <Link to="/" className="flex items-center group">
-            {/* Utilisation du logo officiel */}
             <div className="h-[95px] w-auto transition-transform duration-300 group-hover:scale-105">
               <img 
                 src="/logo-festisolde1.png" 
@@ -38,32 +37,53 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Colonne 2 : Navigation Boutique */}
+        {/* Colonne 2 : Espace Business */}
         <div>
-          <h3 className="text-white font-bold mb-8 uppercase text-[10px] tracking-[0.2em]">Boutique</h3>
+          <h3 className="text-white font-bold mb-8 uppercase text-[10px] tracking-[0.2em]">Partenaires & Business</h3>
           <ul className="space-y-4 text-sm font-medium">
+            <li>
+              <Link to="/vendre" className="text-brand-primary font-black italic flex items-center gap-2 group">
+                <Store size={16} className="group-hover:scale-110 transition-transform" />
+                VENDRE SUR FESTISOLDE
+              </Link>
+            </li>
+            <li><FooterLink to="/vendor/create-shop">Ouvrir une boutique</FooterLink></li>
             <li><FooterLink to="/products">Toutes les offres</FooterLink></li>
-            <li><FooterLink to="/category/electronique">Électronique</FooterLink></li>
-            <li><FooterLink to="/category/mode">Mode & Beauté</FooterLink></li>
-            <li><FooterLink to="/vendor/register" className="text-brand-primary font-bold">Devenir Vendeur</FooterLink></li>
+            
+            <div className="pt-4 mt-4 border-t border-white/5 space-y-4">
+                <h4 className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">Catégories</h4>
+                <li><FooterLink to="/category/electronique">Électronique</FooterLink></li>
+                <li><FooterLink to="/category/mode">Mode & Beauté</FooterLink></li>
+            </div>
           </ul>
         </div>
 
-        {/* Colonne 3 : Contact & Localisation */}
+        {/* Colonne 3 : Contact & Localisation (MISE À JOUR) */}
         <div>
-          <h3 className="text-white font-bold mb-8 uppercase text-[10px] tracking-[0.2em]">Contact</h3>
+          <h3 className="text-white font-bold mb-8 uppercase text-[10px] tracking-[0.2em]">Support Client</h3>
           <ul className="space-y-4 text-sm font-medium">
             <li className="flex items-center gap-3">
               <MapPin size={16} className="text-brand-primary" />
               <span>Ouagadougou, Dassasgho</span>
             </li>
-            <li className="flex items-center gap-3">
+            <li className="flex items-center gap-3 font-bold text-white">
               <Phone size={16} className="text-brand-primary" />
-              <span>+226 70 18 99 12 / 54 60 54 83</span>
+              <span>+226 70 18 99 12</span>
             </li>
-            <li className="flex items-center gap-3">
-              <Mail size={16} className="text-brand-primary" />
-              <span>contact@festisolde.bf</span>
+            <li>
+              {/* LIEN VERS LA PAGE CONTACT */}
+              <FooterLink to="/contact" className="flex items-center gap-3">
+                <Mail size={16} className="text-brand-primary" />
+                <span>Formulaire de contact</span>
+              </FooterLink>
+            </li>
+            <li className="pt-4">
+               <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                  <p className="text-[10px] font-black uppercase text-white mb-2 flex items-center gap-2">
+                    <CheckCircle size={12} className="text-emerald-500" /> Boutique Vérifiée
+                  </p>
+                  <p className="text-[9px] leading-tight opacity-60">Tous nos vendeurs sont contrôlés physiquement pour votre sécurité.</p>
+               </div>
             </li>
           </ul>
         </div>
@@ -71,11 +91,10 @@ export default function Footer() {
         {/* Colonne 4 : Paiement & Sécurité */}
         <div>
           <h3 className="text-white font-bold mb-8 uppercase text-[10px] tracking-[0.2em]">Paiement Sécurisé</h3>
-          <p className="text-xs mb-6 leading-relaxed">
-            Transactions sécurisées. Nous acceptons les paiements mobiles locaux et cartes bancaires.
+          <p className="text-xs mb-6 leading-relaxed italic">
+            Transactions 100% sécurisées via les réseaux mobiles du Burkina Faso.
           </p>
           
-          {/* Grille des logos de paiement */}
           <div className="flex flex-wrap gap-4 items-center">
             <img src={LogoOM} alt="Orange Money" className="h-7 w-auto hover:scale-110 transition-transform grayscale hover:grayscale-0" />
             <img src={LogoMM} alt="Moov Money" className="h-7 w-auto hover:scale-110 transition-transform grayscale hover:grayscale-0" />
@@ -83,9 +102,9 @@ export default function Footer() {
             <img src={LogoMC} alt="Mastercard" className="h-8 w-auto hover:scale-110 transition-transform grayscale hover:grayscale-0" />
           </div>
           
-          <div className="mt-4 flex items-center gap-2 opacity-30">
+          <div className="mt-6 flex items-center gap-2 opacity-30">
             <div className="h-px flex-1 bg-white"></div>
-            <span className="text-[9px] font-black uppercase tracking-widest">Garanti SSL</span>
+            <span className="text-[9px] font-black uppercase tracking-widest">Technologie SSL</span>
             <div className="h-px flex-1 bg-white"></div>
           </div>
         </div>
@@ -94,13 +113,13 @@ export default function Footer() {
       {/* BARRE INFÉRIEURE */}
       <div className="border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row justify-between items-center gap-6 text-[11px] uppercase tracking-widest font-bold">
-          <p>© {currentYear} FestiSolde SARL. Tous droits réservés.</p>
+          <p>© {currentYear} FestiSolde SARL. <span className="text-brand-primary">226 Power.</span></p>
           <div className="flex flex-wrap justify-center gap-8">
             <span className="flex items-center gap-2">
               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              Système opérationnel
+              Plateforme Sécurisée
             </span>
-            <p className="text-white/40 italic">Fait avec ❤️ au Burkina Faso</p>
+            <p className="text-white/40 italic font-medium text-[9px]">Propulsé par la technologie FestiSolde</p>
           </div>
         </div>
       </div>

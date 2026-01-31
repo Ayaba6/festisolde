@@ -100,7 +100,7 @@ export default function CategoryShowcase() {
           </div>
           
           <Link 
-            to="/shop" 
+            to="/products" 
             className="hidden md:flex items-center gap-4 bg-gray-900 text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] hover:bg-brand-primary transition-all duration-300 shadow-xl shadow-gray-200"
           >
             Aller à la boutique <ArrowRight size={18} />
@@ -123,7 +123,7 @@ export default function CategoryShowcase() {
                 viewport={{ once: true }}
               >
                 <Link
-                  to={`/shop?category=${encodeURIComponent(cat.name)}`}
+                  to={`/products?category=${encodeURIComponent(cat.name)}`}
                   className="group relative block h-80 lg:h-[480px] overflow-hidden rounded-[3rem] shadow-sm hover:shadow-2xl transition-all duration-700 bg-slate-900"
                 >
                   {/* Badge Compteur */}
@@ -167,7 +167,7 @@ export default function CategoryShowcase() {
         {/* BOUTON SHOP (MOBILE UNIQUEMENT) */}
         <div className="flex md:hidden justify-center mt-8">
           <Link 
-            to="/shop" 
+            to="/products" 
             className="flex items-center justify-center w-full gap-4 bg-gray-900 text-white py-5 rounded-3xl font-black uppercase text-xs tracking-[0.2em] shadow-2xl"
           >
             Accéder à la boutique <ArrowRight size={20} />

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { supabase } from '../../../lib/supabaseClient'
 import { toast } from 'sonner'
 import { auth } from '../../../lib/auth'
-import { cart } from '../../../lib/cart'
+import { cart as cartLib } from '../../../lib/cart' // Alias pour éviter la confusion
 import { ShoppingCart, Eye, Star, ArrowRight, Sparkles } from 'lucide-react'
 
 interface Product {
@@ -55,7 +55,7 @@ export default function FeaturedProducts() {
         toast.error('Connexion requise');
         return
       }
-      await cart.addItem(user.id, productId)
+      await cartLib.addItem(user.id, productId)
       toast.success('Ajouté au panier !')
     } catch (err) {
       toast.error('Erreur lors de l’ajout')
@@ -78,7 +78,8 @@ export default function FeaturedProducts() {
               Les <span className="text-brand-primary">Incontournables</span>
             </h2>
           </div>
-          <Link to="/shop" className="group flex items-center gap-3 bg-gray-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-brand-primary transition-all shadow-lg shadow-gray-200">
+          {/* CORRECTION DU LIEN : /products au lieu de /shop */}
+          <Link to="/products" className="group flex items-center gap-3 bg-gray-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-brand-primary transition-all shadow-lg shadow-gray-200">
             Voir boutique <ArrowRight size={18} />
           </Link>
         </div>
@@ -93,6 +94,7 @@ export default function FeaturedProducts() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
+              viewport={{ once: true }} // Ajouté pour optimiser les performances
               className="group flex flex-col bg-white"
             >
               <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] bg-gray-100 mb-4 shadow-sm group-hover:shadow-xl transition-all duration-500">

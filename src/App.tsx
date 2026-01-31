@@ -12,6 +12,8 @@ import Account from './pages/Account/AccountPage'
 import Orders from './pages/Account/Orders'
 import Checkout from './pages/Checkout/Checkout'
 import OrderSuccess from './pages/Checkout/OrderSuccess'
+import VendorLanding from './pages/Vendor/VendorLanding'
+import Contact from './pages/Contact'
 
 // --- PAGES VENDEURS ---
 import VendorDashboard from './pages/Vendor/Dashboard'
@@ -31,6 +33,7 @@ import CartDrawer from './components/CartDrawer'
 import ProtectedRoute from './components/ProtectedRoute'
 import VendorRoute from './components/VendorRoute'
 import AuthRedirect from './components/AuthRedirect' 
+import ScrollToTop from './components/ScrollToTop' // <-- IMPORT AJOUTÉ
 
 /**
  * COMPOSANT DE PROTECTION ADMIN
@@ -128,7 +131,10 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50/50 font-sans">
-      {/* HEADER : On passe les fonctions du panier et l'user */}
+      {/* FORCE LE SCROLL EN HAUT À CHAQUE CHANGEMENT DE PAGE */}
+      <ScrollToTop />
+
+      {/* HEADER */}
       <Header 
         user={user} 
         setUser={setUser} 
@@ -147,11 +153,14 @@ export default function App() {
       
       <main className="flex-grow">
         <Routes>
+          {/* PAGES PUBLIQUES */}
           <Route path="/" element={<Home />} />
           <Route path="/products" element={<Shop cart={cart} setCart={setCart} />} />
           <Route path="/product/:id" element={<ProductDetail setCart={setCart} />} />
           <Route path="/checkout" element={<Checkout cart={cart} total={totalAmount} clearCart={clearCart} />} />
           <Route path="/order-success" element={<OrderSuccess />} />
+          <Route path="/vendre" element={<VendorLanding />} />
+          <Route path="/contact" element={<Contact />} />
 
           {/* AUTHENTIFICATION */}
           <Route path="/auth/login" element={user ? <AuthRedirect user={user} /> : <Login setUser={setUser} />} />

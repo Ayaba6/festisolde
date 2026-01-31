@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useNavigate } from 'react-router-dom'
-import { User, Mail, Lock, ShoppingBag, Store, Loader2, Sparkles } from 'lucide-react'
+import { User, Mail, Lock, ShoppingBag, Store, Loader2, Sparkles, Phone } from 'lucide-react' // Ajout de Phone
 
 interface RegisterProps {
   setUser: (user: any) => void
@@ -10,6 +10,7 @@ interface RegisterProps {
 export default function Register({ setUser }: RegisterProps) {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('') // Nouvel état pour le téléphone
   const [password, setPassword] = useState('')
   const [role, setRole] = useState<'customer' | 'vendor'>('customer')
   const [loading, setLoading] = useState(false)
@@ -28,6 +29,7 @@ export default function Register({ setUser }: RegisterProps) {
         options: { 
           data: { 
             full_name: fullName,
+            phone: phone, // Ajout du téléphone dans les metadata
             role: role 
           } 
         },
@@ -36,7 +38,8 @@ export default function Register({ setUser }: RegisterProps) {
       if (signUpError) throw signUpError
       if (!data.user) throw new Error('Erreur lors de la création du compte')
 
-      setUser({ ...data.user, role, full_name: fullName })
+      // Mise à jour de l'état local avec toutes les infos
+      setUser({ ...data.user, role, full_name: fullName, phone })
 
       if (role === 'vendor') {
         navigate('/vendor/create-shop')
@@ -92,20 +95,36 @@ export default function Register({ setUser }: RegisterProps) {
               </div>
             </div>
 
-            {/* Email */}
+            {/* Téléphone */}
             <div className="relative">
-              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-4">Contact</label>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-4">Téléphone</label>
               <div className="relative">
-                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
                 <input
-                  type="email"
-                  placeholder="votre@email.com"
+                  type="tel"
+                  placeholder="Ex: +226 01..."
                   className="w-full pl-14 pr-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:border-brand-primary focus:bg-white outline-none font-bold text-gray-900 transition-all"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   required
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Email */}
+          <div className="relative">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-4">Email</label>
+            <div className="relative">
+              <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+              <input
+                type="email"
+                placeholder="votre@email.com"
+                className="w-full pl-14 pr-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:border-brand-primary focus:bg-white outline-none font-bold text-gray-900 transition-all"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
           </div>
 

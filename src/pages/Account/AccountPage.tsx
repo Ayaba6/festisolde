@@ -1,4 +1,4 @@
-import { User as UserIcon, Mail, Shield, Calendar, LogOut, Key } from 'lucide-react'
+import { User as UserIcon, Mail, Shield, Calendar, LogOut, Key, Phone } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 
 interface AccountPageProps {
@@ -18,8 +18,9 @@ export default function AccountPage({ user, setUser }: AccountPageProps) {
     )
   }
 
-  // Extraction des infos depuis les métadonnées Supabase
+  // Extraction des infos (incluant le phone stocké dans les métadonnées lors du Register)
   const fullName = user.user_metadata?.full_name || 'Utilisateur FestiSolde'
+  const phoneNumber = user.user_metadata?.phone || user.phone || 'Non renseigné'
   const role = user.role || 'Client'
   const createdAt = new Date(user.created_at).toLocaleDateString('fr-FR', {
     day: 'numeric',
@@ -62,11 +63,16 @@ export default function AccountPage({ user, setUser }: AccountPageProps) {
 
             <div className="p-8 space-y-6">
               {/* Infos détaillées */}
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-2 gap-y-8 gap-x-6">
                 <InfoItem 
                   icon={<Mail size={18} />} 
                   label="Adresse Email" 
                   value={user.email} 
+                />
+                <InfoItem 
+                  icon={<Phone size={18} />} 
+                  label="Téléphone" 
+                  value={phoneNumber} 
                 />
                 <InfoItem 
                   icon={<Shield size={18} />} 
@@ -101,7 +107,7 @@ export default function AccountPage({ user, setUser }: AccountPageProps) {
             </div>
           </div>
 
-          {/* SECTION INFO SÉCURITÉ (Bonus Design) */}
+          {/* SECTION INFO SÉCURITÉ */}
           <div className="bg-brand-primary/5 rounded-[1.5rem] p-6 border border-brand-primary/10 flex items-start gap-4">
             <div className="p-3 bg-white rounded-xl shadow-sm text-brand-primary">
               <Shield size={20} />
@@ -129,7 +135,7 @@ function InfoItem({ icon, label, value, highlight }: { icon: any, label: string,
       </div>
       <div>
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{label}</p>
-        <p className={`font-bold ${highlight ? 'text-brand-primary' : 'text-brand-dark'}`}>
+        <p className={`font-bold ${highlight ? 'text-brand-primary uppercase' : 'text-brand-dark'}`}>
           {value}
         </p>
       </div>

@@ -11,7 +11,8 @@ import {
   Settings, 
   Package, 
   LayoutDashboard,
-  Store
+  Store,
+  PhoneCall // Ajouté pour le menu contact
 } from 'lucide-react'
 
 // --- IMPORT DU COMPOSANT EXTERNE ---
@@ -81,31 +82,34 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 py-3 lg:px-6 transition-all">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           
-          {/* LOGO PRIX CASSÉ / FESTISOLDE */}
+          {/* LOGO */}
           <Link to="/" className="flex items-center group">
             <div className="h-[95px] w-auto transition-all duration-300 group-hover:scale-105 active:scale-95">
               <img 
                 src="/logo-festisolde.png" 
-                alt="FestiSolde - Le festival de la liquidation" 
+                alt="FestiSolde" 
                 className="h-full w-full object-contain drop-shadow-sm"
               />
             </div>
           </Link>
 
-          {/* NAV DESKTOP */}
+          {/* NAV DESKTOP (AJOUT CONTACT) */}
           <nav className="hidden md:flex items-center gap-10">
-            {['Accueil', 'Boutique'].map((item) => {
-              const path = item === 'Accueil' ? '/' : '/products'
-              const isActive = location.pathname === path
+            {[
+              { label: 'Accueil', path: '/' },
+              { label: 'Boutique', path: '/products' },
+              { label: 'Contact', path: '/contact' } // <-- NOUVEAU LIEN
+            ].map((item) => {
+              const isActive = location.pathname === item.path
               return (
                 <Link 
-                  key={item}
-                  to={path} 
+                  key={item.label}
+                  to={item.path} 
                   className={`text-[11px] font-black uppercase tracking-[0.2em] relative group py-2 ${
                     isActive ? 'text-brand-primary' : 'text-brand-dark hover:text-brand-primary'
                   }`}
                 >
-                  {item}
+                  {item.label}
                   <span className={`absolute bottom-0 left-0 w-full h-0.5 bg-brand-primary transition-transform duration-300 origin-left ${
                     isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
                   }`} />
@@ -145,18 +149,13 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
                   <ChevronDown size={14} className={`text-slate-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* DROPDOWN MENU */}
+                {/* DROPDOWN MENU CLIENT */}
                 {userMenuOpen && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
                     <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-slate-100 py-3 z-20 animate-in fade-in slide-in-from-top-2">
                       <div className="px-6 py-4 border-b border-slate-50 mb-2 text-left">
-                        <div className="flex items-center justify-between mb-1">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mon Compte</p>
-                            {isAdmin && (
-                              <span className="bg-amber-100 text-amber-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">Admin</span>
-                            )}
-                        </div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mon Compte</p>
                         <p className="text-sm font-bold text-brand-dark truncate">{user.email}</p>
                       </div>
 
@@ -169,7 +168,6 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
                             primary 
                           />
                         )}
-
                         <MenuLink to="/account" icon={<UserIcon size={18} />} label="Mon Profil" />
                         <MenuLink to="/orders" icon={<Package size={18} />} label="Mes commandes" />
                         
@@ -205,11 +203,14 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
           </div>
         </div>
 
-        {/* MOBILE NAV OVERLAY */}
+        {/* MOBILE NAV OVERLAY (AJOUT CONTACT) */}
         {menuOpen && (
           <nav className="md:hidden absolute top-full left-0 w-full bg-white border-t border-slate-100 p-8 flex flex-col gap-5 shadow-2xl animate-in slide-in-from-top-5 text-left">
             <Link to="/" className="text-3xl font-black text-brand-dark">Accueil</Link>
             <Link to="/products" className="text-3xl font-black text-brand-dark">Boutique</Link>
+            <Link to="/contact" className="text-3xl font-black text-brand-primary flex items-center gap-3">
+               Contact
+            </Link>
             
             {user && (
               <>
