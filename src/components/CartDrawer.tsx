@@ -1,4 +1,4 @@
-import { X, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react'
+import { X, Plus, Minus, ShoppingBag, ArrowRight, Zap, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 interface CartDrawerProps {
@@ -12,7 +12,6 @@ interface CartDrawerProps {
 export default function CartDrawer({ isOpen, onClose, cart, setCart, total }: CartDrawerProps) {
   const navigate = useNavigate()
 
-  // Mise à jour de la quantité + sauvegarde locale
   const updateQuantity = (id: string, delta: number) => {
     const newCart = cart.map(item => 
       item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
@@ -21,7 +20,6 @@ export default function CartDrawer({ isOpen, onClose, cart, setCart, total }: Ca
     localStorage.setItem('festi_cart', JSON.stringify(newCart))
   }
 
-  // Suppression + sauvegarde locale
   const removeItem = (id: string) => {
     const newCart = cart.filter(item => item.id !== id)
     setCart(newCart)
@@ -32,86 +30,102 @@ export default function CartDrawer({ isOpen, onClose, cart, setCart, total }: Ca
 
   return (
     <div className="fixed inset-0 z-[100] flex justify-end">
-      {/* Overlay avec flou */}
+      {/* Overlay fluide */}
       <div 
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300" 
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-all duration-500" 
         onClick={onClose} 
       />
       
-      {/* Panneau latéral */}
-      <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-500">
+      {/* Panneau latéral responsive */}
+      <div className="relative w-full sm:w-[440px] bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-500 ease-out">
         
-        {/* Header - Style Minimaliste & Noir */}
-        <div className="p-6 border-b border-gray-50 flex items-center justify-between">
+        {/* Header - Plus élégant */}
+        <div className="p-5 md:p-6 border-b border-slate-50 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gray-900 text-white rounded-xl">
-              <ShoppingBag size={20} />
+            <div className="p-2.5 bg-slate-900 text-white rounded-xl shadow-lg shadow-slate-200">
+              <ShoppingBag size={18} />
             </div>
-            <h2 className="text-2xl font-black tracking-tighter text-gray-900">Mon Panier</h2>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">Votre Panier</h2>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{cart.length} article{cart.length > 1 ? 's' : ''}</p>
+            </div>
           </div>
-          <button 
-            onClick={onClose} 
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
-          >
-            <X size={24} />
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-400 hover:rotate-90">
+            <X size={22} />
           </button>
         </div>
 
-        {/* Liste des produits */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+        {/* Liste des produits - Responsive & Police Moyenne */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 custom-scrollbar bg-slate-50/30">
           {cart.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                <ShoppingBag size={32} className="text-gray-200" />
+            <div className="h-full flex flex-col items-center justify-center text-center p-10">
+              <div className="w-16 h-16 bg-white rounded-3xl shadow-sm flex items-center justify-center mb-4 border border-slate-50">
+                <ShoppingBag size={24} className="text-slate-200" />
               </div>
-              <p className="font-black text-gray-400 uppercase text-xs tracking-widest">Le panier est vide</p>
+              <p className="font-semibold text-slate-400 text-sm">Votre panier est encore vide</p>
+              <button onClick={onClose} className="mt-4 text-xs font-bold text-brand-primary uppercase tracking-widest">Continuer mes achats</button>
             </div>
           ) : (
             cart.map((item) => (
-              <div key={item.id} className="flex gap-4 p-2 rounded-2xl hover:bg-gray-50/50 transition-colors group">
-                {/* Vignette Image */}
-                <div className="w-24 h-24 bg-gray-100 rounded-2xl overflow-hidden shrink-0 border border-gray-100">
-                  <img 
-                    src={item.image_url || item.images?.[0] || 'https://via.placeholder.com/150'} 
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                    alt={item.title} 
-                  />
+              <div key={item.id} className="flex gap-4 p-3 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all group relative">
+                
+                {/* --- IMAGE / GRILLE PACK --- */}
+                <div className="w-20 h-20 md:w-24 md:h-24 shrink-0 overflow-hidden rounded-xl bg-slate-50">
+                  {item.isPack ? (
+                    <div className="grid grid-cols-2 w-full h-full gap-0.5">
+                      {item.items?.map((sub: any, idx: number) => (
+                        <img key={idx} src={sub.image} className="w-full h-full object-cover" alt="" />
+                      ))}
+                    </div>
+                  ) : (
+                    <img 
+                      src={item.image_url || item.image || item.images?.[0]} 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                      alt={item.title} 
+                    />
+                  )}
                 </div>
 
-                {/* Détails Produit */}
-                <div className="flex-1 flex flex-col justify-between py-1">
-                  <div>
+                {/* --- CONTENU --- */}
+                <div className="flex-1 flex flex-col justify-between">
+                  <div className="space-y-1">
                     <div className="flex justify-between items-start">
-                      <h4 className="font-black text-gray-900 text-sm line-clamp-1 pr-4 uppercase tracking-tight">
+                      <h4 className="font-bold text-slate-800 text-[14px] md:text-base leading-tight">
                         {item.title}
                       </h4>
-                      <button 
-                        onClick={() => removeItem(item.id)} 
-                        className="text-gray-300 hover:text-[#FF5A5A] transition-colors"
-                      >
-                        <X size={18} />
+                      <button onClick={() => removeItem(item.id)} className="text-slate-300 hover:text-rose-500 transition-colors p-1">
+                        <Trash2 size={16} />
                       </button>
                     </div>
-                    <p className="text-[#FF5A5A] font-black text-base mt-1">
-                      {(item.promo_price || item.price).toLocaleString()} F
-                    </p>
+
+                    {item.isPack ? (
+                      <div className="flex items-center gap-1.5 text-[9px] font-bold text-brand-primary bg-brand-primary/5 px-2 py-0.5 rounded-lg w-fit">
+                        <Zap size={10} fill="currentColor" /> LOOK PERSONNALISÉ
+                      </div>
+                    ) : (
+                      <p className="text-[11px] font-medium text-slate-400">
+                        {item.selectedColor} {item.selectedSize && `• ${item.selectedSize}`}
+                      </p>
+                    )}
                   </div>
-                  
-                  {/* Sélecteur de Quantité */}
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center bg-gray-100 rounded-xl p-1">
-                      <button 
-                        onClick={() => updateQuantity(item.id, -1)} 
-                        className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm hover:text-[#FF5A5A] transition-all active:scale-90"
-                      >
-                        <Minus size={14}/>
-                      </button>
-                      <span className="px-4 font-black text-sm text-gray-900">{item.quantity}</span>
-                      <button 
-                        onClick={() => updateQuantity(item.id, 1)} 
-                        className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm hover:text-[#FF5A5A] transition-all active:scale-90"
-                      >
-                        <Plus size={14}/></button>
+
+                  <div className="flex items-end justify-between mt-2">
+                    <div className="flex flex-col">
+                      <span className="text-brand-primary font-bold text-base">
+                        {(item.promo_price || item.price).toLocaleString()} F
+                      </span>
+                      {item.isPack && (
+                        <span className="text-[10px] text-slate-300 line-through">
+                          {item.price.toLocaleString()} F
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Quantité compacte */}
+                    <div className="flex items-center bg-slate-50 rounded-lg p-0.5 border border-slate-100">
+                      <button onClick={() => updateQuantity(item.id, -1)} className="w-6 h-6 flex items-center justify-center bg-white rounded-md shadow-sm text-slate-400 hover:text-rose-500 transition-all"><Minus size={12}/></button>
+                      <span className="px-3 font-bold text-[13px] text-slate-700">{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.id, 1)} className="w-6 h-6 flex items-center justify-center bg-white rounded-md shadow-sm text-slate-400 hover:text-emerald-500 transition-all"><Plus size={12}/></button>
                     </div>
                   </div>
                 </div>
@@ -120,28 +134,28 @@ export default function CartDrawer({ isOpen, onClose, cart, setCart, total }: Ca
           )}
         </div>
 
-        {/* Footer avec Total & CTA */}
+        {/* Footer - Épuré */}
         {cart.length > 0 && (
-          <div className="p-8 border-t border-gray-100 bg-white shadow-[0_-10px_40px_rgba(0,0,0,0,02)]">
-            <div className="flex justify-between items-end mb-8">
-              <div>
-                <p className="text-gray-400 font-black uppercase text-[10px] tracking-[0.2em] mb-1">Total à payer</p>
-                <p className="text-4xl font-black text-gray-900 tracking-tighter">
-                  {total.toLocaleString()} <span className="text-lg">F</span>
-                </p>
-              </div>
+          <div className="p-6 md:p-8 bg-white border-t border-slate-50">
+            <div className="flex justify-between items-center mb-6">
+              <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Sous-total</span>
+              <span className="text-2xl font-bold text-slate-900 tracking-tight">{total.toLocaleString()} F</span>
             </div>
             
             <button 
               onClick={() => { onClose(); navigate('/checkout'); }}
-              className="w-full bg-gradient-to-r from-[#FF5A5A] to-[#FF7B7B] text-white py-6 rounded-[2rem] font-black text-lg shadow-xl shadow-rose-100 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4"
+              className="w-full bg-slate-900 text-white py-4 md:py-5 rounded-2xl font-bold text-[15px] shadow-xl shadow-slate-200 hover:bg-brand-primary transition-all flex items-center justify-center gap-3 group"
             >
-              Commander maintenant <ArrowRight size={22} />
+              Passer à la commande
+              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </button>
             
-            <p className="text-center mt-4 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-              Livraison rapide en 24h/48h
-            </p>
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
+                Livraison express sécurisée au Burkina
+              </p>
+            </div>
           </div>
         )}
       </div>
