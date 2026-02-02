@@ -14,7 +14,7 @@ import Checkout from './pages/Checkout/Checkout'
 import OrderSuccess from './pages/Checkout/OrderSuccess'
 import VendorLanding from './pages/Vendor/VendorLanding'
 import Contact from './pages/Contact'
-import PackCreator from './pages/home/components/PackCreator' // <-- IMPORT AJOUTÉ
+import PackCreator from './pages/Home/components/PackCreator' // <-- IMPORT AJOUTÉ
 
 // --- PAGES VENDEURS ---
 import VendorDashboard from './pages/Vendor/Dashboard'
