@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { ShoppingCart, ChevronLeft, ChevronRight, Sparkles, ArrowRight } from 'lucide-react'
-import { useNavigate, Link } from 'react-router-dom' // Ajout de Link
+import { 
+  ShoppingCart, 
+  ChevronLeft, 
+  ChevronRight, 
+  Sparkles, 
+  ArrowRight, 
+  Wand2, 
+  Layers 
+} from 'lucide-react'
+import { useNavigate, Link } from 'react-router-dom'
 
 export default function PackeoSection() {
   const [packs, setPacks] = useState([])
@@ -21,7 +29,7 @@ export default function PackeoSection() {
 
         if (error) throw error
         setPacks(data || [])
-      } catch (error) {
+      } catch (error: any) {
         console.error('Erreur:', error.message)
       } finally {
         setLoading(false)
@@ -41,7 +49,7 @@ export default function PackeoSection() {
     return () => clearInterval(interval)
   }, [currentIndex, isPaused, packs.length])
 
-  const formatPrice = (p) => new Intl.NumberFormat('fr-FR').format(p) + ' F'
+  const formatPrice = (p: number) => new Intl.NumberFormat('fr-FR').format(p) + ' F'
 
   if (loading || packs.length === 0) return null 
 
@@ -78,9 +86,9 @@ export default function PackeoSection() {
           </div>
         </div>
 
-        {/* CARROUSEL */}
+        {/* CARROUSEL EXISTANT */}
         <div 
-          className="relative overflow-hidden"
+          className="relative overflow-hidden mb-10"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
@@ -88,7 +96,7 @@ export default function PackeoSection() {
             className="flex transition-transform duration-700 ease-in-out"
             style={{ transform: `translateX(-${currentIndex * (window.innerWidth >= 1024 ? 50 : 100)}%)` }}
           >
-            {packs.map((pack) => (
+            {packs.map((pack: any) => (
               <div key={pack.id} className="w-full lg:w-1/2 flex-shrink-0 px-2">
                 <div className="flex items-center gap-4 p-3 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all group">
                   
@@ -134,6 +142,37 @@ export default function PackeoSection() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* --- NOUVELLE BANNIÈRE : ATELIER DE COMPOSITION --- */}
+        <div 
+          onClick={() => navigate('/pack-creator')}
+          className="relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-brand-primary/10 via-brand-primary/5 to-transparent border-2 border-brand-primary/20 p-6 md:p-8 cursor-pointer group hover:border-brand-primary/50 transition-all active:scale-[0.99]"
+        >
+          {/* Déco en arrière-plan */}
+          <div className="absolute right-0 top-0 h-full w-1/3 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
+            <Layers size={140} className="translate-x-12 translate-y-4 -rotate-12" />
+          </div>
+          
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+            <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+              <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/20 group-hover:rotate-12 transition-transform duration-500">
+                <Wand2 size={30} className="text-brand-dark" strokeWidth={2.5} />
+              </div>
+              <div>
+                <h3 className="text-xl md:text-2xl font-black uppercase italic leading-none">
+                  Compose ton propre <span className="text-brand-primary text-2xl md:text-3xl">Pack</span>
+                </h3>
+                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-2 flex items-center justify-center md:justify-start gap-2">
+                  Mélange 3 articles <ArrowRight size={10} /> <span className="text-white">-15% de remise</span>
+                </p>
+              </div>
+            </div>
+            
+            <button className="px-10 py-4 bg-brand-primary text-brand-dark rounded-xl font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-brand-primary/10 group-hover:bg-white transition-colors">
+              Lancer l'atelier
+            </button>
           </div>
         </div>
 

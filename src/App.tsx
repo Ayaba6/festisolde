@@ -14,6 +14,7 @@ import Checkout from './pages/Checkout/Checkout'
 import OrderSuccess from './pages/Checkout/OrderSuccess'
 import VendorLanding from './pages/Vendor/VendorLanding'
 import Contact from './pages/Contact'
+import PackCreator from './pages/home/components/PackCreator' // <-- IMPORT AJOUTÉ
 
 // --- PAGES VENDEURS ---
 import VendorDashboard from './pages/Vendor/Dashboard'
@@ -33,7 +34,7 @@ import CartDrawer from './components/CartDrawer'
 import ProtectedRoute from './components/ProtectedRoute'
 import VendorRoute from './components/VendorRoute'
 import AuthRedirect from './components/AuthRedirect' 
-import ScrollToTop from './components/ScrollToTop' // <-- IMPORT AJOUTÉ
+import ScrollToTop from './components/ScrollToTop'
 
 /**
  * COMPOSANT DE PROTECTION ADMIN
@@ -131,10 +132,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50/50 font-sans">
-      {/* FORCE LE SCROLL EN HAUT À CHAQUE CHANGEMENT DE PAGE */}
       <ScrollToTop />
 
-      {/* HEADER */}
       <Header 
         user={user} 
         setUser={setUser} 
@@ -142,7 +141,6 @@ export default function App() {
         onOpenCart={() => setIsCartOpen(true)} 
       />
       
-      {/* PANIER LATÉRAL (DRAWER) */}
       <CartDrawer 
         isOpen={isCartOpen} 
         onClose={() => setIsCartOpen(false)}
@@ -161,6 +159,9 @@ export default function App() {
           <Route path="/order-success" element={<OrderSuccess />} />
           <Route path="/vendre" element={<VendorLanding />} />
           <Route path="/contact" element={<Contact />} />
+          
+          {/* NOUVELLE ROUTE : ATELIER PACKEO */}
+          <Route path="/pack-creator" element={<PackCreator />} />
 
           {/* AUTHENTIFICATION */}
           <Route path="/auth/login" element={user ? <AuthRedirect user={user} /> : <Login setUser={setUser} />} />

@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
-import { Search, Plus, Star, SlidersHorizontal, Package, Check, Sparkles } from 'lucide-react'
-import { Link, useSearchParams } from 'react-router-dom' // Ajout de useSearchParams
+import { Search, Plus, Star, SlidersHorizontal, Package, Check, Sparkles, Tag } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router-dom'
 import ProductCardSkeleton from './ProductCardSkeleton'
-
-const CATEGORIES = ['Tous', 'Packeo', 'Électronique', 'Mode & Beauté', 'Maison & Déco', 'Alimentation', 'Santé', 'Sport', 'Autres']
 
 interface Product {
   id: string; title: string; price: number; promo_price?: number;
   images: string[]; category: string; stock: number;
   is_featured?: boolean; shop_id: string; description?: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
 }
 
 interface ShopProps {
@@ -18,21 +22,43 @@ interface ShopProps {
 
 export default function Shop({ cart, setCart }: ShopProps) {
   const [products, setProducts] = useState<Product[]>([])
+  const [dbCategories, setDbCategories] = useState<string[]>(['Tous']) // Initialisé avec 'Tous'
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('recent')
   
-  // 1. Récupération des paramètres de l'URL
   const [searchParams, setSearchParams] = useSearchParams()
   const categoryFromUrl = searchParams.get('category')
-
-  // 2. Initialisation de la catégorie (URL prioritaire sur 'Tous')
   const [selectedCategory, setSelectedCategory] = useState(categoryFromUrl || 'Tous')
 
-  // 3. Effet pour synchroniser la catégorie si l'URL change (ex: clic sur logo/menu)
+  // 1. Charger les catégories depuis la base de données
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('name')
+        .order('name', { ascending: true })
+      
+      if (error) throw error
+      if (data) {
+        // On combine 'Tous' avec les noms des catégories récupérées
+        const names = data.map(c => c.name)
+        setDbCategories(['Tous', ...names])
+      }
+    } catch (err) {
+      console.error("Erreur chargement catégories:", err)
+    }
+  }
+
+  useEffect(() => {
+    fetchCategories()
+  }, [])
+
   useEffect(() => {
     if (categoryFromUrl) {
       setSelectedCategory(categoryFromUrl)
+    } else {
+      setSelectedCategory('Tous')
     }
   }, [categoryFromUrl])
 
@@ -63,13 +89,12 @@ export default function Shop({ cart, setCart }: ShopProps) {
     }
   }
 
-  // Fonction pour changer de catégorie et mettre à jour l'URL proprement
   const handleCategoryChange = (cat: string) => {
     setSelectedCategory(cat)
     if (cat === 'Tous') {
-      setSearchParams({}) // On nettoie l'URL
+      setSearchParams({}) 
     } else {
-      setSearchParams({ category: cat }) // On met la catégorie dans l'URL
+      setSearchParams({ category: cat })
     }
   }
 
@@ -130,15 +155,16 @@ export default function Shop({ cart, setCart }: ShopProps) {
             </div>
           </div>
 
+          {/* LIGNE DES CATÉGORIES DYNAMIQUE */}
           <div className="flex items-center gap-2 overflow-x-auto pt-4 pb-1 scrollbar-hide">
-            {CATEGORIES.map(cat => (
+            {dbCategories.map(cat => (
               <button
                 key={cat}
                 onClick={() => handleCategoryChange(cat)}
                 className={`whitespace-nowrap px-5 py-2 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all ${
                   selectedCategory === cat 
                   ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20 scale-105' 
-                  : 'bg-white text-gray-400 border border-gray-100 hover:text-brand-primary'
+                  : 'bg-white text-gray-400 border border-gray-100 hover:text-brand-primary hover:border-brand-primary/20'
                 }`}
               >
                 {cat}

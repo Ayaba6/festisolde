@@ -3,16 +3,17 @@ import { supabase } from '../../lib/supabaseClient'
 import { 
   LayoutDashboard, Store, Package, BarChart3, 
   ShoppingCart, Search, LogOut, Menu, X, 
-  CheckCircle2, AlertCircle, TrendingUp, Clock
+  CheckCircle2, TrendingUp, Clock, Tag 
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import AdminShops from './AdminShops'
 import AdminProducts from './AdminProducts'
-import AdminOrders from './AdminOrders' // <--- 1. IMPORT DE L'ONGLET COMMANDES
+import AdminOrders from './AdminOrders'
+import AdminCategories from './AdminCategories' // Importation du nouvel onglet
 
 export default function AdminGeneral() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'shops' | 'products' | 'orders'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'shops' | 'products' | 'orders' | 'categories'>('overview')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [stats, setStats] = useState({ 
@@ -24,7 +25,7 @@ export default function AdminGeneral() {
     pendingApprovals: [] as any[]
   })
 
-  // 2. RÉCUPÉRATION DES STATS (Inchangée mais essentielle)
+  // RÉCUPÉRATION DES STATS
   const fetchAdminStats = async () => {
     try {
       const { count: pCount } = await supabase.from('products').select('*', { count: 'exact', head: true })
@@ -61,7 +62,7 @@ export default function AdminGeneral() {
 
   useEffect(() => {
     fetchAdminStats()
-  }, [activeTab]) // On rafraîchit les compteurs quand on change d'onglet
+  }, [activeTab])
 
   const handleTabChange = (tab: any) => {
     setActiveTab(tab)
@@ -90,6 +91,7 @@ export default function AdminGeneral() {
           <NavItem icon={<LayoutDashboard size={20}/>} label="Dashboard" active={activeTab === 'overview'} onClick={() => handleTabChange('overview')} />
           <NavItem icon={<Store size={20}/>} label="Vendeurs" count={stats.shopsCount} active={activeTab === 'shops'} onClick={() => handleTabChange('shops')} />
           <NavItem icon={<Package size={20}/>} label="Produits" count={stats.productsCount} active={activeTab === 'products'} onClick={() => handleTabChange('products')} />
+          <NavItem icon={<Tag size={20}/>} label="Catégories" active={activeTab === 'categories'} onClick={() => handleTabChange('categories')} />
           <NavItem icon={<ShoppingCart size={20}/>} label="Commandes" count={stats.ordersCount} active={activeTab === 'orders'} onClick={() => handleTabChange('orders')} />
         </nav>
 
@@ -127,28 +129,29 @@ export default function AdminGeneral() {
                />
             </div>
             <div className="flex items-center gap-3 bg-white p-1.5 pr-4 rounded-2xl border border-gray-100 shadow-sm">
-               <div className="w-9 h-9 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center font-black text-xs italic shadow-inner">A</div>
-               <div className="hidden sm:block text-left leading-none">
+                <div className="w-9 h-9 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center font-black text-xs italic shadow-inner">A</div>
+                <div className="hidden sm:block text-left leading-none">
                   <p className="text-[10px] font-black text-gray-900">Directeur</p>
                   <p className="text-[8px] font-bold text-emerald-500 uppercase tracking-tighter">Connecté</p>
-               </div>
+                </div>
             </div>
           </div>
         </header>
 
         <div className="px-6 lg:px-10 pb-10">
-          {/* 3. CONDITION D'AFFICHAGE DES SECTIONS */}
           {activeTab === 'overview' && <OverviewSection stats={stats} setActiveTab={handleTabChange} />}
           {activeTab === 'shops' && <AdminShops />}
           {activeTab === 'products' && <AdminProducts />}
-          {activeTab === 'orders' && <AdminOrders />} {/* <--- AFFICHAGE DES COMMANDES */}
+          {activeTab === 'orders' && <AdminOrders />}
+          {activeTab === 'categories' && <AdminCategories />}
         </div>
       </main>
     </div>
   )
 }
 
-// --- SOUS-COMPOSANTS (Overview, NavItem, StatCard, ApprovalItem identiques à ton code) ---
+// --- SOUS-COMPOSANTS ---
+
 function OverviewSection({ stats, setActiveTab }: { stats: any, setActiveTab: any }) {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -210,7 +213,6 @@ function OverviewSection({ stats, setActiveTab }: { stats: any, setActiveTab: an
   )
 }
 
-// Fonction NavItem
 function NavItem({ icon, label, active, onClick, count }: any) {
   return (
     <button onClick={onClick} className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl transition-all font-black text-[11px] uppercase tracking-widest ${active ? 'bg-[#8B5CF6] text-white shadow-xl shadow-purple-500/20 translate-x-2' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
@@ -220,7 +222,6 @@ function NavItem({ icon, label, active, onClick, count }: any) {
   )
 }
 
-// Fonction StatCard
 function StatCard({ title, value, trend, icon, color, bg }: any) {
   return (
     <div className="bg-white p-7 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
@@ -237,7 +238,6 @@ function StatCard({ title, value, trend, icon, color, bg }: any) {
   )
 }
 
-// Fonction ApprovalItem
 function ApprovalItem({ label, sub }: any) {
   return (
     <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
