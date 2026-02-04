@@ -113,13 +113,13 @@ export default function Footer() {
       {/* BARRE INFÉRIEURE */}
       <div className="border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row justify-between items-center gap-6 text-[11px] uppercase tracking-widest font-bold">
-          <p>© {currentYear} FestiSolde SARL. <span className="text-brand-primary">226 Power.</span></p>
+          <p>© {currentYear} FestiSolde  <span className="text-brand-primary">226 kodalink.</span></p>
           <div className="flex flex-wrap justify-center gap-8">
             <span className="flex items-center gap-2">
               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
               Plateforme Sécurisée
             </span>
-            <p className="text-white/40 italic font-medium text-[9px]">Propulsé par la technologie FestiSolde</p>
+            <p className="text-white/40 italic font-medium text-[9px]">Propulsé par KODALINK</p>
           </div>
         </div>
       </div>
