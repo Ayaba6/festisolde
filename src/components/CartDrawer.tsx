@@ -17,13 +17,13 @@ export default function CartDrawer({ isOpen, onClose, cart, setCart, total }: Ca
       item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
     )
     setCart(newCart)
-    localStorage.setItem('festi_cart', JSON.stringify(newCart))
+    localStorage.setItem('festi-cart', JSON.stringify(newCart))
   }
 
   const removeItem = (id: string) => {
     const newCart = cart.filter(item => item.id !== id)
     setCart(newCart)
-    localStorage.setItem('festi_cart', JSON.stringify(newCart))
+    localStorage.setItem('festi-cart', JSON.stringify(newCart))
   }
 
   if (!isOpen) return null
@@ -39,7 +39,7 @@ export default function CartDrawer({ isOpen, onClose, cart, setCart, total }: Ca
       {/* Panneau latéral responsive */}
       <div className="relative w-full sm:w-[440px] bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-500 ease-out">
         
-        {/* Header - Plus élégant */}
+        {/* Header */}
         <div className="p-5 md:p-6 border-b border-slate-50 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-slate-900 text-white rounded-xl shadow-lg shadow-slate-200">
@@ -55,7 +55,7 @@ export default function CartDrawer({ isOpen, onClose, cart, setCart, total }: Ca
           </button>
         </div>
 
-        {/* Liste des produits - Responsive & Police Moyenne */}
+        {/* Liste des produits */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 custom-scrollbar bg-slate-50/30">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-10">
@@ -69,7 +69,7 @@ export default function CartDrawer({ isOpen, onClose, cart, setCart, total }: Ca
             cart.map((item) => (
               <div key={item.id} className="flex gap-4 p-3 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all group relative">
                 
-                {/* --- IMAGE / GRILLE PACK --- */}
+                {/* IMAGE / PACK GRID */}
                 <div className="w-20 h-20 md:w-24 md:h-24 shrink-0 overflow-hidden rounded-xl bg-slate-50">
                   {item.isPack ? (
                     <div className="grid grid-cols-2 w-full h-full gap-0.5">
@@ -86,7 +86,7 @@ export default function CartDrawer({ isOpen, onClose, cart, setCart, total }: Ca
                   )}
                 </div>
 
-                {/* --- CONTENU --- */}
+                {/* CONTENU */}
                 <div className="flex-1 flex flex-col justify-between">
                   <div className="space-y-1">
                     <div className="flex justify-between items-start">
@@ -114,7 +114,7 @@ export default function CartDrawer({ isOpen, onClose, cart, setCart, total }: Ca
                       <span className="text-brand-primary font-bold text-base">
                         {(item.promo_price || item.price).toLocaleString()} F
                       </span>
-                      {item.isPack && (
+                      {item.promo_price && item.promo_price < item.price && (
                         <span className="text-[10px] text-slate-300 line-through">
                           {item.price.toLocaleString()} F
                         </span>
@@ -134,7 +134,7 @@ export default function CartDrawer({ isOpen, onClose, cart, setCart, total }: Ca
           )}
         </div>
 
-        {/* Footer - Épuré */}
+        {/* Footer */}
         {cart.length > 0 && (
           <div className="p-6 md:p-8 bg-white border-t border-slate-50">
             <div className="flex justify-between items-center mb-6">
@@ -152,8 +152,8 @@ export default function CartDrawer({ isOpen, onClose, cart, setCart, total }: Ca
             
             <div className="mt-4 flex items-center justify-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
-                Livraison express sécurisée au Burkina
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter text-center leading-relaxed">
+                Paiement Mobile Money Sécurisé (Burkina Faso)
               </p>
             </div>
           </div>

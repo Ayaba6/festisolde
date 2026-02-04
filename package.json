@@ -15,6 +15,7 @@
     "@supabase/supabase-js": "^2.90.1",
     "@tanstack/react-query": "^5.90.16",
     "canvas-confetti": "^1.9.4",
+    "fedapay": "^1.2.5",
     "framer-motion": "^12.25.0",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
