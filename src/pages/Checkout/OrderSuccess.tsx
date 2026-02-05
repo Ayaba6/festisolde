@@ -1,119 +1,142 @@
 import { useLocation, Link, useNavigate } from 'react-router-dom'
-import { CheckCircle2, MessageCircle, ShoppingBag, ExternalLink, Sparkles } from 'lucide-react'
+import { CheckCircle2, MessageCircle, Sparkles, MapPin, Calendar, Truck, Heart } from 'lucide-react'
 import { useEffect } from 'react'
 
 export default function OrderSuccess() {
   const { state } = useLocation()
   const navigate = useNavigate()
   
-  // Redirection si accès direct sans commande
   useEffect(() => {
+    // Si quelqu'un essaie d'accéder à /order-success sans données de commande
     if (!state) {
-      navigate('/')
+      const timer = setTimeout(() => navigate('/'), 3000)
+      return () => clearTimeout(timer)
     }
     window.scrollTo(0, 0)
   }, [state, navigate])
 
-  // --- CONFIGURATION MISE À JOUR ---
-  const VENDOR_WHATSAPP = "22670000000" // Ton numéro Burkina
+  const VENDOR_WHATSAPP = "22670189912" // Ton numéro corrigé
   const TOTAL = state?.total?.toLocaleString() || "0"
-  
-  // On récupère la méthode (FedaPay par défaut maintenant)
-  const METHOD = state?.method || "FedaPay (Mobile Money)"
-  
-  // On récupère l'ID de commande Supabase
-  const ORDER_ID = state?.orderId?.toString().slice(0, 8).toUpperCase() || "COMMANDE"
+  const ORDER_ID = state?.orderId?.toString().slice(0, 8).toUpperCase() || "SOLDE"
+  const METHOD = state?.method || 'FedaPay' // Récupère la méthode choisie (FedaPay ou Livraison)
+  const DATE = new Date().toLocaleDateString('fr-FR')
 
-  // Message WhatsApp mis à jour : plus besoin de demander la capture de force, 
-  // on dit juste qu'on a payé via FedaPay.
-  const message = `Bonjour FestiSolde ! 👋\n\nJe viens de finaliser ma commande sur le site.\n\n📝 Détails :\n- Référence : #${ORDER_ID}\n- Montant : ${TOTAL} F\n- Statut : Payé via FedaPay\n\nMerci de me confirmer la prise en charge pour la livraison !`
-  const whatsappUrl = `https://wa.me/${VENDOR_WHATSAPP}?text=${encodeURIComponent(message)}`
+  // --- LOGIQUE DU MESSAGE WHATSAPP ---
+  const getWhatsAppMessage = () => {
+    const isCOD = METHOD === 'Livraison'; // COD = Cash on Delivery
+    
+    let text = `Bonjour FestiSolde ! 👋\n\n`;
+    text += isCOD ? `🎁 NOUVELLE COMMANDE (À LIVRER)\n` : `✅ NOUVELLE COMMANDE PAYÉE\n`;
+    text += `--------------------------\n`;
+    text += `🆔 Référence : #${ORDER_ID}\n`;
+    text += `💰 Montant : ${TOTAL} F CFA\n`;
+    text += `📅 Date : ${DATE}\n`;
+    text += `📍 Méthode : ${isCOD ? 'Paiement à la livraison' : 'Payé par Mobile Money'}\n`;
+    text += `--------------------------\n`;
+    text += isCOD ? `Merci de me contacter pour la livraison !` : `Mon paiement est validé, merci de confirmer !`;
+    
+    return text;
+  }
+
+  const whatsappUrl = `https://wa.me/${VENDOR_WHATSAPP}?text=${encodeURIComponent(getWhatsAppMessage())}`
+
+  if (!state) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-400 font-black uppercase text-[10px] tracking-[0.3em]">Validation en cours...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-white py-12 px-6 flex flex-col items-center justify-center relative overflow-hidden">
-      
-      {/* Décoration de fond */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-50 rounded-full blur-[100px] opacity-50" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-rose-50 rounded-full blur-[100px] opacity-50" />
-
-      {/* Icône de succès animée */}
-      <div className="relative mb-12">
-        <div className="absolute inset-0 bg-emerald-100 rounded-[2.5rem] scale-[1.8] animate-pulse opacity-40" />
-        <div className="relative w-28 h-28 bg-emerald-500 text-white rounded-[2.5rem] flex items-center justify-center shadow-2xl shadow-emerald-200 -rotate-6 animate-in zoom-in duration-500">
+    <div className="min-h-screen bg-[#FDFCFD] py-16 px-6 flex flex-col items-center">
+      {/* Animation de succès */}
+      <div className="mb-10 relative">
+        <div className="w-28 h-28 bg-emerald-500 text-white rounded-[2.5rem] flex items-center justify-center shadow-[0_20px_50px_rgba(16,185,129,0.3)] animate-in zoom-in duration-500">
           <CheckCircle2 size={56} strokeWidth={2.5} />
         </div>
-        <div className="absolute -top-2 -right-2 bg-white p-2 rounded-xl shadow-lg animate-bounce">
-          <Sparkles size={20} className="text-amber-400" />
-        </div>
+        <Sparkles className="absolute -top-4 -right-4 text-amber-400 animate-pulse" size={32} />
+        <Heart className="absolute -bottom-2 -left-6 text-rose-400 animate-bounce" size={24} fill="currentColor" />
       </div>
-      
-      <div className="text-center max-w-sm mb-12 relative z-10">
-        <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-4 tracking-tighter italic">
-          Succès !
+
+      <div className="text-center mb-10">
+        <h1 className="text-4xl font-black text-gray-900 mb-3 tracking-tighter italic">
+          {METHOD === 'Livraison' ? 'Commande Reçue !' : 'Paiement Réussi !'}
         </h1>
-        <p className="text-gray-500 text-sm font-bold leading-relaxed px-4">
-          Votre commande <span className="text-gray-900 font-black">#{ORDER_ID}</span> a été reçue. Notre équipe prépare déjà vos articles !
+        <p className="text-gray-500 text-sm font-bold uppercase tracking-widest">
+          Votre cadeau de Saint-Valentin arrive bientôt 🌹
         </p>
       </div>
 
-      {/* Carte Ticket */}
-      <div className="w-full max-w-sm bg-white rounded-[3rem] border border-gray-100 p-8 mb-10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] relative overflow-hidden group">
-        <div className="relative z-10 text-center">
-          <div className="inline-block bg-emerald-50 px-4 py-1.5 rounded-full mb-4 border border-emerald-100">
-             <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em]">Paiement Confirmé</p>
+      <div className="w-full max-w-md bg-white rounded-[3rem] shadow-[0_30px_100px_rgba(0,0,0,0.05)] overflow-hidden border border-gray-50">
+        {/* Header Reçu */}
+        <div className="bg-slate-900 p-7 text-white flex justify-between items-center">
+          <div className="flex flex-col">
+            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">Référence Commande</span>
+            <span className="text-lg font-black tracking-tighter">#{ORDER_ID}</span>
           </div>
-          
-          <div className="flex flex-col items-center mb-10">
-            <p className="text-6xl font-black text-gray-900 tracking-tighter">
-              {TOTAL} <span className="text-xl font-bold text-gray-400">F</span>
-            </p>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2">
-               Transaction via {METHOD}
-            </p>
+          <div className="bg-white/10 px-4 py-2 rounded-xl backdrop-blur-md">
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Validé</span>
           </div>
-          
-          <div className="space-y-4">
-            <a 
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full bg-[#25D366] text-white py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-[#1eb957] active:scale-95 transition-all shadow-xl shadow-green-200"
-            >
-              <MessageCircle size={22} fill="currentColor" />
-              Suivre sur WhatsApp
-            </a>
-            
-            <Link 
-              to="/" 
-              className="w-full bg-white text-gray-400 py-5 rounded-[1.8rem] border border-gray-100 font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-gray-50 transition-all"
-            >
-              <ShoppingBag size={16} />
-              Continuer le shopping
-            </Link>
-          </div>
-        </div>
-
-        <div className="absolute -bottom-10 -left-10 opacity-[0.03] text-gray-900 rotate-12">
-            <ExternalLink size={200} />
-        </div>
-      </div>
-
-      {/* Statut de livraison */}
-      <div className="flex flex-col items-center gap-6 relative z-10">
-        <div className="flex items-center gap-3 bg-white border border-gray-100 px-6 py-3 rounded-2xl shadow-sm">
-           <div className="relative flex">
-              <div className="w-3 h-3 bg-emerald-500 rounded-full" />
-              <div className="absolute inset-0 w-3 h-3 bg-emerald-500 rounded-full animate-ping" />
-           </div>
-           <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest">
-             Commande en cours de traitement
-           </span>
         </div>
         
-        <p className="text-[10px] text-gray-400 font-bold max-w-[240px] text-center uppercase leading-relaxed tracking-tighter">
-          Vous recevrez un appel de notre service logistique pour confirmer l'heure de livraison.
-        </p>
+        {/* Détails du reçu */}
+        <div className="p-8">
+          <div className="space-y-5 mb-10">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3 text-gray-400">
+                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center"><Calendar size={14} /></div>
+                <span className="text-xs font-black uppercase tracking-tighter">Date</span>
+              </div>
+              <span className="text-sm font-black text-gray-900">{DATE}</span>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3 text-gray-400">
+                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center"><MapPin size={14} /></div>
+                <span className="text-xs font-black uppercase tracking-tighter">Mode</span>
+              </div>
+              <span className="text-sm font-black text-rose-500 italic">
+                {METHOD === 'Livraison' ? 'Livraison Express' : 'Paiement Mobile'}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3 text-gray-400">
+                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center"><Truck size={14} /></div>
+                <span className="text-xs font-black uppercase tracking-tighter">Status</span>
+              </div>
+              <span className="text-xs font-black bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full uppercase tracking-widest">
+                Prêt
+              </span>
+            </div>
+          </div>
+
+          {/* Séparateur pointillé */}
+          <div className="border-t-2 border-dashed border-gray-100 pt-8 flex flex-col items-center">
+            <span className="text-gray-400 font-black uppercase text-[10px] tracking-[0.2em] mb-2">Montant Total</span>
+            <span className="text-5xl font-black text-gray-900 tracking-tighter">{TOTAL}<span className="text-xl ml-1 italic text-gray-400">F</span></span>
+          </div>
+        </div>
+
+        {/* Boutons d'action */}
+        <div className="p-8 pt-0 flex flex-col gap-4">
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" 
+             className="w-full bg-[#25D366] text-white py-6 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-3 shadow-xl shadow-green-100 hover:scale-[1.02] active:scale-[0.98] transition-all">
+            <MessageCircle size={22} fill="currentColor" />
+            Confirmer sur WhatsApp
+          </a>
+          
+          <Link to="/" className="w-full py-4 text-gray-400 font-black text-[10px] uppercase text-center hover:text-rose-500 transition-colors tracking-widest">
+            Continuer mes achats
+          </Link>
+        </div>
       </div>
+
+      <p className="mt-12 text-[10px] font-bold text-gray-300 uppercase tracking-[0.4em]">FestiSolde Marketplace</p>
     </div>
   )
 }

@@ -18,22 +18,22 @@ export default function ProductCardSkeleton() {
           <div className="h-3 w-16 bg-gray-100 rounded-md" />
         </div>
 
-        {/* Titre Placeholder (Deux lignes pour simuler le line-clamp-2) */}
+        {/* Titre Placeholder (Deux lignes simulant le nom du produit) */}
         <div className="space-y-2 mb-4 h-10">
           <div className="h-3.5 w-full bg-gray-100 rounded-full" />
           <div className="h-3.5 w-3/4 bg-gray-100 rounded-full" />
         </div>
 
-        {/* Bas de carte : Prix et Bouton Plus */}
+        {/* Bas de carte : Prix et Bouton */}
         <div className="mt-auto flex items-center justify-between">
           <div className="space-y-2">
-            {/* Simulation prix promo (optionnel) */}
+            {/* Simulation prix barré */}
             <div className="h-2.5 w-12 bg-gray-50 rounded-full" />
             {/* Prix principal */}
             <div className="h-6 w-28 bg-gray-200 rounded-xl" />
           </div>
 
-          {/* Bouton Action Placeholder */}
+          {/* Bouton Action rond/carré */}
           <div className="w-11 h-11 bg-gray-200 rounded-2xl" />
         </div>
       </div>

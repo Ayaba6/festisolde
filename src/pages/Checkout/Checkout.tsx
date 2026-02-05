@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useNavigate } from 'react-router-dom'
-import { Phone, User, MapPin, Send, ShoppingBag, ArrowLeft, Wallet, ShieldCheck, CreditCard } from 'lucide-react'
+import { Phone, User, MapPin, ArrowLeft, Truck, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function Checkout({ cart, total, clearCart }: any) {
@@ -9,7 +9,7 @@ export default function Checkout({ cart, total, clearCart }: any) {
   const [loading, setLoading] = useState(false)
   const [showPaymentStep, setShowPaymentStep] = useState(false)
   const [formData, setFormData] = useState({ name: '', phone: '', address: '' })
-
+  
   const handleInitialSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (cart.length === 0) return toast.error("Votre panier est vide")
@@ -20,9 +20,10 @@ export default function Checkout({ cart, total, clearCart }: any) {
   const handleFinalConfirm = async () => {
     setLoading(true)
     try {
+      // Nettoyage du numéro de téléphone
       const cleanPhone = formData.phone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
 
-      // 1. Enregistrement Supabase
+      // 1. Enregistrement de la commande principale
       const { data: createdOrders, error: orderError } = await supabase
         .from('orders')
         .insert([{
@@ -30,161 +31,174 @@ export default function Checkout({ cart, total, clearCart }: any) {
           customer_phone: cleanPhone,
           customer_address: formData.address,
           total_price: total,
-          payment_method: 'FedaPay',
+          payment_method: 'Paiement à la livraison',
           status: 'En attente'
         }])
         .select()
 
-      if (orderError) throw orderError
+      if (orderError) {
+        console.error("Erreur Table Orders:", orderError);
+        throw new Error("Impossible de créer la commande : " + orderError.message);
+      }
+
+      if (!createdOrders || createdOrders.length === 0) {
+        throw new Error("La commande n'a pas été retournée après insertion.");
+      }
+
       const order = createdOrders[0]
 
-      // --- 2. CONFIGURATION FEDAPAY EMBED ---
-      if (!(window as any).FedaPay) throw new Error("Service de paiement indisponible");
+      // 2. Préparation des articles avec sécurité sur les données
+      const orderItems = cart.map((item: any) => ({
+        order_id: order.id,
+        product_id: item.id,
+        shop_id: item.shop_id || null, // Évite l'erreur si shop_id est manquant
+        quantity: parseInt(item.quantity),
+        price: parseFloat(item.promo_price || item.price),
+        product_name: item.title || 'Produit sans nom'
+      }))
 
-      const oldBtn = document.getElementById('feda-btn');
-      if (oldBtn) oldBtn.remove();
+      // 3. Insertion des articles
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems)
 
-      const btn = document.createElement('button');
-      btn.id = 'feda-btn';
-      btn.className = 'fedapay-checkout-button';
-      btn.style.display = 'none';
+      if (itemsError) {
+        console.error("Erreur Table Order_Items:", itemsError);
+        // Optionnel : Supprimer la commande parente si les articles échouent
+        await supabase.from('orders').delete().eq('id', order.id);
+        throw new Error("Erreur articles : " + itemsError.message);
+      }
+
+      // 4. Succès et nettoyage
+      clearCart();
+      localStorage.removeItem('festi_cart');
       
-      Object.assign(btn.dataset, {
-        publicKey: 'pk_sandbox_szE7te3pd3XpstTKpoZUub4Y',
-        transactionAmount: total.toString(),
-        transactionCurrency: 'XOF',
-        transactionDescription: `Commande #${order.id.slice(0, 8)}`,
-        customerEmail: `${cleanPhone}@festisolde.bf`,
-        customerPhoneNumber: cleanPhone,
-        // FORCE LE BURKINA ICI
-  customerCountry: 'bf', 
-  
-  // CETTE LIGNE EST LA PLUS IMPORTANTE : 
-  // Elle retire tout ce qui n'est pas Orange ou Moov Burkina
-  paymentMethods: 'orange_money_bf, moov_money_bf' 
-});
-
-      document.body.appendChild(btn);
+      toast.success("Commande enregistrée avec succès !");
       
-      // Initialisation
-      (window as any).FedaPay.init('#feda-btn');
-
-      // Observateur de fermeture / succès
-      const checkStatus = setInterval(() => {
-        const widget = document.querySelector('.fedapay-container');
-        // Si le widget disparaît après avoir été affiché
-        if (loading && !widget && document.getElementById('feda-btn')) {
-           setTimeout(() => {
-             clearInterval(checkStatus);
-             clearCart();
-             localStorage.removeItem('festi-cart');
-             navigate('/order-success', { state: { orderId: order.id, total, method: 'FedaPay' } });
-           }, 1000);
-        }
-      }, 1500);
-
-      // Déclenchement automatique de l'affichage
-      setTimeout(() => btn.click(), 500);
+      // Redirection vers une page de succès (assure-toi que cette route existe)
+      navigate('/order-success', { 
+        state: { orderId: order.id, total, method: 'Livraison' } 
+      });
 
     } catch (err: any) {
-      toast.error(err.message);
-      setLoading(false);
+      console.error("Erreur globale Checkout:", err);
+      toast.error(err.message || "Une erreur est survenue lors de la confirmation");
+    } finally {
+      setLoading(false)
     }
   }
 
-  // Étape 2 : Écran de paiement intégré
-  if (showPaymentStep) {
-    return (
-      <div className="max-w-xl mx-auto px-6 py-12 animate-in fade-in duration-500">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full mb-4 border border-emerald-100">
-            <ShieldCheck size={14} />
-            <span className="text-[10px] font-black uppercase tracking-widest">Paiement Sécurisé</span>
-          </div>
-          <h2 className="text-3xl font-black text-gray-900 tracking-tighter">Finalisation</h2>
-        </div>
-
-        {/* Détails Commande Style Ticket */}
-        <div className="bg-gray-50 rounded-[2rem] p-6 mb-6 border border-dashed border-gray-200">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-gray-400 text-xs font-bold uppercase">Total à payer</span>
-            <span className="text-xl font-black text-gray-900">{total.toLocaleString()} F CFA</span>
-          </div>
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-400 font-medium">Client</span>
-            <span className="text-gray-900 font-bold truncate ml-4">{formData.name}</span>
-          </div>
-        </div>
-
-        {/* CONTENEUR EMBED FEDAPAY */}
-        <div className="relative min-h-[450px] bg-white rounded-[2.5rem] border-2 border-gray-100 shadow-2xl overflow-hidden transition-all">
-          {!loading ? (
-             <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
-                <div className="w-20 h-20 bg-brand-primary/10 text-brand-primary rounded-full flex items-center justify-center mb-6">
-                  <CreditCard size={32} />
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] py-12 text-slate-900">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="flex flex-col lg:flex-row gap-12 items-start">
+          
+          {/* GAUCHE : FORMULAIRE */}
+          <div className="flex-1 w-full">
+            {!showPaymentStep ? (
+              <div className="animate-in fade-in slide-in-from-left duration-500">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="p-3 bg-slate-900 text-white rounded-2xl shadow-lg">
+                    <Truck size={24} />
+                  </div>
+                  <h2 className="text-3xl font-black text-gray-900 tracking-tighter italic uppercase">Livraison</h2>
                 </div>
-                <h3 className="text-xl font-black mb-2">Prêt pour le paiement ?</h3>
-                <p className="text-gray-400 text-sm mb-8">Cliquez sur le bouton ci-dessous pour charger les options Orange et Moov Burkina.</p>
+
+                <form onSubmit={handleInitialSubmit} className="space-y-6">
+                  <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-5">
+                    <div className="relative">
+                      <User className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                      <input required className="w-full pl-16 pr-8 py-5 bg-gray-50 border-2 border-transparent focus:border-rose-100 focus:bg-white rounded-2xl font-bold transition-all outline-none" placeholder="Votre nom complet" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                    </div>
+                    <div className="relative">
+                      <Phone className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                      <input required type="tel" className="w-full pl-16 pr-8 py-5 bg-gray-50 border-2 border-transparent focus:border-rose-100 focus:bg-white rounded-2xl font-bold transition-all outline-none" placeholder="WhatsApp (ex: 70000000)" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                    </div>
+                    <div className="relative">
+                      <MapPin className="absolute left-6 top-6 text-gray-400" size={20} />
+                      <textarea required className="w-full pl-16 pr-8 py-6 bg-gray-50 border-2 border-transparent focus:border-rose-100 focus:bg-white rounded-2xl font-bold min-h-[140px] outline-none" placeholder="Adresse précise (Quartier, Rue, Repères...)" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+                    </div>
+                  </div>
+                  <button type="submit" className="w-full bg-slate-900 text-white py-6 rounded-3xl font-black uppercase tracking-widest shadow-xl hover:bg-rose-600 transition-all flex items-center justify-center gap-3">
+                    Continuer vers le paiement <ArrowLeft className="rotate-180" size={20}/>
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <div className="animate-in fade-in slide-in-from-right duration-500">
+                <button onClick={() => setShowPaymentStep(false)} className="flex items-center gap-2 text-gray-400 font-bold text-xs mb-6 uppercase tracking-widest">
+                  <ArrowLeft size={16} /> Retour aux infos
+                </button>
+                
+                <h2 className="text-3xl font-black text-gray-900 tracking-tighter mb-8 italic uppercase">Paiement</h2>
+
+                <div className="space-y-4 mb-8">
+                  <div className="p-6 rounded-[2rem] border-2 border-rose-500 bg-rose-50/50 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 rounded-xl bg-rose-500 text-white shadow-md"><Truck size={24} /></div>
+                      <div>
+                        <p className="font-black text-gray-900 uppercase text-sm">Paiement à la livraison</p>
+                        <p className="text-xs text-gray-500 font-bold italic">Réglez en espèces lors de la réception</p>
+                      </div>
+                    </div>
+                    <CheckCircle2 className="text-rose-500" />
+                  </div>
+                </div>
+
                 <button 
                   onClick={handleFinalConfirm}
-                  className="w-full bg-brand-primary text-white py-5 rounded-2xl font-black uppercase shadow-lg shadow-brand-primary/20 active:scale-95 transition-all"
+                  disabled={loading}
+                  className="w-full py-6 rounded-3xl font-black uppercase tracking-widest bg-rose-600 text-white shadow-xl shadow-rose-200 hover:bg-rose-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                 >
-                  Afficher les options
+                  {loading ? "Traitement de la commande..." : `Confirmer & Commander`}
                 </button>
-             </div>
-          ) : (
-            <div id="fedapay-embed-container" className="w-full h-full animate-in fade-in duration-1000">
-              {/* Le formulaire FedaPay va s'injecter ici */}
-              <div className="flex flex-col items-center justify-center py-20">
-                <div className="w-10 h-10 border-4 border-brand-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Chargement sécurisé...</p>
+              </div>
+            )}
+          </div>
+
+          {/* DROITE : RÉSUMÉ */}
+          <div className="w-full lg:w-[400px] sticky top-12">
+            <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
+              <h3 className="text-xl font-black text-gray-900 uppercase mb-6 italic tracking-tight">Résumé Panier</h3>
+              <div className="space-y-4 mb-8 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                {cart.map((item: any) => (
+                  <div key={item.id} className="flex gap-4 items-center">
+                    <div className="w-14 h-14 rounded-xl bg-gray-50 overflow-hidden shrink-0 border border-gray-100">
+                      <img src={Array.isArray(item.images) ? item.images[0] : (item.images || item.image_url)} className="w-full h-full object-cover" alt="" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-gray-800 text-[11px] line-clamp-1 uppercase leading-none mb-1">{item.title}</h4>
+                      <p className="font-black text-rose-500 text-[10px] tracking-tight">{item.quantity} × {(item.promo_price || item.price).toLocaleString()} F</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-4 pt-6 border-t border-dashed border-gray-200">
+                <div className="flex justify-between text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  <span>Sous-total</span>
+                  <span>{total.toLocaleString()} F</span>
+                </div>
+                
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="flex justify-between items-center text-[10px] font-black text-slate-600 uppercase mb-1">
+                        <span>Frais de Livraison</span>
+                        <span className="text-rose-600 italic">À calculer</span>
+                    </div>
+                    <p className="text-[9px] text-slate-400 font-bold leading-tight">
+                        * Le livreur vous communiquera le montant selon votre position exacte.
+                    </p>
+                </div>
+
+                <div className="flex justify-between items-end pt-2">
+                  <span className="text-sm font-black uppercase text-gray-900 italic">Total Final</span>
+                  <span className="text-3xl font-black text-gray-900 tracking-tighter leading-none">{total.toLocaleString()} F</span>
+                </div>
               </div>
             </div>
-          )}
-        </div>
-
-        <button 
-          onClick={() => setShowPaymentStep(false)}
-          className="w-full mt-8 py-4 text-gray-400 font-bold flex items-center justify-center gap-2 hover:text-gray-600 transition-colors"
-        >
-          <ArrowLeft size={16} /> Retour aux informations
-        </button>
-      </div>
-    )
-  }
-
-  // Étape 1 : Formulaire de livraison (Ton code précédent optimisé)
-  return (
-    <div className="max-w-4xl mx-auto px-6 py-12">
-      <div className="flex items-center gap-4 mb-10">
-        <div className="p-4 bg-brand-primary text-white rounded-2xl shadow-lg">
-          <ShoppingBag size={24} />
-        </div>
-        <div>
-          <h2 className="text-3xl font-black text-gray-900 tracking-tighter">Livraison</h2>
-          <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">Burkina Faso</p>
+          </div>
         </div>
       </div>
-
-      <form onSubmit={handleInitialSubmit} className="space-y-4">
-        <div className="bg-white p-4 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4">
-            <div className="relative">
-              <User className="absolute left-6 top-6 text-gray-400" size={18} />
-              <input required className="w-full pl-16 pr-8 py-6 bg-gray-50/50 rounded-2xl border-none font-bold text-gray-900" placeholder="Nom et Prénom" onChange={e => setFormData({...formData, name: e.target.value})} />
-            </div>
-            <div className="relative">
-              <Phone className="absolute left-6 top-6 text-gray-400" size={18} />
-              <input required type="tel" className="w-full pl-16 pr-8 py-6 bg-gray-50/50 rounded-2xl border-none font-bold text-gray-900" placeholder="WhatsApp (70...)" onChange={e => setFormData({...formData, phone: e.target.value})} />
-            </div>
-            <div className="relative">
-              <MapPin className="absolute left-6 top-6 text-gray-400" size={18} />
-              <textarea required className="w-full pl-16 pr-8 py-6 bg-gray-50/50 rounded-2xl border-none font-bold text-gray-900 min-h-[120px] resize-none" placeholder="Adresse précise (Ville, Quartier, Rue...)" onChange={e => setFormData({...formData, address: e.target.value})} />
-            </div>
-        </div>
-        <button className="w-full bg-brand-primary text-white py-6 rounded-[2rem] font-black uppercase flex items-center justify-center gap-3 shadow-2xl hover:bg-brand-primary/90 transition-all">
-          Étape suivante <Send size={20}/>
-        </button>
-      </form>
     </div>
   )
 }

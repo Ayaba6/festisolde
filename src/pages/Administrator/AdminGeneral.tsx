@@ -3,14 +3,14 @@ import { supabase } from '../../lib/supabaseClient'
 import { 
   LayoutDashboard, Store, Package, BarChart3, 
   ShoppingCart, Search, LogOut, Menu, X, 
-  CheckCircle2, TrendingUp, Clock, Tag 
+  CheckCircle2, TrendingUp, Clock, Tag, AlertCircle 
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import AdminShops from './AdminShops'
 import AdminProducts from './AdminProducts'
 import AdminOrders from './AdminOrders'
-import AdminCategories from './AdminCategories' // Importation du nouvel onglet
+import AdminCategories from './AdminCategories'
 
 export default function AdminGeneral() {
   const [activeTab, setActiveTab] = useState<'overview' | 'shops' | 'products' | 'orders' | 'categories'>('overview')
@@ -22,19 +22,39 @@ export default function AdminGeneral() {
     productsCount: 0, 
     ordersCount: 0,
     recentShops: [] as any[],
-    pendingApprovals: [] as any[]
+    pendingApprovals: [] as any[],
+    lowStockProducts: [] as any[]
   })
 
-  // RÉCUPÉRATION DES STATS
+  // RÉCUPÉRATION DES STATS SÉCURISÉE (CORRIGÉE)
   const fetchAdminStats = async () => {
     try {
+      // 1. Comptes rapides
       const { count: pCount } = await supabase.from('products').select('*', { count: 'exact', head: true })
       const { count: sCount } = await supabase.from('shops').select('*', { count: 'exact', head: true })
       const { count: oCount } = await supabase.from('orders').select('*', { count: 'exact', head: true })
 
-      const { data: ordersData } = await supabase.from('orders').select('total_price')
+      // 2. Revenu
+      const { data: ordersData } = await supabase
+        .from('orders')
+        .select('total_price')
+        .neq('status', 'Annulée')
+
       const totalRev = ordersData?.reduce((acc, curr) => acc + (Number(curr.total_price) || 0), 0) || 0
 
+      // 3. CORRECTION ERREUR 400 : Utilisation de 'title' au lieu de 'name'
+      const { data: allProducts } = await supabase
+        .from('products')
+        .select('title, stock')
+
+      const lowStock = allProducts 
+        ? allProducts
+            .filter(p => p.stock !== null && Number(p.stock) <= 5)
+            .sort((a, b) => Number(a.stock) - Number(b.stock))
+            .slice(0, 3)
+        : []
+
+      // 4. Données annexes
       const { data: recentShopsData } = await supabase
         .from('shops')
         .select('*, profiles(full_name)')
@@ -53,10 +73,11 @@ export default function AdminGeneral() {
         productsCount: pCount || 0,
         ordersCount: oCount || 0,
         recentShops: recentShopsData || [],
-        pendingApprovals: pending || []
+        pendingApprovals: pending || [],
+        lowStockProducts: lowStock
       })
     } catch (err) {
-      console.error("Erreur stats:", err)
+      console.error("Erreur stats critique:", err)
     }
   }
 
@@ -150,13 +171,11 @@ export default function AdminGeneral() {
   )
 }
 
-// --- SOUS-COMPOSANTS ---
-
 function OverviewSection({ stats, setActiveTab }: { stats: any, setActiveTab: any }) {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-        <StatCard title="Revenus Générés" value={`${stats.totalRevenue.toLocaleString()} F`} trend="+12.5%" icon={<BarChart3 />} color="text-purple-600" bg="bg-purple-50" />
+        <StatCard title="Revenus Générés" value={`${stats.totalRevenue.toLocaleString()} F`} trend="Brut" icon={<BarChart3 />} color="text-purple-600" bg="bg-purple-50" />
         <StatCard title="Partenaires" value={stats.shopsCount} trend={`+${stats.recentShops.length}`} icon={<Store />} color="text-orange-600" bg="bg-orange-50" />
         <StatCard title="Catalogue" value={stats.productsCount} trend="Live" icon={<Package />} color="text-emerald-600" bg="bg-emerald-50" />
         <StatCard title="Ventes Totales" value={stats.ordersCount} trend="Total" icon={<ShoppingCart />} color="text-blue-600" bg="bg-blue-50" />
@@ -164,6 +183,18 @@ function OverviewSection({ stats, setActiveTab }: { stats: any, setActiveTab: an
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2 bg-white rounded-[2.5rem] p-6 lg:p-8 shadow-sm border border-gray-100">
+          {stats.lowStockProducts.length > 0 && (
+            <div className="mb-8 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="text-rose-500" size={20} />
+                <p className="text-[10px] font-black text-rose-900 uppercase tracking-widest">
+                  Alerte : {stats.lowStockProducts.length} produits en rupture ou presque
+                </p>
+              </div>
+              <button onClick={() => setActiveTab('products')} className="text-[9px] font-black bg-rose-500 text-white px-3 py-1 rounded-lg uppercase">Gérer</button>
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-lg font-black text-gray-900 italic tracking-tighter uppercase">Nouveaux <span className="text-purple-600">Vendeurs</span></h3>
             <button onClick={() => setActiveTab('shops')} className="text-[10px] font-black text-purple-600 uppercase tracking-widest hover:underline">Voir tout</button>
@@ -192,20 +223,37 @@ function OverviewSection({ stats, setActiveTab }: { stats: any, setActiveTab: an
           </div>
         </div>
 
-        <div className="bg-white rounded-[2.5rem] p-6 lg:p-8 shadow-sm border border-gray-100">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="p-2 bg-amber-50 text-amber-500 rounded-lg"><Clock size={18}/></div>
-            <h3 className="text-lg font-black text-gray-900 italic tracking-tighter uppercase">En <span className="text-amber-500">Attente</span></h3>
+        <div className="space-y-6">
+          <div className="bg-white rounded-[2.5rem] p-6 lg:p-8 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="p-2 bg-amber-50 text-amber-500 rounded-lg"><Clock size={18}/></div>
+              <h3 className="text-lg font-black text-gray-900 italic tracking-tighter uppercase">En <span className="text-amber-500">Attente</span></h3>
+            </div>
+            <div className="space-y-6">
+                {stats.pendingApprovals.length > 0 ? stats.pendingApprovals.map((item: any) => (
+                  <ApprovalItem key={item.id} label={item.name} sub="Boutique" />
+                )) : (
+                  <div className="py-10 text-center">
+                     <CheckCircle2 className="mx-auto text-emerald-100 mb-3" size={40} />
+                     <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Tout est à jour</p>
+                  </div>
+                )}
+            </div>
           </div>
-          <div className="space-y-6">
-              {stats.pendingApprovals.length > 0 ? stats.pendingApprovals.map((item: any) => (
-                <ApprovalItem key={item.id} label={item.name} sub="Boutique" />
-              )) : (
-                <div className="py-10 text-center">
-                   <CheckCircle2 className="mx-auto text-emerald-100 mb-3" size={40} />
-                   <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Tout est à jour</p>
-                </div>
-              )}
+
+          <div className="bg-gray-900 rounded-[2.5rem] p-6 text-white overflow-hidden relative">
+             <Package className="absolute -right-4 -bottom-4 text-white/5" size={120} />
+             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 text-purple-400">Stocks Critiques</h4>
+             <div className="space-y-3">
+                {stats.lowStockProducts.map((p: any) => (
+                  <div key={p.title} className="flex justify-between items-center">
+                    <span className="text-xs font-bold truncate pr-4 text-gray-300">{p.title}</span>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded ${p.stock <= 0 ? 'bg-rose-500 text-white' : 'bg-amber-500 text-black'}`}>
+                      {p.stock}
+                    </span>
+                  </div>
+                ))}
+             </div>
           </div>
         </div>
       </div>

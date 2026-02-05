@@ -21,7 +21,6 @@ const SLIDES = [
 
 export default function HeroSlider() {
   return (
-    // AJUSTEMENT : On passe en h-full pour obéir au parent (HeroSection)
     <div className="relative group w-full h-full">
       <Swiper
         modules={[Autoplay, Navigation, Pagination, EffectFade]}
@@ -34,7 +33,6 @@ export default function HeroSlider() {
           prevEl: '.swiper-prev',
         }}
         loop={true}
-        // HARMONISATION : On réduit l'arrondi pour qu'il s'emboîte dans le parent [20px]
         className="w-full h-full rounded-[18px] overflow-hidden shadow-2xl"
       >
         {SLIDES.map((slide, index) => (
@@ -42,17 +40,18 @@ export default function HeroSlider() {
             <div className="relative w-full h-full overflow-hidden">
               <img 
                 src={slide.image} 
-                // object-cover est crucial ici pour le format panoramique
+                // "eager" pour la première image afin d'éviter le flash blanc au chargement
+                loading={index === 0 ? "eager" : "lazy"}
                 className="w-full h-full object-cover object-center transform scale-100" 
                 alt={slide.title} 
               />
               
-              {/* Overlay plus discret pour format réduit */}
-              <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/80 via-brand-dark/20 to-transparent" />
+              {/* Overlay dégradé */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
               
-              {/* Texte réajusté pour la petite hauteur */}
+              {/* Contenu textuel */}
               <div className="absolute bottom-6 left-8 right-8 text-left">
-                 <span className="inline-block text-brand-primary font-bold text-[8px] uppercase tracking-[0.3em] mb-1">
+                 <span className="inline-block text-[#ff5a5a] font-bold text-[8px] uppercase tracking-[0.3em] mb-1">
                    {slide.tag}
                  </span>
                  <h3 className="text-xl lg:text-2xl font-black text-white leading-tight uppercase italic">
@@ -63,24 +62,33 @@ export default function HeroSlider() {
           </SwiperSlide>
         ))}
 
-        {/* Boutons de navigation plus petits et élégants */}
-        <button className="swiper-prev absolute left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-brand-dark/40 backdrop-blur-md border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-brand-primary text-white">
+        {/* Boutons de navigation personnalisés */}
+        <button className="swiper-prev absolute left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-[#ff5a5a] text-white">
           <ChevronLeft size={18} />
         </button>
-        <button className="swiper-next absolute right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-brand-dark/40 backdrop-blur-md border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-brand-primary text-white">
+        <button className="swiper-next absolute right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-[#ff5a5a] text-white">
           <ChevronRight size={18} />
         </button>
       </Swiper>
       
-      {/* Style pour les bullets de pagination (à mettre dans ton index.css idéalement) */}
-      <style jsx global>{`
-        .swiper-pagination-bullet-active {
-          background: #ff5a5a !important; /* Ta couleur brand-primary */
-        }
-        .swiper-pagination-bullet {
-          background: rgba(255,255,255,0.5);
-        }
-      `}</style>
+      {/* Correction de l'erreur console : Balise style standard sans attributs non-supportés */}
+      <style>
+        {`
+          .swiper-pagination-bullet-active {
+            background: #ff5a5a !important;
+            width: 20px !important;
+            border-radius: 5px !important;
+          }
+          .swiper-pagination-bullet {
+            background: rgba(255, 255, 255, 0.8);
+            opacity: 1;
+          }
+          /* Optionnel : Ajustement de la position de la pagination */
+          .swiper-pagination-lock {
+            display: none !important;
+          }
+        `}
+      </style>
     </div>
   );
 }
