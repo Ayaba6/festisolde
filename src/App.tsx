@@ -14,7 +14,8 @@ import Checkout from './pages/Checkout/Checkout'
 import OrderSuccess from './pages/Checkout/OrderSuccess'
 import VendorLanding from './pages/Vendor/VendorLanding'
 import Contact from './pages/Contact'
-import PackCreator from './pages/Home/components/PackCreator' // <-- IMPORT AJOUTÉ
+import About from './pages/About'
+import PackCreator from './pages/Home/components/PackCreator'
 
 // --- PAGES VENDEURS ---
 import VendorDashboard from './pages/Vendor/Dashboard'
@@ -76,7 +77,7 @@ export default function App() {
     localStorage.removeItem('festi_cart')
   }
 
-  // --- GESTION UTILISATEUR ---
+  // --- GESTION UTILISATEUR & PROFIL ---
   const loadUserWithProfile = async () => {
     const { data: { user: authUser } } = await supabase.auth.getUser()
     
@@ -117,14 +118,15 @@ export default function App() {
     }
   }, [])
 
+  // --- ÉCRAN DE CHARGEMENT ---
   if (loading) return (
     <div className="h-screen flex items-center justify-center bg-white">
       <div className="flex flex-col items-center gap-4">
-        <span className="text-4xl font-black text-brand-primary animate-pulse italic tracking-tighter">
+        <span className="text-4xl font-black text-rose-600 animate-pulse italic tracking-tighter uppercase">
           FESTISOLDE
         </span>
         <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
-          <div className="w-full h-full bg-brand-primary animate-loading-bar"></div>
+          <div className="w-full h-full bg-rose-600 animate-[loading_1.5s_ease-in-out_infinite]"></div>
         </div>
       </div>
     </div>
@@ -151,38 +153,38 @@ export default function App() {
       
       <main className="flex-grow">
         <Routes>
-          {/* PAGES PUBLIQUES */}
+          {/* --- ROUTES PUBLIQUES --- */}
           <Route path="/" element={<Home />} />
-          <Route path="/products" element={<Shop cart={cart} setCart={setCart} />} />
+          <Route path="/shop" element={<Shop cart={cart} setCart={setCart} />} />
           <Route path="/product/:id" element={<ProductDetail setCart={setCart} />} />
           <Route path="/checkout" element={<Checkout cart={cart} total={totalAmount} clearCart={clearCart} />} />
           <Route path="/order-success" element={<OrderSuccess />} />
           <Route path="/vendre" element={<VendorLanding />} />
           <Route path="/contact" element={<Contact />} />
-          
-          {/* NOUVELLE ROUTE : ATELIER PACKEO */}
+          <Route path="/about" element={<About />} />
           <Route path="/pack-creator" element={<PackCreator />} />
 
-          {/* AUTHENTIFICATION */}
+          {/* --- AUTHENTIFICATION --- */}
           <Route path="/auth/login" element={user ? <AuthRedirect user={user} /> : <Login setUser={setUser} />} />
           <Route path="/auth/register" element={user ? <AuthRedirect user={user} /> : <Register setUser={setUser} />} />
 
-          {/* COMPTE CLIENT */}
+          {/* --- COMPTE CLIENT (PROTEGÉ) --- */}
           <Route path="/account" element={<ProtectedRoute user={user}><Account user={user} setUser={setUser} /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute user={user}><Orders /></ProtectedRoute>} />
           
-          {/* ADMIN */}
+          {/* --- ADMINISTRATION (PROTEGÉ ADMIN) --- */}
           <Route path="/admin-general" element={<AdminRoute user={user}><AdminGeneral /></AdminRoute>} />
           <Route path="/admin/products" element={<AdminRoute user={user}><AdminProducts /></AdminRoute>} />
           <Route path="/admin/shops" element={<AdminRoute user={user}><AdminShops /></AdminRoute>} />
           <Route path="/admin" element={<Navigate to="/admin-general" replace />} />
           
-          {/* VENDEUR */}
+          {/* --- ESPACE VENDEUR (PROTEGÉ VENDEUR) --- */}
           <Route path="/vendor/dashboard" element={<VendorRoute user={user}><VendorDashboard /></VendorRoute>} />
           <Route path="/vendor/add-product" element={<VendorRoute user={user}><AddProduct /></VendorRoute>} />
           <Route path="/vendor/edit-product/:id" element={<VendorRoute user={user}><EditProduct /></VendorRoute>} />
           <Route path="/vendor/create-shop" element={<ProtectedRoute user={user}><CreateShop /></ProtectedRoute>} />
 
+          {/* --- REDIRECTION GLOBALE (404) --- */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

@@ -1,21 +1,24 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { 
   ShoppingBag, 
   User as UserIcon, 
   LogOut, 
-  Menu, 
-  X, 
   ChevronDown, 
-  Settings, 
   Package, 
+  Search, 
+  HelpCircle, 
+  PlusCircle,
+  Menu,
+  X,
+  Settings,
   LayoutDashboard,
   Store,
-  PhoneCall // Ajouté pour le menu contact
+  Wand2,
+  Camera
 } from 'lucide-react'
 
-// --- IMPORT DU COMPOSANT EXTERNE ---
 import PromoBanner from './PromoBanner'
 
 interface HeaderProps {
@@ -25,43 +28,81 @@ interface HeaderProps {
   onOpenCart: () => void 
 }
 
+interface Category {
+  id: string
+  name: string
+  slug: string
+}
+
 export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderProps) {
   const navigate = useNavigate()
-  const location = useLocation()
-  const [menuOpen, setMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isVendor, setIsVendor] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
-  // Vérification du statut vendeur
+  // 1. RÉCUPÉRATION DES CATÉGORIES (Limité à 10)
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name, slug')
+        .order('name', { ascending: true })
+        .limit(10) // Limite pour garder un header propre
+
+      if (!error && data) {
+        setCategories(data)
+      }
+    }
+    fetchCategories()
+  }, [])
+
+  // 2. STATUT VENDEUR
   useEffect(() => {
     const checkVendorStatus = async () => {
-      if (!user?.id) {
-        setIsVendor(false)
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('shops')
-        .select('id')
-        .eq('owner_id', user.id)
-        .maybeSingle() 
-
-      if (error) {
-        console.error("Erreur checkVendorStatus:", error.message)
-        return
-      }
-
+      if (!user?.id) return
+      const { data } = await supabase.from('shops').select('id').eq('owner_id', user.id).maybeSingle() 
       setIsVendor(!!data)
     }
-
     checkVendorStatus()
   }, [user?.id])
 
-  // Fermer les menus lors du changement de page
-  useEffect(() => { 
-    setMenuOpen(false)
-    setUserMenuOpen(false)
-  }, [location])
+  // 3. RECHERCHE TEXTUELLE
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}`)
+    }
+  }
+
+  // 4. RECHERCHE PAR IMAGE
+  const handleImageSearch = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setIsAnalyzing(true)
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-image', {
+        body: formData,
+      })
+
+      if (error) throw error
+
+      if (data?.keywords) {
+        navigate(`/shop?search=${encodeURIComponent(data.keywords)}`)
+      }
+    } catch (err) {
+      console.error("Erreur analyse image:", err)
+      alert("L'analyse de l'image a échoué.")
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -69,122 +110,94 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
     navigate('/auth/login')
   }
 
-  const displayName = user?.full_name || user?.email?.split('@')[0] || 'Utilisateur'
-  const initial = displayName.charAt(0).toUpperCase()
+  const initial = (user?.full_name || user?.email || 'U').charAt(0).toUpperCase()
   const isAdmin = user?.role === 'admin'
 
   return (
-    <div className="sticky top-0 z-50 w-full shadow-sm">
-      {/* 1. BANDEAU PROMOTIONNEL */}
+    <div className="sticky top-0 z-50 w-full shadow-sm bg-white">
       <PromoBanner />
 
-      {/* 2. BARRE DE NAVIGATION PRINCIPALE */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 py-3 lg:px-6 transition-all">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
+      {/* --- NIVEAU 1 : LOGO & RECHERCHE & ACTIONS --- */}
+      <div className="border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 lg:px-6 h-[70px] flex items-center gap-4">
           
-          {/* LOGO */}
-          <Link to="/" className="flex items-center group">
-            <div className="h-[95px] w-auto transition-all duration-300 group-hover:scale-105 active:scale-95">
-              <img 
-                src="/logo-festisolde.png" 
-                alt="FestiSolde" 
-                className="h-full w-full object-contain drop-shadow-sm"
-              />
-            </div>
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-slate-600">
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+
+          <Link to="/" className="shrink-0">
+            <img src="/logo-festisolde.png" alt="FestiSolde" className="h-10 w-auto object-contain" />
           </Link>
 
-          {/* NAV DESKTOP (AJOUT CONTACT) */}
-          <nav className="hidden md:flex items-center gap-10">
-            {[
-              { label: 'Accueil', path: '/' },
-              { label: 'Boutique', path: '/products' },
-              { label: 'Contact', path: '/contact' } // <-- NOUVEAU LIEN
-            ].map((item) => {
-              const isActive = location.pathname === item.path
-              return (
-                <Link 
-                  key={item.label}
-                  to={item.path} 
-                  className={`text-[11px] font-black uppercase tracking-[0.2em] relative group py-2 ${
-                    isActive ? 'text-brand-primary' : 'text-brand-dark hover:text-brand-primary'
-                  }`}
-                >
-                  {item.label}
-                  <span className={`absolute bottom-0 left-0 w-full h-0.5 bg-brand-primary transition-transform duration-300 origin-left ${
-                    isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-                  }`} />
-                </Link>
-              )
-            })}
-          </nav>
+          {/* BARRE DE RECHERCHE */}
+          <form onSubmit={handleSearchSubmit} className="hidden md:flex flex-1 relative group max-w-2xl mx-auto">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+              <Search size={18} />
+            </div>
+            <input 
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={isAnalyzing ? "Analyse en cours..." : "Rechercher un article..."}
+              disabled={isAnalyzing}
+              className={`w-full bg-slate-100 border-none rounded py-2 pl-10 pr-12 text-[15px] focus:ring-1 focus:ring-slate-300 focus:bg-white transition-all outline-none ${isAnalyzing ? 'opacity-50' : ''}`}
+            />
+            
+            <button 
+              type="button"
+              onClick={() => document.getElementById('imageSearchInput')?.click()}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-brand-primary transition-colors"
+            >
+              <Camera size={20} className={isAnalyzing ? 'animate-pulse text-brand-primary' : ''} />
+            </button>
+            <input id="imageSearchInput" type="file" accept="image/*" className="hidden" onChange={handleImageSearch} />
+          </form>
 
           {/* ACTIONS DROITE */}
-          <div className="flex items-center gap-2 lg:gap-5">
-            {/* Panier */}
-            <button 
-              onClick={onOpenCart} 
-              className="relative p-3 text-brand-dark hover:bg-slate-50 rounded-xl transition-all active:scale-90"
-            >
-              <ShoppingBag size={22} strokeWidth={2.5} />
-              {cartCount > 0 && (
-                <span className="absolute top-1 right-1 bg-brand-primary text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white animate-in zoom-in">
-                  {cartCount}
-                </span>
-              )}
-            </button>
-
+          <div className="flex items-center gap-2 lg:gap-4 ml-auto">
             {!user ? (
-              <Link to="/auth/login" className="btn-primary hidden sm:flex px-6 py-2.5 text-xs shadow-md">
-                CONNEXION
+              <Link to="/auth/login" className="hidden sm:block px-4 py-1.5 text-[14px] text-brand-primary border border-brand-primary rounded font-medium hover:bg-brand-primary/5 transition-colors">
+                Connexion
               </Link>
             ) : (
               <div className="relative">
-                <button 
-                  onClick={() => setUserMenuOpen(!userMenuOpen)} 
-                  className="flex items-center gap-2 p-1.5 pr-3 hover:bg-slate-50 rounded-2xl transition-all border border-transparent hover:border-slate-100"
-                >
-                  <div className="w-10 h-10 bg-brand-dark text-white rounded-full flex items-center justify-center font-black text-sm shadow-sm ring-2 ring-brand-primary/10">
-                    {initial}
-                  </div>
-                  <ChevronDown size={14} className={`text-slate-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                <button onClick={() => setUserMenuOpen(!userMenuOpen)} className="flex items-center gap-1 hover:bg-slate-50 p-1 rounded transition-all">
+                   <div className="w-8 h-8 bg-brand-dark text-white rounded-full flex items-center justify-center font-bold text-xs">
+                     {initial}
+                   </div>
+                   <ChevronDown size={14} className="text-slate-400" />
                 </button>
 
-                {/* DROPDOWN MENU CLIENT */}
                 {userMenuOpen && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
-                    <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-slate-100 py-3 z-20 animate-in fade-in slide-in-from-top-2">
-                      <div className="px-6 py-4 border-b border-slate-50 mb-2 text-left">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mon Compte</p>
-                        <p className="text-sm font-bold text-brand-dark truncate">{user.email}</p>
+                    <div className="absolute right-0 mt-2 w-64 bg-white rounded shadow-xl border border-slate-200 py-2 z-20 animate-in fade-in slide-in-from-top-2">
+                      
+                      <div className="px-4 py-3 border-b border-slate-50 mb-1">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">Mon Compte</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-bold text-slate-900 truncate max-w-[140px] text-left">{user.email}</p>
+                          {isAdmin && <span className="bg-amber-100 text-amber-700 text-[9px] font-black px-1.5 py-0.5 rounded">ADMIN</span>}
+                        </div>
                       </div>
 
-                      <div className="space-y-1">
+                      <div className="space-y-0.5">
                         {isAdmin && (
-                          <MenuLink 
-                            to="/admin-general" 
-                            icon={<Settings size={18} className="text-amber-500" />} 
-                            label="Console Admin" 
-                            primary 
-                          />
+                          <MenuLink to="/admin-general" icon={<Settings size={16} className="text-amber-500" />} label="Console Admin" className="text-amber-600 hover:bg-amber-50 font-bold" />
                         )}
-                        <MenuLink to="/account" icon={<UserIcon size={18} />} label="Mon Profil" />
-                        <MenuLink to="/orders" icon={<Package size={18} />} label="Mes commandes" />
-                        
+                        <MenuLink to="/account" icon={<UserIcon size={16} />} label="Mon Profil" />
+                        <MenuLink to="/orders" icon={<Package size={16} />} label="Mes commandes" />
+                        <MenuLink to="/pack-creator" icon={<Wand2 size={16} className="text-brand-primary" />} label="Mon Atelier" />
+
                         {isVendor ? (
-                          <MenuLink to="/vendor/dashboard" icon={<LayoutDashboard size={18} />} label="Tableau de bord" />
+                          <MenuLink to="/vendor/dashboard" icon={<LayoutDashboard size={16} />} label="Tableau de bord vendeur" />
                         ) : (
-                          !isAdmin && <MenuLink to="/vendor/create-shop" icon={<Store size={18} />} label="Devenir Vendeur" />
+                          !isAdmin && <MenuLink to="/vendor/create-shop" icon={<Store size={16} />} label="Devenir Vendeur" />
                         )}
-                        
-                        <div className="h-px bg-slate-50 my-2 mx-4" />
-                        
-                        <button 
-                          onClick={handleLogout} 
-                          className="w-full flex items-center gap-3 px-6 py-3 text-rose-500 hover:bg-rose-50 transition-colors font-black text-xs uppercase tracking-wider"
-                        >
-                          <LogOut size={18} />
-                          Déconnexion
+
+                        <div className="h-px bg-slate-100 my-1 mx-2" />
+                        <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2.5 text-rose-500 text-[13px] font-bold uppercase hover:bg-rose-50 transition-colors text-left">
+                          <LogOut size={16} /> Déconnexion
                         </button>
                       </div>
                     </div>
@@ -193,62 +206,77 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
               </div>
             )}
 
-            {/* Menu Mobile Button */}
-            <button 
-              onClick={() => setMenuOpen(!menuOpen)} 
-              className="md:hidden p-2 text-brand-dark hover:bg-slate-50 rounded-xl transition-colors"
-            >
-              {menuOpen ? <X size={26} /> : <Menu size={26} />}
+            <Link to={isVendor ? "/vendor/dashboard" : "/vendre"} className="bg-brand-primary text-white px-3 lg:px-5 py-1.5 rounded text-[14px] font-medium hover:brightness-105 transition-all shadow-sm">
+              <span className="hidden sm:inline">Vendre</span>
+              <PlusCircle size={18} className="sm:hidden" />
+            </Link>
+
+            <button onClick={onOpenCart} className="relative p-2 text-slate-500 hover:text-brand-dark">
+              <ShoppingBag size={24} strokeWidth={1.5} />
+              {cartCount > 0 && (
+                <span className="absolute top-0 right-0 bg-brand-primary text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
+                  {cartCount}
+                </span>
+              )}
             </button>
           </div>
         </div>
+      </div>
 
-        {/* MOBILE NAV OVERLAY (AJOUT CONTACT) */}
-        {menuOpen && (
-          <nav className="md:hidden absolute top-full left-0 w-full bg-white border-t border-slate-100 p-8 flex flex-col gap-5 shadow-2xl animate-in slide-in-from-top-5 text-left">
-            <Link to="/" className="text-3xl font-black text-brand-dark">Accueil</Link>
-            <Link to="/products" className="text-3xl font-black text-brand-dark">Boutique</Link>
-            <Link to="/contact" className="text-3xl font-black text-brand-primary flex items-center gap-3">
-               Contact
+      {/* --- NIVEAU 2 : NAVIGATION CATÉGORIES (Pointent vers le shop via le NOM) --- */}
+      <div className="border-b border-slate-200 hidden md:block bg-white">
+        <div className="max-w-7xl mx-auto px-4 lg:px-6">
+          <nav className="flex items-center h-12 gap-8 overflow-x-auto no-scrollbar">
+            <Link to="/shop" className="text-[15px] font-medium text-slate-900 hover:text-brand-primary transition-colors">
+              Tous
             </Link>
-            
-            {user && (
-              <>
-                <div className="h-px bg-slate-100 my-2" />
-                <Link to="/account" className="text-2xl font-bold text-slate-600">Mon Profil</Link>
-                <Link to="/orders" className="text-2xl font-bold text-slate-600">Mes Commandes</Link>
-              </>
-            )}
-
-            {isAdmin && (
-              <Link to="/admin" className="text-3xl font-black text-amber-500 italic">Console Admin</Link>
-            )}
-            
-            {isVendor && (
-              <Link to="/vendor/dashboard" className="text-3xl font-black text-brand-primary">Mon Shop</Link>
-            )}
-            
-            <div className="h-px bg-slate-100 my-4" />
-            
-            {!user ? (
-              <Link to="/auth/login" className="btn-primary text-center py-5 rounded-2xl font-black">SE CONNECTER</Link>
-            ) : (
-              <button onClick={handleLogout} className="text-rose-500 font-black py-4 border-2 border-rose-500 rounded-2xl text-center">DÉCONNEXION</button>
-            )}
+            {categories.map((cat, index) => (
+              <Link 
+                key={cat.id} 
+                // Synchronisation : On utilise cat.name car le shop filtre par nom
+                to={`/shop?category=${encodeURIComponent(cat.name)}`} 
+                className={`text-[15px] whitespace-nowrap transition-colors ${index < 4 ? 'text-slate-900 font-medium' : 'text-slate-500 font-normal'} hover:text-brand-primary`}
+              >
+                {cat.name}
+              </Link>
+            ))}
+            <div className="flex-1" />
+            <div className="flex items-center gap-6 border-l border-slate-200 pl-8 h-5">
+              <Link to="/about" className="text-[14px] text-slate-500 hover:text-slate-900">À propos</Link>
+              <HelpCircle size={20} className="text-slate-400 cursor-pointer hover:text-slate-600" />
+            </div>
           </nav>
-        )}
-      </header>
+        </div>
+      </div>
+
+      {/* --- MOBILE OVERLAY --- */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-white border-b border-slate-200 py-4 px-6 animate-in slide-in-from-top">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">Catégories</p>
+          <div className="grid grid-cols-2 gap-y-4">
+            <Link to="/shop" onClick={() => setMobileMenuOpen(false)} className="text-[15px] font-bold text-slate-800 italic">Voir tout</Link>
+            {categories.map(cat => (
+              <Link 
+                key={cat.id} 
+                to={`/shop?category=${encodeURIComponent(cat.name)}`} 
+                onClick={() => setMobileMenuOpen(false)} 
+                className="text-[15px] text-slate-800 hover:text-brand-primary"
+              >
+                {cat.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-function MenuLink({ to, icon, label, primary }: { to: string, icon: any, label: string, primary?: boolean }) {
+function MenuLink({ to, icon, label, className }: { to: string, icon: any, label: string, className?: string }) {
   return (
     <Link 
       to={to} 
-      className={`flex items-center gap-3 px-6 py-3 transition-colors font-bold text-xs uppercase tracking-wider ${
-        primary ? 'text-brand-primary hover:bg-brand-primary/5' : 'text-slate-600 hover:text-brand-dark hover:bg-slate-50'
-      }`}
+      className={`flex items-center gap-3 px-4 py-2.5 text-slate-600 hover:bg-slate-50 text-[13px] font-medium transition-colors ${className || ''}`}
     >
       <span className="opacity-70">{icon}</span>
       {label}

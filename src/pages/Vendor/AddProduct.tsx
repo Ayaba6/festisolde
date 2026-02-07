@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Upload, X, ArrowLeft, Sparkles, 
-  ChevronDown, Tag, Plus, Layers 
+  ChevronDown, Tag, Plus, Palette, Maximize 
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -16,9 +16,8 @@ export default function AddProduct() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   
-  // États pour les catégories dynamiques
   const [dbCategories, setDbCategories] = useState<{id: string, name: string}[]>([])
-  const [categoryId, setCategoryId] = useState('') // Stockera l'UUID
+  const [categoryId, setCategoryId] = useState('')
   
   const [price, setPrice] = useState<number | ''>('')
   const [promoPrice, setPromoPrice] = useState<number | ''>('')
@@ -26,6 +25,7 @@ export default function AddProduct() {
   
   const [isCustomizable, setIsCustomizable] = useState(false)
   
+  // Nouveaux états pour les options
   const [colors, setColors] = useState<string[]>([])
   const [sizes, setSizes] = useState<string[]>([])
   const [newColor, setNewColor] = useState('')
@@ -35,13 +35,11 @@ export default function AddProduct() {
   const [previews, setPreviews] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
 
-  // 1. Charger le Shop et les Catégories de la DB
   useEffect(() => {
     const initializeData = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Charger le shop
       const { data: shop } = await supabase
         .from('shops')
         .select('id')
@@ -54,7 +52,6 @@ export default function AddProduct() {
       }
       setShopId(shop.id)
 
-      // Charger les catégories réelles
       const { data: cats, error } = await supabase
         .from('categories')
         .select('id, name')
@@ -66,6 +63,24 @@ export default function AddProduct() {
     }
     initializeData()
   }, [navigate])
+
+  // Fonctions pour gérer les tags (Couleurs et Tailles)
+  const addColor = () => {
+    if (newColor.trim() && !colors.includes(newColor.trim())) {
+      setColors([...colors, newColor.trim()])
+      setNewColor('')
+    }
+  }
+
+  const addSize = () => {
+    if (newSize.trim() && !sizes.includes(newSize.trim())) {
+      setSizes([...sizes, newSize.trim()])
+      setNewSize('')
+    }
+  }
+
+  const removeColor = (val: string) => setColors(colors.filter(c => c !== val))
+  const removeSize = (val: string) => setSizes(sizes.filter(s => s !== val))
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files ? Array.from(e.target.files) : []
@@ -108,20 +123,20 @@ export default function AddProduct() {
     setLoading(true)
     try {
       const imageUrls = await uploadImages()
-      
       const selectedCategoryName = dbCategories.find(c => c.id === categoryId)?.name
 
       const productData = {
         shop_id: shopId,
         title: title, 
         description: description,
-        category_id: categoryId, // Utilisation de la clé étrangère SQL
+        category_id: categoryId,
+        category: selectedCategoryName, // On garde aussi le nom pour la recherche simplifiée
         price: Number(price), 
         promo_price: promoPrice !== '' ? Number(promoPrice) : null,
         stock: Number(stock),
         images: imageUrls,
-        colors: colors,
-        sizes: sizes,
+        colors: colors, // Ajouté en DB
+        sizes: sizes,   // Ajouté en DB
         is_featured: selectedCategoryName === "Pack FestiSolde",
         allow_custom_pack: isCustomizable 
       }
@@ -129,7 +144,7 @@ export default function AddProduct() {
       const { error } = await supabase.from('products').insert([productData])
       if (error) throw error
 
-      toast.success('Article prêt pour la vente et les packs !')
+      toast.success('Article prêt pour la vente !')
       navigate('/vendor/dashboard')
     } catch (err: any) {
       toast.error(err.message || "Erreur de publication")
@@ -141,7 +156,7 @@ export default function AddProduct() {
   const labelStyle = "block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3 ml-1"
   const inputStyle = "w-full bg-slate-50 border-2 border-slate-100 focus:border-brand-primary focus:bg-white focus:ring-4 focus:ring-brand-primary/5 rounded-2xl px-6 py-4 outline-none font-bold text-gray-900 transition-all placeholder:text-gray-300"
 
-  if (!shopId) return <div className="h-screen flex items-center justify-center bg-white italic font-black uppercase tracking-widest text-brand-primary">Chargement du profil vendeur...</div>
+  if (!shopId) return <div className="h-screen flex items-center justify-center bg-white italic font-black uppercase tracking-widest text-brand-primary">Chargement...</div>
 
   return (
     <div className="min-h-screen bg-slate-50/50 py-12 px-4">
@@ -187,18 +202,11 @@ export default function AddProduct() {
                 <input type="text" placeholder="Ex: Chemise Slim Fit Coton" className={inputStyle} value={title} onChange={(e) => setTitle(e.target.value)} required />
               </div>
               <div>
-                <label className={labelStyle}>Catégorie (Base de données)</label>
+                <label className={labelStyle}>Catégorie</label>
                 <div className="relative">
-                  <select 
-                    className={`${inputStyle} appearance-none cursor-pointer`} 
-                    value={categoryId} 
-                    onChange={(e) => setCategoryId(e.target.value)} 
-                    required
-                  >
-                    <option value="">Sélectionner une catégorie...</option>
-                    {dbCategories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
+                  <select className={`${inputStyle} appearance-none cursor-pointer`} value={categoryId} onChange={(e) => setCategoryId(e.target.value)} required>
+                    <option value="">Choisir...</option>
+                    {dbCategories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                   </select>
                   <ChevronDown size={18} className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 </div>
@@ -206,6 +214,59 @@ export default function AddProduct() {
               <div>
                 <label className={labelStyle}>Stock Disponible</label>
                 <input type="number" placeholder="Quantité" className={inputStyle} value={stock} onChange={(e) => setStock(e.target.value === '' ? '' : Number(e.target.value))} required />
+              </div>
+            </div>
+
+            {/* NOUVELLE SECTION : VARIANTES (COULEURS & TAILLES) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-[2.5rem] bg-slate-50 border-2 border-slate-100">
+              {/* Couleurs */}
+              <div className="space-y-4">
+                <label className={labelStyle}><Palette size={14} className="inline mr-2" /> Couleurs</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="Rouge, Bleu..." 
+                    className={`${inputStyle} !py-3 !px-4 !text-sm`} 
+                    value={newColor} 
+                    onChange={(e) => setNewColor(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addColor())}
+                  />
+                  <button type="button" onClick={addColor} className="bg-gray-900 text-white p-3 rounded-xl hover:bg-brand-primary transition-colors"><Plus size={20}/></button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <AnimatePresence>
+                    {colors.map(color => (
+                      <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} key={color} className="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase flex items-center gap-2">
+                        {color} <X size={12} className="cursor-pointer text-rose-500" onClick={() => removeColor(color)} />
+                      </motion.span>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Tailles */}
+              <div className="space-y-4">
+                <label className={labelStyle}><Maximize size={14} className="inline mr-2" /> Tailles</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="XL, 42, 38..." 
+                    className={`${inputStyle} !py-3 !px-4 !text-sm`} 
+                    value={newSize} 
+                    onChange={(e) => setNewSize(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSize())}
+                  />
+                  <button type="button" onClick={addSize} className="bg-gray-900 text-white p-3 rounded-xl hover:bg-brand-primary transition-colors"><Plus size={20}/></button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <AnimatePresence>
+                    {sizes.map(size => (
+                      <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} key={size} className="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase flex items-center gap-2">
+                        {size} <X size={12} className="cursor-pointer text-rose-500" onClick={() => removeSize(size)} />
+                      </motion.span>
+                    ))}
+                  </AnimatePresence>
+                </div>
               </div>
             </div>
 
@@ -227,30 +288,18 @@ export default function AddProduct() {
             </div>
 
             {/* TOGGLE CUSTOM PACK */}
-            <div 
-              onClick={() => setIsCustomizable(!isCustomizable)}
-              className={`p-6 rounded-[2rem] border-2 cursor-pointer transition-all flex items-center justify-between ${
-                isCustomizable ? 'bg-brand-primary border-brand-primary text-white shadow-lg shadow-brand-primary/20' : 'bg-white border-slate-100 text-gray-400 hover:border-brand-primary/30'
-              }`}
-            >
+            <div onClick={() => setIsCustomizable(!isCustomizable)} className={`p-6 rounded-[2rem] border-2 cursor-pointer transition-all flex items-center justify-between ${isCustomizable ? 'bg-brand-primary border-brand-primary text-white shadow-lg' : 'bg-white border-slate-100 text-gray-400 hover:border-brand-primary/30'}`}>
               <div className="flex items-center gap-4">
                 <div className={`p-3 rounded-xl ${isCustomizable ? 'bg-white/20' : 'bg-slate-100'}`}>
                   <Plus size={20} className={isCustomizable ? 'text-white' : 'text-gray-400'} />
                 </div>
                 <div>
-                  <p className={`font-black uppercase italic text-xs leading-none mb-1 ${isCustomizable ? 'text-white' : 'text-gray-900'}`}>
-                    Éligible au Pack Personnalisé
-                  </p>
-                  <p className={`text-[10px] font-bold uppercase italic opacity-70`}>
-                    Permet au client d'inclure cet article dans un look composé
-                  </p>
+                  <p className={`font-black uppercase italic text-xs leading-none mb-1 ${isCustomizable ? 'text-white' : 'text-gray-900'}`}>Éligible au Pack Personnalisé</p>
+                  <p className="text-[10px] font-bold uppercase italic opacity-70">Permet au client d'inclure cet article dans un look composé</p>
                 </div>
               </div>
               <div className={`w-12 h-6 rounded-full relative transition-colors ${isCustomizable ? 'bg-white/30' : 'bg-slate-200'}`}>
-                <motion.div 
-                  animate={{ x: isCustomizable ? 24 : 4 }}
-                  className="w-4 h-4 rounded-full bg-white absolute top-1" 
-                />
+                <motion.div animate={{ x: isCustomizable ? 24 : 4 }} className="w-4 h-4 rounded-full bg-white absolute top-1" />
               </div>
             </div>
 
@@ -259,7 +308,7 @@ export default function AddProduct() {
               <textarea placeholder="Matière, coupe, entretien..." className={`${inputStyle} min-h-[120px] resize-none`} value={description} onChange={(e) => setDescription(e.target.value)} required />
             </div>
 
-            <button type="submit" disabled={loading} className="w-full py-6 rounded-2xl bg-gray-900 text-white font-black text-xs uppercase tracking-[0.3em] transition-all hover:bg-brand-primary hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50">
+            <button type="submit" disabled={loading} className="w-full py-6 rounded-2xl bg-gray-900 text-white font-black text-xs uppercase tracking-[0.3em] transition-all hover:bg-brand-primary hover:scale-[1.02] disabled:opacity-50 shadow-xl shadow-gray-900/10">
               {loading ? "Traitement en cours..." : "Mettre en vente l'article"}
             </button>
           </form>

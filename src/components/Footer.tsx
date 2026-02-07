@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Facebook, Twitter, Instagram, Mail, Phone, MapPin, Store, CheckCircle } from 'lucide-react'
+import { Facebook, Twitter, Instagram, Mail, Phone, MapPin, Store, CheckCircle, Info } from 'lucide-react'
 
 // Imports des logos de paiement
 import LogoOM from '../assets/OM.png'
@@ -26,7 +26,7 @@ export default function Footer() {
               />
             </div>
           </Link>
-          <p className="text-sm leading-relaxed pr-4 text-slate-400">
+          <p className="text-sm leading-relaxed pr-4 text-slate-400 italic">
             La première plateforme de déstockage certifiée au Burkina Faso. 
             Nous connectons les meilleures boutiques de Ouagadougou avec des acheteurs exigeants.
           </p>
@@ -51,17 +51,24 @@ export default function Footer() {
             <li><FooterLink to="/products">Toutes les offres</FooterLink></li>
             
             <div className="pt-4 mt-4 border-t border-white/5 space-y-4">
-                <h4 className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">Catégories</h4>
-                <li><FooterLink to="/category/electronique">Électronique</FooterLink></li>
-                <li><FooterLink to="/category/mode">Mode & Beauté</FooterLink></li>
+                <h4 className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">Expérience</h4>
+                <li><FooterLink to="/pack-creator">Atelier Packeo</FooterLink></li>
+                <li><FooterLink to="/products?promo=true">Ventes Flash</FooterLink></li>
             </div>
           </ul>
         </div>
 
-        {/* Colonne 3 : Contact & Localisation (MISE À JOUR) */}
+        {/* Colonne 3 : Support & À Propos (MISE À JOUR) */}
         <div>
           <h3 className="text-white font-bold mb-8 uppercase text-[10px] tracking-[0.2em]">Support Client</h3>
           <ul className="space-y-4 text-sm font-medium">
+            <li>
+              {/* LIEN À PROPOS AJOUTÉ ICI */}
+              <FooterLink to="/about" className="flex items-center gap-3 text-white font-black italic">
+                <Info size={16} className="text-brand-primary" />
+                <span>NOTRE HISTOIRE</span>
+              </FooterLink>
+            </li>
             <li className="flex items-center gap-3">
               <MapPin size={16} className="text-brand-primary" />
               <span>Ouagadougou, Dassasgho</span>
@@ -71,7 +78,6 @@ export default function Footer() {
               <span>+226 70 18 99 12</span>
             </li>
             <li>
-              {/* LIEN VERS LA PAGE CONTACT */}
               <FooterLink to="/contact" className="flex items-center gap-3">
                 <Mail size={16} className="text-brand-primary" />
                 <span>Formulaire de contact</span>
@@ -82,7 +88,7 @@ export default function Footer() {
                   <p className="text-[10px] font-black uppercase text-white mb-2 flex items-center gap-2">
                     <CheckCircle size={12} className="text-emerald-500" /> Boutique Vérifiée
                   </p>
-                  <p className="text-[9px] leading-tight opacity-60">Tous nos vendeurs sont contrôlés physiquement pour votre sécurité.</p>
+                  <p className="text-[9px] leading-tight opacity-60">Vendeurs contrôlés physiquement pour votre sécurité.</p>
                </div>
             </li>
           </ul>
@@ -104,7 +110,7 @@ export default function Footer() {
           
           <div className="mt-6 flex items-center gap-2 opacity-30">
             <div className="h-px flex-1 bg-white"></div>
-            <span className="text-[9px] font-black uppercase tracking-widest">Technologie SSL</span>
+            <span className="text-[9px] font-black uppercase tracking-widest text-white">Technologie SSL</span>
             <div className="h-px flex-1 bg-white"></div>
           </div>
         </div>
