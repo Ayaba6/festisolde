@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   ArrowLeft, ShoppingCart, ShieldCheck, Truck, 
-  RotateCcw, Minus, Plus, Check, Star, Share2 
+  RotateCcw, Minus, Plus, Check, Star, Share2, Tag 
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -116,6 +116,24 @@ export default function ProductDetail({ setCart }: { setCart: any }) {
     window.scrollTo(0, 0)
   }, [id])
 
+  // --- LOGIQUE DE REMISE DÉGRESSIVE (MÉMORISÉE) ---
+  const { currentUnitPrice, totalPrice, isDiscountedByVolume } = useMemo(() => {
+    if (!product) return { currentUnitPrice: 0, totalPrice: 0, isDiscountedByVolume: false }
+    
+    const basePrice = Number(product.promo_price || product.price || 0)
+    let discount = 1 // 100% du prix
+
+    if (quantity === 2) discount = 0.95 // -5%
+    if (quantity >= 3) discount = 0.90  // -10%
+
+    const unitPrice = basePrice * discount
+    return {
+      currentUnitPrice: unitPrice,
+      totalPrice: unitPrice * quantity,
+      isDiscountedByVolume: quantity >= 2
+    }
+  }, [product, quantity])
+
   if (loading) return (
     <div className="h-screen flex items-center justify-center bg-white">
       <div className="w-12 h-12 border-4 border-slate-100 border-t-rose-500 rounded-full animate-spin"></div>
@@ -124,13 +142,11 @@ export default function ProductDetail({ setCart }: { setCart: any }) {
 
   if (!product) return null
 
-  const price = Number(product.price || 0)
+  const basePrice = Number(product.price || 0)
   const promoPrice = Number(product.promo_price || 0)
-  const displayPrice = (promoPrice > 0) ? promoPrice : price
-  const hasDiscount = promoPrice > 0 && promoPrice < price
-  const discountPercent = hasDiscount ? Math.round(((price - promoPrice) / price) * 100) : null
+  const hasPromo = promoPrice > 0 && promoPrice < basePrice
+  const discountPercent = hasPromo ? Math.round(((basePrice - promoPrice) / basePrice) * 100) : null
 
-  // --- LOGIQUE MISE À JOUR AVEC SHOP_ID ---
   const handleAddToCart = () => {
     if (product.sizes?.length > 0 && !selectedSize) return toast.error("Choisissez une taille")
     if (product.colors?.length > 0 && !selectedColor) return toast.error("Choisissez une couleur")
@@ -152,11 +168,10 @@ export default function ProductDetail({ setCart }: { setCart: any }) {
           selectedSize, 
           selectedColor, 
           quantity,
-          displayPrice,
-          shop_id: product.shop_id // TRANSMISSION CRUCIALE POUR LES VENDEURS
+          displayPrice: currentUnitPrice, // On passe le prix remisé
+          shop_id: product.shop_id 
         }]
       }
-      // Harmonisation de la clé avec Checkout.tsx
       localStorage.setItem('festi_cart', JSON.stringify(newCart))
       return newCart
     })
@@ -219,7 +234,7 @@ export default function ProductDetail({ setCart }: { setCart: any }) {
             {/* --- CONTENU --- */}
             <div className="lg:col-span-6 flex flex-col pt-4">
               <span className="text-[10px] font-black text-rose-500 bg-rose-50 px-4 py-1.5 rounded-full uppercase tracking-widest w-fit mb-4">
-                {product.category || 'Édition Spéciale'}
+                {product.category || 'SEMER L\'AVENIR'}
               </span>
 
               <h1 className="text-3xl lg:text-5xl font-black text-slate-900 leading-tight mb-4 tracking-tighter uppercase italic">
@@ -228,7 +243,7 @@ export default function ProductDetail({ setCart }: { setCart: any }) {
 
               <div className="flex items-center gap-2 mb-6">
                 <div className="flex text-amber-400">{[...Array(5)].map((_, i) => <Star key={i} size={14} fill="currentColor" />)}</div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Coup de cœur client</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Édition Entrepreneur</span>
               </div>
 
               <p className="text-slate-500 text-sm leading-relaxed mb-8">{product.description}</p>
@@ -278,26 +293,50 @@ export default function ProductDetail({ setCart }: { setCart: any }) {
                 </div>
               )}
 
-              {/* PRIX ET CTA */}
-              <div className="bg-slate-900 rounded-[2.5rem] p-6 lg:p-8 shadow-2xl mb-8">
-                <div className="flex items-baseline gap-4 mb-6">
-                  <span className="text-4xl lg:text-5xl font-black text-white tracking-tighter">
-                    {displayPrice.toLocaleString()} <small className="text-lg">F</small>
-                  </span>
-                  {hasDiscount && <span className="text-xl text-slate-500 line-through font-bold">{price.toLocaleString()} F</span>}
+              {/* PRIX ET CTA AVEC LOGIQUE DE REMISE */}
+              <div className="bg-slate-900 rounded-[2.5rem] p-6 lg:p-8 shadow-2xl mb-8 relative overflow-hidden">
+                {isDiscountedByVolume && (
+                  <div className="absolute top-0 right-0 bg-emerald-500 text-white font-black text-[10px] px-4 py-1.5 rounded-bl-2xl flex items-center gap-2 uppercase tracking-tighter">
+                    <Tag size={12} /> Remise Volume Activée
+                  </div>
+                )}
+
+                <div className="flex flex-col mb-6">
+                  <div className="flex items-baseline gap-4">
+                    <span className="text-4xl lg:text-5xl font-black text-white tracking-tighter">
+                      {totalPrice.toLocaleString()} <small className="text-lg">F</small>
+                    </span>
+                    {isDiscountedByVolume && (
+                      <span className="text-slate-500 line-through font-bold text-lg">
+                        {((promoPrice || basePrice) * quantity).toLocaleString()} F
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-rose-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1">
+                    {quantity > 1 ? `Soit ${currentUnitPrice.toLocaleString()} F l'unité` : "Prix unitaire standard"}
+                  </p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex items-center bg-white/10 rounded-2xl p-1 border border-white/10">
-                    <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-12 h-12 text-white hover:text-rose-400"><Minus size={18} /></button>
-                    <span className="font-black text-xl px-6 text-white">{quantity}</span>
-                    <button onClick={() => setQuantity(q => q + 1)} className="w-12 h-12 text-white hover:text-rose-400"><Plus size={18} /></button>
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center bg-white/10 rounded-2xl p-1 border border-white/10">
+                      <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-12 h-12 text-white hover:text-rose-400 transition-colors"><Minus size={18} /></button>
+                      <span className="font-black text-xl px-6 text-white">{quantity}</span>
+                      <button onClick={() => setQuantity(q => q + 1)} className="w-12 h-12 text-white hover:text-rose-400 transition-colors"><Plus size={18} /></button>
+                    </div>
+                    
+                    {/* Conseils d'achat (Incentives) */}
+                    <div className="px-2">
+                      {quantity === 1 && <p className="text-[9px] text-emerald-400 font-bold italic">💡 Ajoutez-en 1 de plus pour économiser 5% !</p>}
+                      {quantity === 2 && <p className="text-[9px] text-emerald-400 font-bold italic">🚀 Passez à 3 articles pour -10% de réduction !</p>}
+                      {quantity >= 3 && <p className="text-[9px] text-amber-400 font-bold italic">✨ Félicitations ! Vous profitez du tarif VIP (-10%).</p>}
+                    </div>
                   </div>
                   
                   <button 
                     onClick={handleAddToCart} 
                     disabled={isAdding} 
-                    className={`flex-1 py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 ${
+                    className={`w-full py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 ${
                       isAdding ? 'bg-emerald-500 text-white shadow-lg' : 'bg-rose-600 text-white hover:bg-rose-700 active:scale-95 shadow-xl shadow-rose-900/20'
                     }`}
                   >

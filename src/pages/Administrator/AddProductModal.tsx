@@ -14,13 +14,22 @@ interface Props {
   product?: any | null 
 }
 
+interface DbCategory {
+  id: string
+  name: string
+  parent_id: string | null
+}
+
 export default function AddProductModal({ isOpen, onClose, onSuccess, product }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(false)
   const [shopId, setShopId] = useState<string | null>(null)
 
-  const [dbCategories, setDbCategories] = useState<{id: string, name: string}[]>([])
-  const [categoryId, setCategoryId] = useState('')
+  // États des catégories
+  const [allCategories, setAllCategories] = useState<DbCategory[]>([])
+  const [parentCategoryId, setParentCategoryId] = useState('') // Pour le premier select
+  const [subCategories, setSubCategories] = useState<DbCategory[]>([]) // Liste filtrée
+  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState('') // La valeur finale (ID)
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -29,7 +38,6 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, product }:
   const [stock, setStock] = useState<number | ''>('')
   const [isCustomizable, setIsCustomizable] = useState(false)
   
-  // États pour les variantes
   const [colors, setColors] = useState<string[]>([])
   const [sizes, setSizes] = useState<string[]>([])
   const [newColor, setNewColor] = useState('')
@@ -42,6 +50,20 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, product }:
     if (isOpen) initializeData()
   }, [isOpen, product])
 
+  // Logique de cascade : quand la catégorie parente change
+  useEffect(() => {
+    if (parentCategoryId) {
+      const children = allCategories.filter(c => c.parent_id === parentCategoryId)
+      setSubCategories(children)
+      // Si on n'est pas en mode édition, on reset la sous-catégorie
+      if (!product || parentCategoryId !== product.parent_category_id) {
+        setSelectedSubCategoryId('')
+      }
+    } else {
+      setSubCategories([])
+    }
+  }, [parentCategoryId, allCategories])
+
   const initializeData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
@@ -49,13 +71,13 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, product }:
     const { data: shop } = await supabase.from('shops').select('id').eq('owner_id', user.id).single()
     if (shop) setShopId(shop.id)
 
-    const { data: cats } = await supabase.from('categories').select('id, name').order('name')
-    if (cats) setDbCategories(cats)
+    // On récupère toutes les catégories (Parents et Enfants)
+    const { data: cats } = await supabase.from('categories').select('id, name, parent_id').order('name')
+    if (cats) setAllCategories(cats)
 
     if (product) {
       setTitle(product.title)
       setDescription(product.description || '')
-      setCategoryId(product.category_id || '')
       setPrice(product.price)
       setPromoPrice(product.promo_price || '')
       setStock(product.stock || '')
@@ -63,15 +85,26 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, product }:
       setSizes(product.sizes || [])
       setPreviews(product.images || [])
       setIsCustomizable(product.allow_custom_pack || false)
+      
+      // Gestion de la hiérarchie en édition
+      if (product.category_id) {
+        const currentCat = cats?.find(c => c.id === product.category_id)
+        if (currentCat?.parent_id) {
+            setParentCategoryId(currentCat.parent_id)
+            setSelectedSubCategoryId(currentCat.id)
+        } else {
+            setParentCategoryId(product.category_id)
+        }
+      }
     } else {
       resetForm()
     }
   }
 
   const resetForm = () => {
-    setTitle(''); setDescription(''); setCategoryId(''); setPrice(''); setPromoPrice('');
-    setStock(''); setColors([]); setSizes([]); setImages([]); setPreviews([]);
-    setIsCustomizable(false)
+    setTitle(''); setDescription(''); setParentCategoryId(''); setSelectedSubCategoryId(''); 
+    setPrice(''); setPromoPrice(''); setStock(''); setColors([]); setSizes([]); 
+    setImages([]); setPreviews([]); setIsCustomizable(false)
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,24 +151,27 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, product }:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (previews.length === 0) return toast.error("Ajoutez au moins une photo")
-    if (!categoryId) return toast.error("Choisissez une catégorie")
+    if (!parentCategoryId) return toast.error("Choisissez une catégorie")
     setLoading(true)
 
     try {
       const imageUrls = await uploadImages()
-      const selectedCategoryName = dbCategories.find(c => c.id === categoryId)?.name
+      
+      // On prend l'ID de la sous-catégorie si elle existe, sinon le parent
+      const finalCategoryId = selectedSubCategoryId || parentCategoryId
+      const finalCategoryName = allCategories.find(c => c.id === finalCategoryId)?.name
 
       const productData = {
         shop_id: shopId,
         title, description,
-        category_id: categoryId,
-        category: selectedCategoryName,
+        category_id: finalCategoryId,
+        category: finalCategoryName,
         price: Number(price),
         promo_price: promoPrice !== '' ? Number(promoPrice) : null,
         stock: Number(stock),
         images: imageUrls,
         colors, sizes,
-        is_featured: selectedCategoryName === "Packeo" || selectedCategoryName === "Pack FestiSolde",
+        is_featured: finalCategoryName === "Packeo" || finalCategoryName === "Pack FestiSolde",
         allow_custom_pack: isCustomizable
       }
 
@@ -157,7 +193,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, product }:
 
   const labelStyle = "block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3 ml-1"
   const inputStyle = "w-full bg-slate-50 border-2 border-slate-100 focus:border-brand-primary focus:bg-white rounded-2xl px-6 py-4 outline-none font-bold text-gray-900 transition-all text-sm"
-  const variantBadge = "flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest animate-in fade-in zoom-in duration-300"
+  const variantBadge = "flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest"
 
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center bg-gray-900/60 backdrop-blur-md p-4">
@@ -176,7 +212,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, product }:
           
           {/* PHOTOS */}
           <div className="space-y-4">
-            <label className={labelStyle}>Photos du produit ({previews.length}/4)</label>
+            <label className={labelStyle}>Photos ({previews.length}/4)</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {previews.map((src, index) => (
                 <div key={index} className="relative aspect-square rounded-[1.5rem] overflow-hidden group border border-slate-100 shadow-sm">
@@ -196,19 +232,45 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, product }:
             <input type="file" ref={fileInputRef} multiple className="hidden" onChange={handleImageChange} />
           </div>
 
-          {/* INFOS */}
+          {/* INFOS GÉNÉRALES */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="md:col-span-2">
               <label className={labelStyle}>Nom de l'article</label>
               <input type="text" className={inputStyle} value={title} onChange={e => setTitle(e.target.value)} required />
             </div>
 
+            {/* SÉLECTION CATÉGORIE PARENTE */}
             <div>
-              <label className={labelStyle}>Catégorie (Base de données)</label>
+              <label className={labelStyle}>Catégorie Principale</label>
               <div className="relative">
-                <select className={`${inputStyle} appearance-none cursor-pointer`} value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
+                <select 
+                  className={`${inputStyle} appearance-none cursor-pointer`} 
+                  value={parentCategoryId} 
+                  onChange={e => setParentCategoryId(e.target.value)} 
+                  required
+                >
                   <option value="">Sélectionner...</option>
-                  {dbCategories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                  {allCategories.filter(c => !c.parent_id).map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+                <ChevronDown size={18} className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* SÉLECTION SOUS-CATÉGORIE (Sandales, Claquettes, etc.) */}
+            <div className={!parentCategoryId ? 'opacity-40 pointer-events-none' : ''}>
+              <label className={labelStyle}>Sous-Catégorie (Optionnel)</label>
+              <div className="relative">
+                <select 
+                  className={`${inputStyle} appearance-none cursor-pointer`} 
+                  value={selectedSubCategoryId} 
+                  onChange={e => setSelectedSubCategoryId(e.target.value)}
+                >
+                  <option value="">Tous {allCategories.find(c => c.id === parentCategoryId)?.name}</option>
+                  {subCategories.map(sub => (
+                    <option key={sub.id} value={sub.id}>{sub.name}</option>
+                  ))}
                 </select>
                 <ChevronDown size={18} className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
@@ -220,61 +282,31 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, product }:
             </div>
           </div>
 
-          {/* VARIANTES : COULEURS & TAILLES */}
+          {/* VARIANTES */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Couleurs */}
             <div className="space-y-4">
-              <label className={labelStyle}>Couleurs Disponibles</label>
+              <label className={labelStyle}>Couleurs</label>
               <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  placeholder="Ex: Noir, Rouge..." 
-                  className={inputStyle} 
-                  value={newColor} 
-                  onChange={e => setNewColor(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addVariant('color'))}
-                />
-                <button type="button" onClick={() => addVariant('color')} className="p-4 bg-slate-900 text-white rounded-2xl hover:bg-brand-primary transition-colors">
-                  <Plus size={20} />
-                </button>
+                <input type="text" placeholder="Noir, Rouge..." className={inputStyle} value={newColor} onChange={e => setNewColor(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addVariant('color'))} />
+                <button type="button" onClick={() => addVariant('color')} className="p-4 bg-slate-900 text-white rounded-2xl hover:bg-brand-primary"><Plus size={20} /></button>
               </div>
               <div className="flex flex-wrap gap-2 pt-2">
-                <AnimatePresence>
-                  {colors.map(color => (
-                    <motion.span key={color} initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className={variantBadge}>
-                      {color}
-                      <button type="button" onClick={() => removeVariant('color', color)} className="text-brand-primary hover:text-white"><X size={12} /></button>
-                    </motion.span>
-                  ))}
-                </AnimatePresence>
+                {colors.map(color => (
+                  <span key={color} className={variantBadge}>{color}<button type="button" onClick={() => removeVariant('color', color)}><X size={12} /></button></span>
+                ))}
               </div>
             </div>
 
-            {/* Tailles */}
             <div className="space-y-4">
               <label className={labelStyle}>Tailles / Pointures</label>
               <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  placeholder="Ex: XL, 42, Unique..." 
-                  className={inputStyle} 
-                  value={newSize} 
-                  onChange={e => setNewSize(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addVariant('size'))}
-                />
-                <button type="button" onClick={() => addVariant('size')} className="p-4 bg-slate-900 text-white rounded-2xl hover:bg-brand-primary transition-colors">
-                  <Plus size={20} />
-                </button>
+                <input type="text" placeholder="XL, 42..." className={inputStyle} value={newSize} onChange={e => setNewSize(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addVariant('size'))} />
+                <button type="button" onClick={() => addVariant('size')} className="p-4 bg-slate-900 text-white rounded-2xl hover:bg-brand-primary"><Plus size={20} /></button>
               </div>
               <div className="flex flex-wrap gap-2 pt-2">
-                <AnimatePresence>
-                  {sizes.map(size => (
-                    <motion.span key={size} initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className={variantBadge}>
-                      {size}
-                      <button type="button" onClick={() => removeVariant('size', size)} className="text-brand-primary hover:text-white"><X size={12} /></button>
-                    </motion.span>
-                  ))}
-                </AnimatePresence>
+                {sizes.map(size => (
+                  <span key={size} className={variantBadge}>{size}<button type="button" onClick={() => removeVariant('size', size)}><X size={12} /></button></span>
+                ))}
               </div>
             </div>
           </div>
@@ -294,13 +326,11 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, product }:
           <div 
             onClick={() => setIsCustomizable(!isCustomizable)}
             className={`p-6 rounded-[2rem] border-2 cursor-pointer transition-all flex items-center justify-between ${
-              isCustomizable ? 'bg-brand-primary border-brand-primary text-white shadow-lg shadow-brand-primary/20' : 'bg-white border-slate-100 text-gray-400 hover:border-brand-primary/30'
+              isCustomizable ? 'bg-brand-primary border-brand-primary text-white shadow-lg shadow-brand-primary/20' : 'bg-white border-slate-100 text-gray-400'
             }`}
           >
             <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-xl ${isCustomizable ? 'bg-white/20' : 'bg-slate-100'}`}>
-                <Plus size={20} className={isCustomizable ? 'text-white' : 'text-gray-400'} />
-              </div>
+              <div className={`p-3 rounded-xl ${isCustomizable ? 'bg-white/20' : 'bg-slate-100'}`}><Plus size={20} /></div>
               <div>
                 <p className={`font-black uppercase italic text-xs leading-none mb-1 ${isCustomizable ? 'text-white' : 'text-gray-900'}`}>Éligible au Pack Personnalisé</p>
                 <p className="text-[10px] font-bold uppercase italic opacity-70">Permet au client d'inclure cet article dans un look composé</p>
@@ -319,7 +349,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, product }:
 
           <button type="submit" disabled={loading} className="w-full bg-gray-900 text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-brand-primary transition-all shadow-xl flex items-center justify-center gap-3">
             {loading ? <Loader2 className="animate-spin" /> : (product ? <Save size={18} /> : <Plus size={18} />)}
-            {loading ? "Synchronisation..." : (product ? "Mettre à jour l'article" : "Publier l'article")}
+            {loading ? "Synchronisation..." : (product ? "Mettre à jour" : "Publier l'article")}
           </button>
         </form>
       </motion.div>

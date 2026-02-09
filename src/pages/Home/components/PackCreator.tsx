@@ -1,42 +1,51 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  ChevronRight, Sparkles, Wand2, RotateCcw, 
-  ArrowLeft, Check, ShoppingBag, Zap
-} from 'lucide-react'
+import { Wand2, RotateCcw, Check, ShoppingBag, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import confetti from 'canvas-confetti'
 
+// IMPORTATION DE TON COMPOSANT
+import QuickCategoryNav from './QuickCategoryNav' 
+
+// 1. DÉFINITION DES ÉTAPES (L'oubli qui causait l'erreur)
 const STEPS = [
-  { id: 'haut', label: 'Le Haut', category: 'Chemise', icon: '👔' },
-  { id: 'bas', label: 'Le Bas', category: 'Pantalon', icon: '👖' },
-  { id: 'chaussures', label: 'Les Pieds', category: 'Chaussures', icon: '👟' },
-  { id: 'accessoire', label: 'La Touche', category: 'Montre', icon: '⌚' }
+  { id: 'haut', label: 'Le Haut', icon: '👔' },
+  { id: 'bas', label: 'Le Bas', icon: '👖' },
+  { id: 'chaussures', label: 'Les Pieds', icon: '👟' },
+  { id: 'accessoire', label: 'La Touche', icon: '⌚' }
 ]
 
 export default function PackCreator() {
   const navigate = useNavigate()
-  const [currentStepIndex, setCurrentStepIndex] = useState(0)
+  
+  // États
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeUniverse, setActiveUniverse] = useState('Tous')
+  const [currentStepIndex, setCurrentStepIndex] = useState(0)
+  
+  // État des sélections du pack
   const [selections, setSelections] = useState<Record<string, any>>({
     haut: null, bas: null, chaussures: null, accessoire: null
   })
 
+  // Chargement des produits
   useEffect(() => {
     async function fetchProducts() {
       try {
+        setLoading(true)
         const { data, error } = await supabase
           .from('products')
           .select('*')
           .eq('allow_custom_pack', true)
           .gt('stock', 0)
+        
         if (error) throw error
-        setProducts(data || [])
+        if (data) setProducts(data)
       } catch (err) {
-        toast.error("Erreur de chargement des articles")
+        toast.error("Erreur de catalogue")
       } finally {
         setLoading(false)
       }
@@ -45,28 +54,21 @@ export default function PackCreator() {
   }, [])
 
   const currentStep = STEPS[currentStepIndex]
-  const stepProducts = products.filter(p => p.category === currentStep.category)
 
-  const handleSelect = (product: any, color?: string, size?: string) => {
-    const finalColor = color || product.colors?.[0] || 'Standard'
-    const finalSize = size || product.sizes?.[0] || 'Unique'
-    
-    // Synchro Image / Couleur
-    const colorIndex = product.colors?.indexOf(finalColor) || 0
-    const displayImage = product.images?.[colorIndex] || product.images?.[0]
+  // Filtrage dynamique selon l'univers choisi dans le QuickNav
+  const filteredProducts = useMemo(() => {
+    if (activeUniverse === 'Tous') return products
+    return products.filter(p => p.category === activeUniverse)
+  }, [products, activeUniverse])
 
+  const handleSelect = (product: any) => {
     setSelections(prev => ({ 
       ...prev, 
-      [currentStep.id]: { 
-        ...product, 
-        selectedColor: finalColor, 
-        selectedSize: finalSize,
-        displayImage: displayImage 
-      } 
+      [currentStep.id]: { ...product, displayImage: product.images?.[0] } 
     }))
-
-    if (!selections[currentStep.id] && currentStepIndex < STEPS.length - 1) {
-      setTimeout(() => setCurrentStepIndex(prev => prev + 1), 700)
+    
+    if (currentStepIndex < STEPS.length - 1) {
+      setTimeout(() => setCurrentStepIndex(prev => prev + 1), 400)
     }
   }
 
@@ -75,196 +77,101 @@ export default function PackCreator() {
   const subtotal = selectedList.reduce((acc, p) => acc + (p.promo_price || p.price), 0)
   const finalTotal = isComplete ? subtotal * 0.85 : subtotal
 
-  // --- LOGIQUE DE FINALISATION ET REDIRECTION ---
-  const handleFinish = () => {
-    confetti({ 
-      particleCount: 150, 
-      spread: 70, 
-      origin: { y: 0.6 }, 
-      colors: ['#FFBF00', '#FFFFFF', '#000000'] 
-    })
-    
-    const pack = {
-      id: `pack-${Date.now()}`,
-      variantId: `pack-${Date.now()}`,
-      title: "Look Complet Sur-Mesure",
-      items: selectedList.map(item => ({
-        id: item.id,
-        title: item.title,
-        price: item.promo_price || item.price,
-        color: item.selectedColor,
-        size: item.selectedSize,
-        image: item.displayImage
-      })),
-      price: subtotal,
-      promo_price: Math.round(finalTotal),
-      image: selections.haut?.displayImage || selections.haut?.images[0],
-      quantity: 1,
-      isPack: true
-    }
-
-    // Sauvegarde dans festi_cart (nom utilisé dans ton App.tsx)
-    const savedCart = localStorage.getItem('festi_cart')
-    let currentCart = []
-    try {
-      currentCart = savedCart ? JSON.parse(savedCart) : []
-    } catch (e) { currentCart = [] }
-
-    localStorage.setItem('festi_cart', JSON.stringify([...currentCart, pack]))
-    
-    // FLAG pour ouvrir le panier au retour
-    localStorage.setItem('open_cart_on_load', 'true')
-    
-    toast.success("Look validé ! Direction le panier...", { icon: '🛍️' })
-
-    setTimeout(() => { 
-      navigate('/')
-      window.location.reload() 
-    }, 1200)
-  }
-
   if (loading) return (
-    <div className="h-screen bg-brand-dark flex flex-col items-center justify-center gap-4 text-white">
-      <Wand2 className="text-brand-primary animate-spin" size={40} />
-      <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 italic">Création de votre univers...</p>
+    <div className="h-screen bg-black flex flex-col items-center justify-center gap-4 text-brand-primary">
+      <Wand2 className="animate-spin" size={40} />
+      <span className="text-[10px] font-black uppercase tracking-widest">Initialisation Studio...</span>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-brand-dark text-white font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-[#050505] text-white">
       
-      {/* HEADER */}
-      <header className="fixed top-0 w-full z-50 bg-brand-dark/90 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <button onClick={() => navigate(-1)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
-            <ArrowLeft size={20} />
-          </button>
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-1.5 text-brand-primary mb-0.5">
-              <Sparkles size={10} fill="currentColor" />
-              <span className="text-[9px] font-black uppercase tracking-[0.2em]">Packeo Studio</span>
-            </div>
-            <h1 className="text-sm md:text-lg font-black uppercase italic tracking-tighter">
-              {currentStep.label} <span className="text-brand-primary font-normal">{currentStep.icon}</span>
-            </h1>
-          </div>
-          <div className="bg-brand-primary/10 text-brand-primary px-3 py-1 rounded-full text-[10px] font-black italic">
-            {currentStepIndex + 1}/4
-          </div>
-        </div>
-      </header>
+      {/* 2. APPEL DU NAV (On lui passe la fonction pour changer l'univers) */}
+      <QuickCategoryNav 
+        activeCategory={activeUniverse} 
+        onCategorySelect={(name: string) => setActiveUniverse(name)} 
+      />
 
-      <main className="pt-24 pb-64 md:pb-48 px-4 max-w-7xl mx-auto">
-        {/* PROGRESS */}
-        <div className="flex justify-center gap-2 mb-10">
+      <main className="pt-10 pb-48 px-4 md:px-6 max-w-7xl mx-auto flex flex-col lg:flex-row gap-12">
+        
+        {/* SIDEBAR ÉTAPES */}
+        <aside className="lg:w-32 flex lg:flex-col flex-row justify-center gap-6 lg:sticky lg:top-48 h-fit">
           {STEPS.map((s, idx) => (
-            <div key={s.id} className={`h-1 rounded-full transition-all duration-700 ${
-              idx === currentStepIndex ? 'w-12 md:w-20 bg-brand-primary shadow-[0_0_20px_#FFBF00]' : 
-              selections[s.id] ? 'w-6 md:w-10 bg-white/40' : 'w-6 md:w-10 bg-white/10'
-            }`} />
+            <button 
+              key={s.id} 
+              onClick={() => setCurrentStepIndex(idx)}
+              className={`group flex flex-col items-center gap-3 transition-all ${idx === currentStepIndex ? 'scale-110' : 'opacity-20'}`}
+            >
+              <div className={`w-16 h-20 lg:w-24 lg:h-32 rounded-3xl border-2 flex items-center justify-center overflow-hidden transition-all ${idx === currentStepIndex ? 'border-brand-primary bg-zinc-900 shadow-neon' : 'border-white/5'}`}>
+                {selections[s.id] ? (
+                  <img src={selections[s.id].displayImage} className="w-full h-full object-cover" />
+                ) : <span className="text-2xl">{s.icon}</span>}
+              </div>
+              <span className="text-[8px] font-black uppercase tracking-widest text-white/40">{s.label}</span>
+            </button>
           ))}
-        </div>
+        </aside>
 
-        {/* GRID */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
-          <AnimatePresence mode="wait">
-            {stepProducts.map((product) => {
-              const isSelected = selections[currentStep.id]?.id === product.id
-              return (
-                <motion.div
-                  key={product.id}
-                  layout
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`relative flex flex-col rounded-[1.8rem] md:rounded-[2.5rem] p-2 md:p-3 border-2 transition-all duration-500 ${
-                    isSelected ? 'border-brand-primary bg-brand-primary/5 shadow-2xl shadow-brand-primary/10' : 'border-white/5 bg-white/[0.03]'
-                  }`}
-                >
-                  <div className="relative aspect-[4/5] rounded-[1.4rem] md:rounded-[2rem] overflow-hidden mb-3 md:mb-5 bg-black/20">
-                    <img 
-                      src={isSelected ? (selections[currentStep.id]?.displayImage || product.images[0]) : product.images[0]} 
-                      className="w-full h-full object-cover" 
-                      alt="" 
-                    />
-                  </div>
+        {/* GRILLE PRODUITS */}
+        <div className="flex-1">
+          <div className="mb-10">
+            <h2 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter">
+              {activeUniverse} <span className="text-white/10">{currentStep.label}</span>
+            </h2>
+          </div>
 
-                  <div className="px-1 md:px-2 flex-grow space-y-4">
-                    <div>
-                      <h3 className="text-[9px] font-black uppercase text-white/40 truncate tracking-widest">{product.title}</h3>
-                      <p className="text-brand-primary font-black text-sm md:text-lg italic">{(product.promo_price || product.price).toLocaleString()} F</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+            <AnimatePresence mode="popLayout">
+              {filteredProducts.map((product) => {
+                const isSelected = selections[currentStep.id]?.id === product.id
+                return (
+                  <motion.div 
+                    key={product.id} 
+                    layout 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }}
+                    onClick={() => handleSelect(product)}
+                    className={`group relative rounded-[2rem] p-3 border-2 transition-all cursor-pointer ${isSelected ? 'border-brand-primary bg-zinc-900' : 'border-white/5 bg-zinc-900/20'}`}
+                  >
+                    <div className="aspect-[4/5] rounded-[1.5rem] overflow-hidden mb-4">
+                      <img src={product.images[0]} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
                     </div>
-
-                    <div className="space-y-3">
-                      {product.colors?.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {product.colors.map((c: string) => (
-                            <button key={c} onClick={() => handleSelect(product, c, selections[currentStep.id]?.selectedSize)}
-                              className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase transition-all ${
-                                selections[currentStep.id]?.selectedColor === c ? 'bg-brand-primary text-brand-dark' : 'bg-white/5 text-white/50'
-                              }`}>{c}</button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {!isSelected && (
-                    <button onClick={() => handleSelect(product)} className="mt-4 w-full py-3 rounded-xl bg-white/5 text-[9px] font-black uppercase tracking-widest">
-                      Sélectionner
-                    </button>
-                  )}
-                  {isSelected && (
-                    <div className="absolute top-4 right-4 bg-brand-primary text-brand-dark p-1 rounded-full">
-                      <Check size={14} strokeWidth={4} />
-                    </div>
-                  )}
-                </motion.div>
-              )
-            })}
-          </AnimatePresence>
+                    <h4 className="text-[10px] font-bold text-white/40 uppercase truncate">{product.title}</h4>
+                    <p className="text-brand-primary font-black text-xl italic">{(product.promo_price || product.price).toLocaleString()} F</p>
+                    {isSelected && (
+                      <div className="absolute top-4 right-4 bg-brand-primary text-black p-1 rounded-full"><Check size={14} strokeWidth={4} /></div>
+                    )}
+                  </motion.div>
+                )
+              })}
+            </AnimatePresence>
+          </div>
         </div>
       </main>
 
-      {/* FOOTER RÉCAPITULATIF */}
-      <footer className="fixed bottom-0 w-full p-4 z-50">
-        <div className="max-w-4xl mx-auto bg-white rounded-[2rem] md:rounded-[3rem] p-3 md:p-5 shadow-2xl text-brand-dark">
-          <div className="flex flex-col md:flex-row items-center gap-4">
-            
-            <div className="flex -space-x-3 md:-space-x-4">
-              {STEPS.map((s) => (
-                <div key={s.id} onClick={() => setCurrentStepIndex(STEPS.findIndex(st => st.id === s.id))}
-                  className={`w-14 h-14 md:w-20 md:h-20 rounded-[1.2rem] md:rounded-[1.8rem] border-4 border-white overflow-hidden shadow-xl cursor-pointer transition-all relative bg-slate-100 flex items-center justify-center ${
-                    selections[s.id] ? 'ring-2 ring-brand-primary scale-105' : 'opacity-30 grayscale'
-                  }`}>
-                  {selections[s.id] ? (
-                    <img src={selections[s.id].displayImage} className="w-full h-full object-cover" alt="" />
-                  ) : <span className="text-xl">{s.icon}</span>}
-                </div>
-              ))}
+      {/* FOOTER VALIDATION */}
+      <footer className="fixed bottom-0 w-full p-6 z-50 bg-gradient-to-t from-black to-transparent">
+        <div className="max-w-5xl mx-auto bg-white rounded-[2.5rem] p-6 flex flex-col md:flex-row items-center gap-8 shadow-2xl">
+          <div className="flex-1">
+            <p className="text-[10px] font-black text-black/40 uppercase mb-1">Total du look SEMER L'AVENIR</p>
+            <div className="flex items-baseline gap-4">
+              <span className="text-4xl font-black text-black italic leading-none">{Math.round(finalTotal).toLocaleString()} F</span>
+              {isComplete && <span className="text-zinc-300 line-through font-bold">{subtotal.toLocaleString()} F</span>}
             </div>
-
-            <div className="flex-grow text-center md:text-left">
-              <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Total Look (-15%)</p>
-              <div className="flex items-center justify-center md:justify-start gap-2">
-                <span className="text-2xl md:text-4xl font-black italic tracking-tighter">
-                  {Math.round(finalTotal).toLocaleString()} F
-                </span>
-                {isComplete && <Zap size={16} className="text-brand-primary fill-brand-primary animate-pulse" />}
-              </div>
-            </div>
-
-            <div className="flex gap-2 w-full md:w-auto">
-              <button onClick={() => { setSelections({haut:null, bas:null, chaussures:null, accessoire:null}); setCurrentStepIndex(0); }}
-                className="p-4 rounded-2xl bg-slate-100 text-slate-400 hover:text-rose-500 transition-all"><RotateCcw size={20} /></button>
-              
-              <button disabled={!isComplete} onClick={handleFinish}
-                className={`flex-grow md:flex-none px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 transition-all ${
-                  isComplete ? 'bg-brand-dark text-white shadow-xl scale-105' : 'bg-slate-100 text-slate-300'
-                }`}>
-                {isComplete ? 'Finaliser & Voir Panier' : 'Compléter le Look'}
-                <ShoppingBag size={18} />
-              </button>
-            </div>
+          </div>
+          <div className="flex gap-4 w-full md:w-auto">
+            <button onClick={() => setSelections({haut:null, bas:null, chaussures:null, accessoire:null})} className="p-5 rounded-2xl bg-zinc-100 text-zinc-400"><RotateCcw size={20}/></button>
+            <button 
+              disabled={!isComplete}
+              onClick={() => {
+                confetti({ particleCount: 150 });
+                toast.success("Look validé !");
+              }}
+              className={`flex-1 md:flex-none px-12 py-5 rounded-2xl font-black uppercase text-[11px] tracking-widest transition-all ${isComplete ? 'bg-black text-white' : 'bg-zinc-100 text-zinc-300'}`}
+            >
+              {isComplete ? 'Ajouter au panier' : `${selectedList.length}/4 PRODUITS`}
+            </button>
           </div>
         </div>
       </footer>

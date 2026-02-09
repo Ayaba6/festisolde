@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
-import { Search, Plus, Star, SlidersHorizontal, Package, Check, Sparkles, Tag } from 'lucide-react'
+import { Search, Plus, Package, Check, Sparkles, SlidersHorizontal } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import ProductCardSkeleton from './ProductCardSkeleton'
 
@@ -8,12 +8,14 @@ interface Product {
   id: string; title: string; price: number; promo_price?: number;
   images: string[]; category: string; stock: number;
   is_featured?: boolean; shop_id: string; description?: string;
+  category_id?: string;
 }
 
 interface Category {
   id: string;
   name: string;
   slug: string;
+  parent_id?: string | null;
 }
 
 interface ShopProps {
@@ -22,29 +24,25 @@ interface ShopProps {
 
 export default function Shop({ cart, setCart }: ShopProps) {
   const [products, setProducts] = useState<Product[]>([])
-  const [dbCategories, setDbCategories] = useState<string[]>(['Tous']) // Initialisé avec 'Tous'
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('recent')
   
   const [searchParams, setSearchParams] = useSearchParams()
   const categoryFromUrl = searchParams.get('category')
-  const [selectedCategory, setSelectedCategory] = useState(categoryFromUrl || 'Tous')
+  const [selectedCategoryName, setSelectedCategoryName] = useState(categoryFromUrl || 'Tous')
 
-  // 1. Charger les catégories depuis la base de données
+  // 1. Charger toutes les catégories (pour gérer la hiérarchie)
   const fetchCategories = async () => {
     try {
       const { data, error } = await supabase
         .from('categories')
-        .select('name')
+        .select('*')
         .order('name', { ascending: true })
       
       if (error) throw error
-      if (data) {
-        // On combine 'Tous' avec les noms des catégories récupérées
-        const names = data.map(c => c.name)
-        setDbCategories(['Tous', ...names])
-      }
+      if (data) setCategories(data)
     } catch (err) {
       console.error("Erreur chargement catégories:", err)
     }
@@ -55,33 +53,47 @@ export default function Shop({ cart, setCart }: ShopProps) {
   }, [])
 
   useEffect(() => {
-    if (categoryFromUrl) {
-      setSelectedCategory(categoryFromUrl)
-    } else {
-      setSelectedCategory('Tous')
-    }
+    setSelectedCategoryName(categoryFromUrl || 'Tous')
   }, [categoryFromUrl])
 
   useEffect(() => {
     fetchProducts()
-  }, [selectedCategory, sortBy])
+  }, [selectedCategoryName, sortBy, categories]) // Recharger si les catégories ou le filtre changent
 
   const fetchProducts = async () => {
+    if (categories.length === 0) return; // Attendre que les catégories soient là
+
     try {
       setLoading(true)
       let query = supabase.from('products').select('*')
 
-      if (selectedCategory !== 'Tous') {
-        query = query.eq('category', selectedCategory)
-      }
-
+      // Application du tri
       if (sortBy === 'price-asc') query = query.order('price', { ascending: true })
       else if (sortBy === 'price-desc') query = query.order('price', { ascending: false })
       else query = query.order('created_at', { ascending: false })
 
       const { data, error } = await query
       if (error) throw error
-      setProducts(data || [])
+
+      let finalProducts = data || []
+
+      // Filtrage intelligent (Parent + Enfants)
+      if (selectedCategoryName !== 'Tous') {
+        const targetCat = categories.find(c => c.name === selectedCategoryName)
+        if (targetCat) {
+          const familyIds = [
+            targetCat.id,
+            ...categories.filter(c => c.parent_id === targetCat.id).map(c => c.id)
+          ]
+          
+          finalProducts = finalProducts.filter(p => 
+            familyIds.includes(p.category_id || '') || 
+            p.category === selectedCategoryName
+          )
+        }
+      }
+
+      setProducts(finalProducts)
     } catch (err) {
       console.error("Erreur boutique:", err)
     } finally {
@@ -89,12 +101,12 @@ export default function Shop({ cart, setCart }: ShopProps) {
     }
   }
 
-  const handleCategoryChange = (cat: string) => {
-    setSelectedCategory(cat)
-    if (cat === 'Tous') {
+  const handleCategoryChange = (catName: string) => {
+    setSelectedCategoryName(catName)
+    if (catName === 'Tous') {
       setSearchParams({}) 
     } else {
-      setSearchParams({ category: cat })
+      setSearchParams({ category: catName })
     }
   }
 
@@ -108,41 +120,44 @@ export default function Shop({ cart, setCart }: ShopProps) {
         newCart = [...prevCart, { ...product, quantity: 1 }]
       }
       localStorage.setItem('festi-cart', JSON.stringify(newCart))
+      window.dispatchEvent(new Event('cartUpdated'))
       return newCart
     })
   }
 
-  const filteredProducts = products.filter(p => 
+  const filteredBySearch = products.filter(p => 
     p.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.category?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
+      {/* HEADER BOUTIQUE */}
       <div className="bg-white border-b border-gray-100 pt-10 pb-6">
         <div className="max-w-7xl mx-auto px-6">
           <h1 className="text-3xl font-black text-gray-900 mb-2 uppercase italic tracking-tighter">Boutique</h1>
           <p className="text-gray-500 text-sm font-medium">
-            {selectedCategory !== 'Tous' ? `Filtré par : ${selectedCategory}` : 'Découvrez les meilleures offres de Ouagadougou.'}
+            {selectedCategoryName !== 'Tous' ? `Rayon : ${selectedCategoryName}` : 'Découvrez le modèle d\'autonomisation SEMER L\'AVENIR.'}
           </p>
         </div>
       </div>
 
+      {/* BARRE DE RECHERCHE ET FILTRES */}
       <div className="sticky top-[72px] z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col md:flex-row gap-4 mb-4">
             <div className="relative flex-1 group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-brand-primary transition-colors" size={18} />
               <input 
                 type="text" 
                 placeholder="Rechercher un article..."
-                className="w-full pl-11 pr-4 py-3 bg-gray-50 rounded-2xl border border-transparent focus:border-brand-primary/20 focus:bg-white focus:ring-4 focus:ring-brand-primary/5 outline-none font-medium transition-all text-sm"
+                className="w-full pl-11 pr-4 py-3 bg-gray-50 rounded-2xl border border-transparent focus:border-brand-primary/20 outline-none font-medium transition-all text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             
-            <div className="flex items-center bg-gray-50 rounded-2xl px-4 border border-transparent">
+            <div className="flex items-center bg-gray-50 rounded-2xl px-4">
               <SlidersHorizontal size={16} className="text-gray-400" />
               <select 
                 onChange={(e) => setSortBy(e.target.value)}
@@ -155,41 +170,52 @@ export default function Shop({ cart, setCart }: ShopProps) {
             </div>
           </div>
 
-          {/* LIGNE DES CATÉGORIES DYNAMIQUE */}
-          <div className="flex items-center gap-2 overflow-x-auto pt-4 pb-1 scrollbar-hide">
-            {dbCategories.map(cat => (
+          {/* LISTE DES CATÉGORIES (Uniquement les parents pour la barre) */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            <button
+              onClick={() => handleCategoryChange('Tous')}
+              className={`whitespace-nowrap px-5 py-2 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all ${
+                selectedCategoryName === 'Tous' 
+                ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20' 
+                : 'bg-white text-gray-400 border border-gray-100'
+              }`}
+            >
+              Tous
+            </button>
+            {categories.filter(c => !c.parent_id).map(cat => (
               <button
-                key={cat}
-                onClick={() => handleCategoryChange(cat)}
+                key={cat.id}
+                onClick={() => handleCategoryChange(cat.name)}
                 className={`whitespace-nowrap px-5 py-2 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all ${
-                  selectedCategory === cat 
+                  selectedCategoryName === cat.name 
                   ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20 scale-105' 
-                  : 'bg-white text-gray-400 border border-gray-100 hover:text-brand-primary hover:border-brand-primary/20'
+                  : 'bg-white text-gray-400 border border-gray-100 hover:text-brand-primary'
                 }`}
               >
-                {cat}
+                {cat.name}
               </button>
             ))}
           </div>
         </div>
       </div>
 
+      {/* GRILLE PRODUITS */}
       <div className="max-w-7xl mx-auto px-6 py-12">
         {loading ? (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
             {[...Array(8)].map((_, i) => <ProductCardSkeleton key={i} />)}
           </div>
-        ) : filteredProducts.length > 0 ? (
+        ) : filteredBySearch.length > 0 ? (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-            {filteredProducts.map((product) => (
+            {filteredBySearch.map((product) => (
               <ShopCard key={product.id} product={product} onAddToCart={() => addToCart(product)} />
             ))}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-32 text-center">
             <Package size={40} className="text-gray-200 mb-6" />
-            <h3 className="text-xl font-black text-gray-900 mb-2">Aucun article ici</h3>
-            <button onClick={() => handleCategoryChange('Tous')} className="text-brand-primary font-bold text-sm underline">Voir tout le catalogue</button>
+            <h3 className="text-xl font-black text-gray-900 mb-2">Aucun article trouvé</h3>
+            <button onClick={() => handleCategoryChange('Tous')} className="text-brand-primary font-bold text-sm underline">Réinitialiser les filtres</button>
           </div>
         )}
       </div>
