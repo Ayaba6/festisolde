@@ -15,6 +15,7 @@ import OrderSuccess from './pages/Checkout/OrderSuccess'
 import VendorLanding from './pages/Vendor/VendorLanding'
 import Contact from './pages/Contact'
 import About from './pages/About'
+import Aide from './pages/Aide' // <--- IMPORTATION AJOUTÉE
 import PackCreator from './pages/Home/components/PackCreator'
 
 // --- PAGES VENDEURS ---
@@ -118,15 +119,15 @@ export default function App() {
     }
   }, [])
 
-  // --- ÉCRAN DE CHARGEMENT ---
+  // --- ÉCRAN DE CHARGEMENT HARMONISÉ FESTISOLDE ---
   if (loading) return (
     <div className="h-screen flex items-center justify-center bg-white">
       <div className="flex flex-col items-center gap-4">
-        <span className="text-4xl font-black text-rose-600 animate-pulse italic tracking-tighter uppercase">
+        <span className="text-4xl lg:text-5xl font-black text-red-600 animate-pulse italic tracking-tighter uppercase">
           FESTISOLDE
         </span>
-        <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
-          <div className="w-full h-full bg-rose-600 animate-[loading_1.5s_ease-in-out_infinite]"></div>
+        <div className="w-16 h-1 bg-slate-100 rounded-full overflow-hidden">
+          <div className="w-full h-full bg-red-600 animate-[loading_1.5s_ease-in-out_infinite]"></div>
         </div>
       </div>
     </div>
@@ -162,6 +163,7 @@ export default function App() {
           <Route path="/vendre" element={<VendorLanding />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<About />} />
+          <Route path="/aide" element={<Aide />} /> {/* <--- ROUTE AJOUTÉE */}
           <Route path="/pack-creator" element={<PackCreator />} />
 
           {/* --- AUTHENTIFICATION --- */}

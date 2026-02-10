@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom' // Ajout de useLocation
 import { supabase } from '../lib/supabaseClient'
 import { 
   ShoppingBag, 
@@ -38,6 +38,7 @@ interface Category {
 
 export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderProps) {
   const navigate = useNavigate()
+  const location = useLocation() // Pour détecter où on se trouve
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isVendor, setIsVendor] = useState(false)
@@ -45,7 +46,6 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
-  // 1. RÉCUPÉRATION DE LA STRUCTURE HIÉRARCHIQUE
   useEffect(() => {
     const fetchCategories = async () => {
       const { data, error } = await supabase
@@ -65,7 +65,6 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
     fetchCategories()
   }, [])
 
-  // 2. STATUT VENDEUR
   useEffect(() => {
     const checkVendorStatus = async () => {
       if (!user?.id) return
@@ -75,7 +74,6 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
     checkVendorStatus()
   }, [user?.id])
 
-  // ACTIONS
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}`)
@@ -99,7 +97,7 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
   const handleLogout = async () => {
     await supabase.auth.signOut()
     setUser(null)
-    setUserMenuOpen(false) // Fermeture du menu
+    setUserMenuOpen(false)
     navigate('/auth/login')
   }
 
@@ -125,31 +123,29 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Search size={18} /></div>
             <input 
               type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={isAnalyzing ? "Analyse en cours..." : "Rechercher un article..."}
+              placeholder={isAnalyzing ? "Analyse en cours..." : "Rechercher sur FestiSolde..."}
               className="w-full bg-slate-100 border-none rounded py-2 pl-10 pr-12 text-[15px] focus:ring-1 focus:ring-slate-300 focus:bg-white transition-all outline-none"
             />
-            <button type="button" onClick={() => document.getElementById('imageSearchInput')?.click()} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-brand-primary">
-              <Camera size={20} className={isAnalyzing ? 'animate-pulse text-brand-primary' : ''} />
+            <button type="button" onClick={() => document.getElementById('imageSearchInput')?.click()} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-600">
+              <Camera size={20} className={isAnalyzing ? 'animate-pulse text-red-600' : ''} />
             </button>
             <input id="imageSearchInput" type="file" accept="image/*" className="hidden" onChange={handleImageSearch} />
           </form>
 
           <div className="flex items-center gap-2 lg:gap-4 ml-auto">
             {!user ? (
-              <Link to="/auth/login" className="hidden sm:block px-4 py-1.5 text-[14px] text-brand-primary border border-brand-primary rounded font-medium hover:bg-brand-primary/5 transition-colors">
+              <Link to="/auth/login" className="hidden sm:block px-4 py-1.5 text-[14px] text-red-600 border border-red-600 rounded font-medium hover:bg-red-50 transition-colors">
                 Connexion
               </Link>
             ) : (
               <div className="relative">
                 <button onClick={() => setUserMenuOpen(!userMenuOpen)} className="flex items-center gap-1 hover:bg-slate-50 p-1 rounded transition-all">
-                   <div className="w-8 h-8 bg-brand-dark text-white rounded-full flex items-center justify-center font-bold text-xs">{initial}</div>
+                   <div className="w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center font-bold text-xs">{initial}</div>
                    <ChevronDown size={14} className="text-slate-400" />
                 </button>
                 {userMenuOpen && (
                   <>
-                    {/* Overlay pour fermer au clic extérieur */}
                     <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
-                    
                     <div className="absolute right-0 mt-2 w-64 bg-white rounded shadow-xl border border-slate-200 py-2 z-20 animate-in fade-in slide-in-from-top-2">
                       <div className="px-4 py-3 border-b border-slate-50 mb-1">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">Mon Compte</p>
@@ -159,19 +155,15 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
                         </div>
                       </div>
                       
-                      {/* CORRECTION : On ferme le menu au clic sur n'importe quel lien enfant */}
                       <div className="space-y-0.5" onClick={() => setUserMenuOpen(false)}>
                         {isAdmin && <MenuLink to="/admin-general" icon={<Settings size={16} className="text-amber-500" />} label="Console Admin" className="text-amber-600 hover:bg-amber-50 font-bold" />}
                         <MenuLink to="/account" icon={<UserIcon size={16} />} label="Mon Profil" />
                         <MenuLink to="/orders" icon={<Package size={16} />} label="Mes commandes" />
-                        <MenuLink to="/pack-creator" icon={<Wand2 size={16} className="text-brand-primary" />} label="Mon Atelier" />
+                        <MenuLink to="/pack-creator" icon={<Wand2 size={16} className="text-red-600" />} label="Mon Atelier" />
                         {isVendor ? <MenuLink to="/vendor/dashboard" icon={<LayoutDashboard size={16} />} label="Tableau de bord vendeur" /> : !isAdmin && <MenuLink to="/vendor/create-shop" icon={<Store size={16} />} label="Devenir Vendeur" />}
                         <div className="h-px bg-slate-100 my-1 mx-2" />
                         <button 
-                          onClick={(e) => {
-                            e.stopPropagation(); // Évite le double déclenchement
-                            handleLogout();
-                          }} 
+                          onClick={(e) => { e.stopPropagation(); handleLogout(); }} 
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-rose-500 text-[13px] font-bold uppercase hover:bg-rose-50 transition-colors text-left"
                         >
                           <LogOut size={16} /> Déconnexion
@@ -182,31 +174,31 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
                 )}
               </div>
             )}
-            <Link to={isVendor ? "/vendor/dashboard" : "/vendre"} className="bg-brand-primary text-white px-3 lg:px-5 py-1.5 rounded text-[14px] font-medium hover:brightness-105 shadow-sm flex items-center gap-2">
+            <Link to={isVendor ? "/vendor/dashboard" : "/vendre"} className="bg-red-600 text-white px-3 lg:px-5 py-1.5 rounded text-[14px] font-medium hover:brightness-105 shadow-sm flex items-center gap-2">
               <span className="hidden sm:inline">Vendre</span>
               <PlusCircle size={18} />
             </Link>
-            <button onClick={onOpenCart} className="relative p-2 text-slate-500 hover:text-brand-dark">
+            <button onClick={onOpenCart} className="relative p-2 text-slate-500 hover:text-slate-900">
               <ShoppingBag size={24} strokeWidth={1.5} />
-              {cartCount > 0 && <span className="absolute top-0 right-0 bg-brand-primary text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">{cartCount}</span>}
+              {cartCount > 0 && <span className="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">{cartCount}</span>}
             </button>
           </div>
         </div>
       </div>
 
-      {/* --- NIVEAU 2 : NAVIGATION HIÉRARCHIQUE --- */}
+      {/* --- NIVEAU 2 : NAVIGATION --- */}
       <div className="border-b border-slate-200 hidden md:block bg-white">
         <div className="max-w-7xl mx-auto px-4 lg:px-6">
           <nav className="flex items-center h-12 gap-8">
-            <Link to="/shop" className="text-[13px] font-black uppercase tracking-widest text-slate-900 hover:text-brand-primary transition-colors">
-              Tous
+            <Link to="/shop" className="text-[13px] font-black uppercase tracking-widest text-slate-900 hover:text-red-600 transition-colors">
+              Tous les produits
             </Link>
             
             {menuStructure.map((parent) => (
               <div key={parent.id} className="relative group h-full flex items-center">
                 <Link 
                   to={`/shop?category=${parent.slug}`} 
-                  className="text-[13px] font-bold text-slate-600 uppercase tracking-wide hover:text-brand-primary flex items-center gap-1 transition-colors"
+                  className={`text-[13px] font-bold uppercase tracking-wide flex items-center gap-1 transition-colors ${location.search.includes(parent.slug) ? 'text-red-600' : 'text-slate-600 hover:text-red-600'}`}
                 >
                   {parent.name}
                   {parent.subCategories && parent.subCategories.length > 0 && (
@@ -220,7 +212,7 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
                       <Link
                         key={child.id}
                         to={`/shop?category=${child.slug}`}
-                        className="block px-4 py-2 text-[12px] font-medium text-slate-500 hover:bg-slate-50 hover:text-brand-primary rounded-lg transition-colors"
+                        className="block px-4 py-2 text-[12px] font-medium text-slate-500 hover:bg-slate-50 hover:text-red-600 rounded-lg transition-colors"
                       >
                         {child.name}
                       </Link>
@@ -232,16 +224,19 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
 
             <div className="flex-1" />
             <div className="flex items-center gap-6 border-l border-slate-200 pl-8 h-5">
-              <Link to="/about" className="text-[12px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900">À propos</Link>
-              <HelpCircle size={18} className="text-slate-300 cursor-pointer hover:text-slate-600" />
+              <Link to="/about" className="text-[12px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900">L'Univers</Link>
+              <Link to="/aide" className="flex items-center gap-2 text-slate-400 hover:text-red-600 group">
+                <span className="text-[12px] font-bold uppercase tracking-widest">Aide</span>
+                <HelpCircle size={18} className="group-hover:rotate-12 transition-transform" />
+              </Link>
             </div>
           </nav>
         </div>
       </div>
 
-      {/* --- MOBILE OVERLAY --- */}
+      {/* --- MOBILE --- */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-slate-200 py-6 px-6 animate-in slide-in-from-top max-h-[70vh] overflow-y-auto">
+        <div className="md:hidden bg-white border-b border-slate-200 py-6 px-6 animate-in slide-in-from-top max-h-[85vh] overflow-y-auto">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Naviguer par rayon</p>
           <div className="space-y-6">
             {menuStructure.map(parent => (
