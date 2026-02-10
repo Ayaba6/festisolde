@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Facebook, Twitter, Instagram, Mail, Phone, MapPin, Store, CheckCircle, Info } from 'lucide-react'
+import { Facebook, Twitter, Instagram, Mail, Phone, MapPin, Store, CheckCircle, Info, ShieldCheck } from 'lucide-react'
 
 // Imports des logos de paiement
 import LogoOM from '../assets/OM.png'
@@ -58,15 +58,21 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Colonne 3 : Support & À Propos (MISE À JOUR) */}
+        {/* Colonne 3 : Support & À Propos */}
         <div>
           <h3 className="text-white font-bold mb-8 uppercase text-[10px] tracking-[0.2em]">Support Client</h3>
           <ul className="space-y-4 text-sm font-medium">
             <li>
-              {/* LIEN À PROPOS AJOUTÉ ICI */}
               <FooterLink to="/about" className="flex items-center gap-3 text-white font-black italic">
                 <Info size={16} className="text-brand-primary" />
                 <span>NOTRE HISTOIRE</span>
+              </FooterLink>
+            </li>
+            {/* AJOUT DU LIEN CONFIDENTIALITÉ ICI POUR LA VISIBILITÉ SUPPORT */}
+            <li>
+              <FooterLink to="/privacy" className="flex items-center gap-3">
+                <ShieldCheck size={16} className="text-brand-primary" />
+                <span>Confidentialité</span>
               </FooterLink>
             </li>
             <li className="flex items-center gap-3">
@@ -82,14 +88,6 @@ export default function Footer() {
                 <Mail size={16} className="text-brand-primary" />
                 <span>Formulaire de contact</span>
               </FooterLink>
-            </li>
-            <li className="pt-4">
-               <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                  <p className="text-[10px] font-black uppercase text-white mb-2 flex items-center gap-2">
-                    <CheckCircle size={12} className="text-emerald-500" /> Boutique Vérifiée
-                  </p>
-                  <p className="text-[9px] leading-tight opacity-60">Vendeurs contrôlés physiquement pour votre sécurité.</p>
-               </div>
             </li>
           </ul>
         </div>
@@ -119,7 +117,11 @@ export default function Footer() {
       {/* BARRE INFÉRIEURE */}
       <div className="border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row justify-between items-center gap-6 text-[11px] uppercase tracking-widest font-bold">
-          <p>© {currentYear} FestiSolde  <span className="text-brand-primary">226 kodalink.</span></p>
+          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+            <p>© {currentYear} FestiSolde  <span className="text-brand-primary">226 kodalink.</span></p>
+            {/* LIEN LÉGAL DISCRET MAIS OBLIGATOIRE */}
+            <Link to="/privacy" className="text-white/40 hover:text-white transition-colors">Politique de confidentialité</Link>
+          </div>
           <div className="flex flex-wrap justify-center gap-8">
             <span className="flex items-center gap-2">
               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />

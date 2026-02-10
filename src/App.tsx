@@ -15,7 +15,8 @@ import OrderSuccess from './pages/Checkout/OrderSuccess'
 import VendorLanding from './pages/Vendor/VendorLanding'
 import Contact from './pages/Contact'
 import About from './pages/About'
-import Aide from './pages/Aide' // <--- IMPORTATION AJOUTÉE
+import Aide from './pages/Aide'
+import Privacy from './pages/Privacy' // <--- IMPORTATION DE LA POLITIQUE DE CONFIDENTIALITÉ
 import PackCreator from './pages/Home/components/PackCreator'
 
 // --- PAGES VENDEURS ---
@@ -163,7 +164,8 @@ export default function App() {
           <Route path="/vendre" element={<VendorLanding />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<About />} />
-          <Route path="/aide" element={<Aide />} /> {/* <--- ROUTE AJOUTÉE */}
+          <Route path="/aide" element={<Aide />} />
+          <Route path="/privacy" element={<Privacy />} /> {/* <--- ROUTE DE CONFIDENTIALITÉ AJOUTÉE */}
           <Route path="/pack-creator" element={<PackCreator />} />
 
           {/* --- AUTHENTIFICATION --- */}
