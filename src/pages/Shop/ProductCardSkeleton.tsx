@@ -2,40 +2,30 @@ import React from 'react'
 
 export default function ProductCardSkeleton() {
   return (
-    <div className="group bg-white rounded-[2rem] p-3 border border-gray-50 flex flex-col h-full animate-pulse">
+    <div className="group min-w-[280px] lg:min-w-[320px] bg-white p-4 rounded-[3rem] border border-slate-100 flex flex-col animate-pulse">
       
-      {/* 1. Zone Image Placeholder */}
-      <div className="relative aspect-[4/5] bg-gray-100 rounded-[1.5rem] overflow-hidden">
+      {/* 1. Zone Image Placeholder - On utilise le ratio 4/3 pour correspondre à la FlashCard */}
+      <div className="relative aspect-[4/3] bg-slate-100 rounded-[2.2rem] overflow-hidden mb-6">
         {/* Badge promo placeholder */}
-        <div className="absolute top-3 left-3 w-10 h-5 bg-gray-200 rounded-lg" />
+        <div className="absolute top-4 left-4 w-12 h-6 bg-slate-200 rounded-full" />
       </div>
 
       {/* 2. Zone Contenu Textuel */}
-      <div className="pt-5 pb-2 px-2 flex flex-col flex-grow text-left">
+      <div className="px-2 pb-2">
         
-        {/* Catégorie Placeholder */}
-        <div className="mb-3">
-          <div className="h-3 w-16 bg-gray-100 rounded-md" />
+        {/* Titre Placeholder (Simule le texte en italique) */}
+        <div className="h-4 w-3/4 bg-slate-100 rounded-full mb-3" />
+
+        {/* Zone Prix : Simule les deux lignes (Promo et Réel) */}
+        <div className="flex flex-col gap-2 mb-6">
+          {/* Prix Promo (Rouge en réel, plus foncé ici) */}
+          <div className="h-7 w-32 bg-slate-200 rounded-lg" />
+          {/* Prix Réel (Noir barré en réel, très clair ici) */}
+          <div className="h-3 w-20 bg-slate-50 rounded-full" />
         </div>
 
-        {/* Titre Placeholder (Deux lignes simulant le nom du produit) */}
-        <div className="space-y-2 mb-4 h-10">
-          <div className="h-3.5 w-full bg-gray-100 rounded-full" />
-          <div className="h-3.5 w-3/4 bg-gray-100 rounded-full" />
-        </div>
-
-        {/* Bas de carte : Prix et Bouton */}
-        <div className="mt-auto flex items-center justify-between">
-          <div className="space-y-2">
-            {/* Simulation prix barré */}
-            <div className="h-2.5 w-12 bg-gray-50 rounded-full" />
-            {/* Prix principal */}
-            <div className="h-6 w-28 bg-gray-200 rounded-xl" />
-          </div>
-
-          {/* Bouton Action rond/carré */}
-          <div className="w-11 h-11 bg-gray-200 rounded-2xl" />
-        </div>
+        {/* Bouton Action : Large et arrondi comme le bouton "Ajouter au panier" */}
+        <div className="w-full h-[52px] bg-slate-200 rounded-[1.5rem]" />
       </div>
     </div>
   )

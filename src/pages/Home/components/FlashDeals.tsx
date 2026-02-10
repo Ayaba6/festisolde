@@ -22,7 +22,7 @@ const SECTIONS = [
   { label: 'Électronique', slug: 'electronique' }
 ]
 
-// --- COMPOSANT DE RANGÉE AVEC SCROLL ---
+// --- COMPOSANT DE RANGÉE COMPACTE ---
 function FlashRow({ title, products, loading, formatPrice, addToCart }: any) {
   const rowRef = useRef<HTMLDivElement>(null);
 
@@ -38,41 +38,39 @@ function FlashRow({ title, products, loading, formatPrice, addToCart }: any) {
 
   return (
     <div className="relative group/row">
-      <div className="flex items-center justify-between mb-8">
-        <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tight">
+      <div className="flex items-center justify-between mb-6 px-2">
+        <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tight">
           Rayon <span className="text-brand-primary">{title}</span>
         </h3>
         <Link 
           to={`/shop?category=${encodeURIComponent(title)}`} 
-          className="group flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-primary transition-colors"
+          className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-primary transition-colors"
         >
-          Voir tout <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+          Voir tout
         </Link>
       </div>
 
-      {/* FLÈCHES DE NAVIGATION */}
       <button 
         onClick={() => scroll('left')}
-        className="absolute -left-4 top-[50%] -translate-y-1/2 z-30 w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center border border-slate-100 opacity-0 group-hover/row:opacity-100 transition-all hover:scale-110 hidden lg:flex"
+        className="absolute -left-2 top-[35%] -translate-y-1/2 z-30 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center border border-slate-100 opacity-0 group-hover/row:opacity-100 transition-all hidden lg:flex"
       >
-        <ChevronLeft size={24} className="text-slate-900" />
+        <ChevronLeft size={20} />
       </button>
 
       <button 
         onClick={() => scroll('right')}
-        className="absolute -right-4 top-[50%] -translate-y-1/2 z-30 w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center border border-slate-100 opacity-0 group-hover/row:opacity-100 transition-all hover:scale-110 hidden lg:flex"
+        className="absolute -right-2 top-[35%] -translate-y-1/2 z-30 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center border border-slate-100 opacity-0 group-hover/row:opacity-100 transition-all hidden lg:flex"
       >
-        <ChevronRight size={24} className="text-slate-900" />
+        <ChevronRight size={20} />
       </button>
 
-      {/* CONTENEUR DE SCROLL */}
       <div 
         ref={rowRef}
-        className="flex gap-4 lg:gap-8 overflow-x-auto scrollbar-hide scroll-smooth pb-8 px-2"
+        className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-6 px-2"
       >
         {loading ? (
           [...Array(4)].map((_, i) => (
-            <div key={i} className="min-w-[280px] aspect-[4/5] bg-slate-100 animate-pulse rounded-[2.5rem]" />
+            <div key={i} className="min-w-[200px] h-[280px] bg-slate-100 animate-pulse rounded-[2rem]" />
           ))
         ) : (
           products.map((item: FlashProduct) => {
@@ -80,26 +78,40 @@ function FlashRow({ title, products, loading, formatPrice, addToCart }: any) {
             return (
               <div 
                 key={item.id} 
-                className="min-w-[260px] lg:min-w-[300px] bg-white p-3 rounded-[2.5rem] border border-slate-100 hover:shadow-2xl transition-all duration-500"
+                className="group min-w-[200px] lg:min-w-[220px] bg-white p-3 rounded-[2rem] border border-slate-100 hover:shadow-xl transition-all duration-300"
               >
-                <Link to={`/product/${item.id}`} className="relative block aspect-square overflow-hidden rounded-[2rem] bg-slate-50 mb-4">
-                  <div className="absolute top-3 left-3 z-10 bg-brand-primary text-white text-[10px] font-black px-3 py-1 rounded-full">-{discount}%</div>
-                  <img src={item.images?.[0]} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                {/* ZONE IMAGE */}
+                <Link to={`/product/${item.id}`} className="relative block w-full h-[150px] overflow-hidden rounded-[1.5rem] bg-slate-50/50 mb-3">
+                  <div className="absolute top-2 left-2 z-10 bg-brand-primary text-[9px] text-white font-black px-2 py-0.5 rounded-full shadow-sm">
+                    -{discount}%
+                  </div>
+                  <img 
+                    src={item.images?.[0]} 
+                    alt={item.title} 
+                    className="w-full h-full object-contain p-4 transition-transform duration-500 group-hover:scale-105" 
+                  />
                 </Link>
 
-                <div className="px-2 pb-2">
-                  <h4 className="font-bold text-slate-900 text-sm truncate mb-1 uppercase italic tracking-tight italic">
+                <div className="px-1 text-center">
+                  <h4 className="font-bold text-slate-900 text-[11px] truncate mb-1 uppercase italic">
                     {item.title}
                   </h4>
-                  <div className="flex items-baseline gap-2 mb-4">
-                    <span className="text-xl font-black text-slate-900">{formatPrice(item.promo_price)}</span>
-                    <span className="text-[11px] text-slate-300 line-through font-bold">{formatPrice(item.price)}</span>
+                  
+                  {/* ZONE PRIX MISE À JOUR : ROUGE POUR PROMO / NOIR POUR RÉEL */}
+                  <div className="flex flex-col items-center gap-0 mb-3">
+                    <span className="text-lg font-black text-red-600 leading-tight">
+                      {formatPrice(item.promo_price)}
+                    </span>
+                    <span className="text-[9px] text-slate-900 line-through font-bold opacity-40">
+                      {formatPrice(item.price)}
+                    </span>
                   </div>
+
                   <button 
                     onClick={() => addToCart(item)}
-                    className="w-full py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] flex items-center justify-center gap-2 hover:bg-brand-primary transition-all active:scale-95 shadow-lg shadow-slate-200"
+                    className="w-full py-2.5 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-brand-primary transition-all active:scale-95"
                   >
-                    <ShoppingCart size={14} /> Vite !
+                    <ShoppingCart size={12} /> Acheter
                   </button>
                 </div>
               </div>
@@ -170,33 +182,26 @@ export default function FlashDeals() {
   const pad = (n: number) => n.toString().padStart(2, '0')
 
   return (
-    <section className="py-16 bg-slate-50/30 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 lg:px-6">
+    <section className="py-12 bg-slate-50/30 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4">
         
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
+        {/* HEADER COMPACT */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="bg-brand-primary p-1 rounded-md">
-                <Zap size={14} className="text-white" fill="currentColor" />
-              </div>
-              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-primary">Offres Chrono</span>
-            </div>
-            <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase italic leading-none">
               Ventes <span className="text-brand-primary">Flash</span>
             </h2>
           </div>
 
-          <div className="flex items-center gap-4 bg-slate-900 text-white p-1 pl-5 rounded-2xl shadow-2xl">
-             <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Expire dans</span>
-             <div className="bg-slate-800 px-4 py-2 rounded-xl flex items-center gap-2 font-mono text-2xl font-black text-brand-primary">
+          <div className="flex items-center gap-3 bg-slate-900 text-white px-4 py-2 rounded-2xl shadow-xl">
+             <span className="text-[9px] font-bold uppercase text-slate-400">Expire dans</span>
+             <div className="font-mono text-xl font-black text-brand-primary">
                 {pad(timeLeft.hours)}:{pad(timeLeft.minutes)}:{pad(timeLeft.seconds)}
              </div>
           </div>
         </div>
 
-        {/* CONTENU - Chaque section est maintenant une rangée scrollable */}
-        <div className="space-y-16">
+        <div className="space-y-12">
           {SECTIONS.map((section) => (
             <FlashRow 
               key={section.label}

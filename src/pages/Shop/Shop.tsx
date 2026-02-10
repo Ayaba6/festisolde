@@ -211,7 +211,6 @@ export default function Shop({ cart, setCart }: ShopProps) {
   )
 }
 
-// --- LE COMPOSANT MANQUANT RE-AJOUTÉ ICI ---
 function ShopCard({ product, onAddToCart }: { product: Product, onAddToCart: () => void }) {
   const [added, setAdded] = useState(false)
   const handleAdd = (e: React.MouseEvent) => {
@@ -228,7 +227,7 @@ function ShopCard({ product, onAddToCart }: { product: Product, onAddToCart: () 
     : null
 
   return (
-    <div className={`group bg-white rounded-[2rem] p-3 border-2 transition-all duration-500 flex flex-col h-full relative ${isPackeo ? 'border-red-600/10 shadow-xl shadow-red-600/5' : 'border-transparent hover:border-gray-100'}`}>
+    <div className={`group bg-white rounded-[2rem] p-3 border-2 transition-all duration-500 flex flex-col h-full relative ${isPackeo ? 'border-red-600/10 shadow-xl shadow-red-600/5' : 'border-transparent hover:border-gray-100 shadow-sm'}`}>
       {isPackeo && (
         <div className="absolute -top-2 -right-1 z-10 bg-red-600 text-white text-[8px] font-black px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1 uppercase">
           <Sparkles size={10} fill="white" /> Pack Spécial
@@ -242,7 +241,7 @@ function ShopCard({ product, onAddToCart }: { product: Product, onAddToCart: () 
           className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${isOutOfStock ? 'grayscale' : ''}`} 
         />
         <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-          {discount && <span className="bg-red-600 text-white text-[10px] font-black px-2.5 py-1 rounded-lg">-{discount}%</span>}
+          {discount && <span className="bg-red-600 text-white text-[10px] font-black px-2.5 py-1 rounded-lg shadow-sm">-{discount}%</span>}
         </div>
       </Link>
 
@@ -257,15 +256,20 @@ function ShopCard({ product, onAddToCart }: { product: Product, onAddToCart: () 
         </Link>
         <div className="mt-auto flex items-center justify-between">
           <div className="flex flex-col">
-            {product.promo_price && <span className="text-[11px] text-gray-400 line-through font-bold">{product.price.toLocaleString()} F</span>}
-            <span className="text-lg font-black text-gray-900">
+            {/* CORRECTION COULEURS PRIX ICI */}
+            {product.promo_price && (
+              <span className="text-[11px] text-gray-900 line-through font-bold opacity-30">
+                {product.price.toLocaleString()} F
+              </span>
+            )}
+            <span className={`text-lg font-black ${product.promo_price ? 'text-red-600' : 'text-gray-900'}`}>
               {(product.promo_price || product.price).toLocaleString()} <small className="text-[10px]">F</small>
             </span>
           </div>
           <button 
             disabled={isOutOfStock || added}
             onClick={handleAdd}
-            className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${added ? 'bg-emerald-500 text-white' : 'bg-gray-900 text-white hover:bg-red-600'}`}
+            className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all shadow-md active:scale-90 ${added ? 'bg-emerald-500 text-white' : 'bg-gray-900 text-white hover:bg-red-600'}`}
           >
             {added ? <Check size={20} /> : <Plus size={20} />}
           </button>
