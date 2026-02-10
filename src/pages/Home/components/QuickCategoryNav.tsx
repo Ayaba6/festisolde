@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { Sparkles, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Link } from 'react-router-dom' 
 
 interface Category {
   id: string
@@ -10,10 +11,9 @@ interface Category {
   slug: string
 }
 
-// AJOUT : Props pour communiquer avec PackCreator
 interface QuickNavProps {
-  onCategorySelect: (name: string) => void;
-  activeCategory: string;
+  onCategorySelect?: (name: string) => void;
+  activeCategory?: string;
 }
 
 export default function QuickCategoryNav({ onCategorySelect, activeCategory }: QuickNavProps) {
@@ -47,7 +47,7 @@ export default function QuickCategoryNav({ onCategorySelect, activeCategory }: Q
               id: parent.id,
               name: parent.name,
               slug: parent.slug,
-              image_url: parent.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(parent.name)}&background=ffbf00&color=000&bold=true`,
+              image_url: parent.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(parent.name)}&background=f3f4f6&color=1f2937&bold=true`,
               product_count: count
             }
           })
@@ -63,52 +63,81 @@ export default function QuickCategoryNav({ onCategorySelect, activeCategory }: Q
   }, [])
 
   return (
-    <section className="py-6 bg-black/40 backdrop-blur-md border-b border-white/5 relative group/section">
+    <section className="py-8 bg-white border-b border-gray-100 relative group/section">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="flex items-center gap-2 mb-6">
-          <Sparkles className="text-brand-primary" size={14} />
-          <h2 className="text-[10px] font-black uppercase tracking-widest text-white/40 italic">Styles disponibles</h2>
+        
+        <div className="flex items-center gap-3 mb-8">
+          <div className="p-1.5 bg-red-600 rounded-lg shadow-md shadow-red-100">
+            <Sparkles className="text-white" size={14} />
+          </div>
+          <h2 className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-900 italic">
+            Explorer les catégories
+          </h2>
         </div>
         
         <div className="relative">
-          <button onClick={() => scroll('left')} className="absolute -left-4 top-8 z-10 w-8 h-8 bg-white rounded-full flex items-center justify-center text-black shadow-xl opacity-0 group-hover/section:opacity-100 transition-opacity">
-            <ChevronLeft size={18} />
+          <button 
+            onClick={() => scroll('left')} 
+            className="absolute -left-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white text-black rounded-full flex items-center justify-center shadow-xl border border-gray-100 opacity-0 group-hover/section:opacity-100 transition-all hover:bg-gray-50 hover:scale-110"
+          >
+            <ChevronLeft size={20} strokeWidth={2.5} />
           </button>
 
-          <div ref={scrollRef} className="flex items-start gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-2">
-            {/* BOUTON "TOUS" */}
-            <button 
-              onClick={() => onCategorySelect('Tous')}
-              className={`flex-shrink-0 flex flex-col items-center gap-3 w-20 transition-all ${activeCategory === 'Tous' ? 'scale-110' : 'opacity-40 hover:opacity-100'}`}
+          <div ref={scrollRef} className="flex items-start gap-8 overflow-x-auto scrollbar-hide scroll-smooth pb-4 px-2">
+            
+            {/* LIEN TOUS -> Vers /shop sans filtre */}
+            <Link 
+              to="/shop"
+              className="flex-shrink-0 flex flex-col items-center gap-3 w-20 group transition-transform"
             >
-              <div className={`w-16 h-16 rounded-full border-2 flex items-center justify-center ${activeCategory === 'Tous' ? 'border-brand-primary bg-brand-primary/10' : 'border-white/10'}`}>
-                <span className="text-[10px] font-black italic">TOUS</span>
+              <div className={`w-16 h-16 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                activeCategory === 'Tous' 
+                ? 'border-red-600 bg-red-600 shadow-lg shadow-red-100 scale-110' 
+                : 'border-gray-200 hover:border-red-400 bg-gray-50'
+              }`}>
+                <span className={`text-[10px] font-black italic ${activeCategory === 'Tous' ? 'text-white' : 'text-gray-400'}`}>TOUS</span>
               </div>
-              <p className="text-[9px] font-black uppercase text-center tracking-tighter">Global</p>
-            </button>
+              <p className={`text-[10px] font-bold uppercase tracking-tighter ${activeCategory === 'Tous' ? 'text-red-600' : 'text-gray-400 group-hover:text-gray-900'}`}>Global</p>
+            </Link>
 
-            {loading ? [...Array(5)].map((_, i) => (
-              <div key={i} className="flex-shrink-0 w-16 h-16 bg-white/5 rounded-full animate-pulse" />
+            {/* LISTE DES CATÉGORIES -> Vers /shop?category=Nom */}
+            {loading ? [...Array(6)].map((_, i) => (
+              <div key={i} className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded-full animate-pulse border-2 border-transparent" />
             )) : categories.map((cat) => (
-              <button 
+              <Link 
                 key={cat.id}
-                onClick={() => onCategorySelect(cat.name)}
-                className={`flex-shrink-0 flex flex-col items-center gap-3 w-20 transition-all ${activeCategory === cat.name ? 'scale-110' : 'opacity-40 hover:opacity-100'}`}
+                // ICI : Redirection vers /shop avec le paramètre de catégorie
+                to={`/shop?category=${encodeURIComponent(cat.name)}`}
+                className="flex-shrink-0 flex flex-col items-center gap-3 w-20 group transition-transform"
               >
-                <div className={`w-16 h-16 rounded-full overflow-hidden border-2 transition-all ${activeCategory === cat.name ? 'border-brand-primary shadow-neon' : 'border-white/10'}`}>
-                  <img src={cat.image_url} className="w-full h-full object-cover" alt={cat.name} />
+                <div className={`w-16 h-16 rounded-full overflow-hidden border-2 transition-all duration-300 relative ${
+                  activeCategory === cat.name 
+                  ? 'border-red-600 shadow-lg shadow-red-100 scale-110' 
+                  : 'border-gray-100 hover:border-gray-300 shadow-sm'
+                }`}>
+                  <img 
+                    src={cat.image_url} 
+                    className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110`} 
+                    alt={cat.name} 
+                  />
+                  <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
                 </div>
                 <div className="text-center">
-                  <p className={`text-[9px] font-black uppercase italic truncate w-20 ${activeCategory === cat.name ? 'text-brand-primary' : 'text-white'}`}>
+                  <p className={`text-[10px] font-black uppercase italic truncate w-20 transition-colors ${
+                    activeCategory === cat.name ? 'text-red-600' : 'text-gray-500 group-hover:text-gray-900'
+                  }`}>
                     {cat.name}
                   </p>
                 </div>
-              </button>
+              </Link>
             ))}
           </div>
 
-          <button onClick={() => scroll('right')} className="absolute -right-4 top-8 z-10 w-8 h-8 bg-white rounded-full flex items-center justify-center text-black shadow-xl opacity-0 group-hover/section:opacity-100 transition-opacity">
-            <ChevronRight size={18} />
+          <button 
+            onClick={() => scroll('right')} 
+            className="absolute -right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white text-black rounded-full flex items-center justify-center shadow-xl border border-gray-100 opacity-0 group-hover/section:opacity-100 transition-all hover:bg-gray-50 hover:scale-110"
+          >
+            <ChevronRight size={20} strokeWidth={2.5} />
           </button>
         </div>
       </div>

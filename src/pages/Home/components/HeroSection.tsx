@@ -1,74 +1,167 @@
-import { ArrowRight, Zap, Wand2 } from 'lucide-react' // ShoppingBag remplacé par Wand2
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabaseClient' 
+import { Swiper, SwiperSlide } from 'swiper/react'
+import { Autoplay, Pagination, EffectFade, Navigation } from 'swiper/modules'
+import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import HeroSlider from './HeroSlider'
+import { motion } from 'framer-motion'
 
-export default function HeroSection() {
+import 'swiper/css'
+import 'swiper/css/pagination'
+import 'swiper/css/navigation'
+import 'swiper/css/effect-fade'
+
+export default function LiquidationHero() {
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchLiquidation() {
+      try {
+        setLoading(true)
+        // On récupère les produits tagués liquidation
+        let { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .ilike('category', '%liquidation%') 
+          .gt('stock', 0)
+          .limit(8)
+
+        if (error) throw error
+        setProducts(data || [])
+      } catch (error) {
+        console.error('Erreur:', error.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchLiquidation()
+  }, [])
+
+  if (loading || products.length === 0) return null
+
   return (
-    // HAUTEUR FIXE RÉDUITE : 400px sur desktop
-    <section className="relative bg-brand-dark text-white overflow-hidden border-b border-white/5 pt-20 lg:pt-0 lg:h-[400px] flex items-center">
-      
-      {/* Background subtil */}
-      <div className="absolute inset-0 pointer-events-none opacity-30">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:30px_30px]" />
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 w-full relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-center">
-          
-          {/* TEXTE */}
-          <div className="lg:col-span-5 text-center lg:text-left order-2 lg:order-1">
-            
-            <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-md bg-brand-primary/10 border border-brand-primary/20 mb-3">
-              <Zap size={10} className="text-brand-primary" fill="currentColor" />
-              <span className="text-[9px] font-black tracking-widest uppercase text-brand-primary">Flash -70%</span>
-            </div>
-
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black leading-tight mb-3 tracking-tighter uppercase italic">
-              L'exceptionnel <br />
-              <span className="text-brand-primary italic">est ici</span>
-            </h1>
-
-            <p className="max-w-xs mx-auto lg:mx-0 text-gray-400 text-xs mb-5 leading-relaxed">
-              Collection exclusive. Design premium. <br className="hidden lg:block" /> 
-              Le luxe accessible en un clic.
-            </p>
-
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3">
-              <Link 
-                to="/products" 
-                className="px-5 py-2.5 bg-brand-primary text-white rounded-lg font-bold text-xs flex items-center gap-2 hover:scale-105 transition-all"
-              >
-                DÉCOUVRIR <ArrowRight size={14} />
-              </Link>
+    <section className="relative bg-[#050505] text-white border-b border-white/5 overflow-hidden font-sans">
+      <Swiper
+        modules={[Autoplay, Pagination, EffectFade, Navigation]}
+        effect="fade"
+        fadeEffect={{ crossFade: true }}
+        speed={1000}
+        autoplay={{ delay: 6000, disableOnInteraction: false }}
+        pagination={{ clickable: true }}
+        navigation={true}
+        className="h-[420px] lg:h-[380px] w-full"
+      >
+        {products.map((product) => (
+          <SwiperSlide key={product.id} className="bg-[#050505]">
+            <div className="container mx-auto px-4 lg:px-16 h-full flex items-center">
               
-              {/* BOUTON ATELIER (PACKEO) */}
-              <Link 
-                to="/pack-creator" 
-                className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-lg font-bold text-xs flex items-center gap-2 hover:bg-white/10 hover:border-brand-primary/50 transition-all text-white/90"
-              >
-                <Wand2 size={14} className="text-brand-primary" /> MON ATELIER
-              </Link>
-            </div>
-          </div>
+              <div className="flex flex-col lg:grid lg:grid-cols-2 gap-6 lg:gap-12 items-center w-full">
+                
+                {/* --- BLOC IMAGE : CADRE PAYSAGE & IMAGE ADAPTÉE --- */}
+                <div className="relative flex justify-center order-1 lg:order-2 h-[180px] lg:h-[260px] w-full">
+                  
+                  {/* Le Cadre Large */}
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    className="relative w-[280px] h-[150px] lg:w-[500px] lg:h-[250px] border border-white/10 rounded-2xl bg-white/[0.02] overflow-hidden shadow-2xl"
+                  >
+                    {/* Coins de focus rouges */}
+                    <div className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 border-red-600 z-20"></div>
+                    <div className="absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 border-red-600 z-20"></div>
+                    
+                    {/* Image qui remplit le cadre */}
+                    <motion.img 
+                      initial={{ scale: 1.1 }}
+                      whileInView={{ scale: 1 }}
+                      transition={{ duration: 1.5 }}
+                      src={product.images?.[0] || '/placeholder.png'} 
+                      className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                      alt={product.title}
+                    />
+                    
+                    {/* Overlay de dégradé pour le texte */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+                  </motion.div>
 
-          {/* SLIDER */}
-          <div className="lg:col-span-7 order-1 lg:order-2">
-            <div className="relative group">
-              <div className="absolute -inset-1 bg-brand-primary/10 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-              
-              <div className="relative aspect-[16/9] sm:aspect-[21/9] lg:aspect-[16/7] rounded-xl overflow-hidden border border-white/5 shadow-2xl">
-                <HeroSlider />
-                <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/40 to-transparent pointer-events-none" />
+                  {/* Badge Promo Flottant */}
+                  {product.promo_price && (
+                    <div className="absolute top-2 right-[5%] lg:-right-2 bg-red-600 text-white px-3 py-1 rounded-md font-black text-[10px] lg:text-[12px] z-30 rotate-2 shadow-xl">
+                      -{Math.round((1 - product.promo_price / product.price) * 100)}%
+                    </div>
+                  )}
+                </div>
+
+                {/* --- BLOC TEXTE : DESCRIPTION COURTE & PRIX --- */}
+                <div className="flex flex-col items-center lg:items-start text-center lg:text-left z-10 order-2 lg:order-1">
+                  
+                  {/* Label Liquidation */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="h-[1px] w-5 bg-red-600"></span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-red-600">Destockage</span>
+                  </div>
+
+                  <motion.h1 
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    className="text-xl lg:text-3xl font-black mb-2 uppercase italic leading-tight tracking-tighter"
+                  >
+                    {product.title}
+                  </motion.h1>
+
+                  {/* Description courte (limitée à 2 lignes) */}
+                  <p className="text-[11px] lg:text-sm text-white/40 mb-5 max-w-[320px] lg:max-w-[450px] line-clamp-2 font-medium">
+                    {product.description || "Dernières pièces disponibles de la collection exclusive SEMER L'AVENIR."}
+                  </p>
+
+                  {/* Zone Prix & CTA */}
+                  <div className="flex items-center gap-6">
+                    <div className="flex flex-col">
+                      <span className="text-white/20 font-bold line-through text-[11px] lg:text-[12px]">
+                        {product.price.toLocaleString()} F
+                      </span>
+                      <span className="text-2xl lg:text-4xl font-black text-white leading-none">
+                        {(product.promo_price || product.price).toLocaleString()} <small className="text-[10px] text-red-500 uppercase">CFA</small>
+                      </span>
+                    </div>
+
+                    <Link 
+                      to={`/product/${product.id}`} 
+                      className="flex items-center gap-2 bg-white text-black h-[42px] lg:h-[50px] px-6 lg:px-8 rounded-full transition-all duration-300 hover:bg-red-600 hover:text-white group active:scale-95 shadow-lg shadow-white/5"
+                    >
+                      <span className="text-[10px] lg:text-[11px] font-black uppercase tracking-widest">
+                        Profiter
+                      </span>
+                      <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                  </div>
+                </div>
+
               </div>
-
-              <div className="absolute top-4 right-4 bg-brand-primary text-brand-dark font-black text-[8px] px-2 py-1 rounded shadow-xl uppercase tracking-tighter animate-pulse">
-                New Drop
-              </div>
             </div>
-          </div>
+          </SwiperSlide>
+        ))}
+      </Swiper>
 
-        </div>
-      </div>
+      {/* STYLES DE L'INTERFACE SWIPER */}
+      <style>{`
+        .swiper-button-next, .swiper-button-prev { 
+          width: 35px !important; 
+          height: 35px !important; 
+          background: rgba(255,255,255,0.05); 
+          border-radius: 50%;
+          color: white !important;
+          top: 50% !important;
+          visibility: hidden;
+        }
+        @media (min-width: 1024px) {
+          .swiper-button-next, .swiper-button-prev { visibility: visible; }
+        }
+        .swiper-button-next:after, .swiper-button-prev:after { font-size: 12px !important; font-weight: 900; }
+        .swiper-pagination-bullet { background: white !important; opacity: 0.2; }
+        .swiper-pagination-bullet-active { background: #dc2626 !important; opacity: 1; width: 20px !important; border-radius: 10px !important; }
+      `}</style>
     </section>
   )
 }
