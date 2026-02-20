@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom' // Ajout de useLocation
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { 
   ShoppingBag, 
@@ -16,7 +16,8 @@ import {
   LayoutDashboard,
   Store,
   Wand2,
-  Camera
+  Camera,
+  MoreHorizontal
 } from 'lucide-react'
 
 import PromoBanner from './PromoBanner'
@@ -38,7 +39,7 @@ interface Category {
 
 export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderProps) {
   const navigate = useNavigate()
-  const location = useLocation() // Pour détecter où on se trouve
+  const location = useLocation()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isVendor, setIsVendor] = useState(false)
@@ -103,6 +104,10 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
 
   const initial = (user?.full_name || user?.email || 'U').charAt(0).toUpperCase()
   const isAdmin = user?.role === 'admin'
+
+  // --- LOGIQUE DE LIMITATION DES CATÉGORIES ---
+  const mainCategories = menuStructure.slice(0, 10);
+  const extraCategories = menuStructure.slice(10);
 
   return (
     <div className="sticky top-0 z-50 w-full shadow-sm bg-white">
@@ -189,20 +194,21 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
       {/* --- NIVEAU 2 : NAVIGATION --- */}
       <div className="border-b border-slate-200 hidden md:block bg-white">
         <div className="max-w-7xl mx-auto px-4 lg:px-6">
-          <nav className="flex items-center h-12 gap-8">
-            <Link to="/shop" className="text-[13px] font-black uppercase tracking-widest text-slate-900 hover:text-red-600 transition-colors">
-              Tous les produits
+          <nav className="flex items-center h-12 gap-6">
+            <Link to="/shop" className="text-[12px] font-black uppercase tracking-widest text-slate-900 hover:text-red-600 transition-colors shrink-0">
+              Tous
             </Link>
             
-            {menuStructure.map((parent) => (
+            {/* Affichage des 10 premiers */}
+            {mainCategories.map((parent) => (
               <div key={parent.id} className="relative group h-full flex items-center">
                 <Link 
                   to={`/shop?category=${parent.slug}`} 
-                  className={`text-[13px] font-bold uppercase tracking-wide flex items-center gap-1 transition-colors ${location.search.includes(parent.slug) ? 'text-red-600' : 'text-slate-600 hover:text-red-600'}`}
+                  className={`text-[12px] font-bold uppercase tracking-tight flex items-center gap-1 transition-colors whitespace-nowrap ${location.search.includes(parent.slug) ? 'text-red-600' : 'text-slate-600 hover:text-red-600'}`}
                 >
                   {parent.name}
                   {parent.subCategories && parent.subCategories.length > 0 && (
-                    <ChevronDown size={12} className="group-hover:rotate-180 transition-transform" />
+                    <ChevronDown size={11} className="group-hover:rotate-180 transition-transform opacity-50" />
                   )}
                 </Link>
 
@@ -222,12 +228,33 @@ export default function Header({ user, setUser, cartCount, onOpenCart }: HeaderP
               </div>
             ))}
 
+            {/* Menu "Plus" pour le reste */}
+            {extraCategories.length > 0 && (
+              <div className="relative group h-full flex items-center">
+                <button className="text-[12px] font-bold uppercase tracking-tight text-slate-600 hover:text-red-600 flex items-center gap-1">
+                  Plus <ChevronDown size={11} className="group-hover:rotate-180 transition-transform opacity-50" />
+                </button>
+                <div className="absolute top-full right-0 w-56 bg-white shadow-xl border border-slate-100 py-3 px-2 rounded-b-xl opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all z-50 max-h-[70vh] overflow-y-auto">
+                   <p className="px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 mb-2">Autres rayons</p>
+                   {extraCategories.map(cat => (
+                      <Link
+                        key={cat.id}
+                        to={`/shop?category=${cat.slug}`}
+                        className="block px-4 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-50 hover:text-red-600 rounded-lg transition-colors"
+                      >
+                        {cat.name}
+                      </Link>
+                   ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex-1" />
-            <div className="flex items-center gap-6 border-l border-slate-200 pl-8 h-5">
-              <Link to="/about" className="text-[12px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900">L'Univers</Link>
+            <div className="flex items-center gap-6 border-l border-slate-200 pl-6 h-5">
+              <Link to="/about" className="text-[11px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900">L'Univers</Link>
               <Link to="/aide" className="flex items-center gap-2 text-slate-400 hover:text-red-600 group">
-                <span className="text-[12px] font-bold uppercase tracking-widest">Aide</span>
-                <HelpCircle size={18} className="group-hover:rotate-12 transition-transform" />
+                <span className="text-[11px] font-bold uppercase tracking-widest">Aide</span>
+                <HelpCircle size={16} className="group-hover:rotate-12 transition-transform" />
               </Link>
             </div>
           </nav>
