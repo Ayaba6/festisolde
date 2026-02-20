@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../../../lib/supabaseClient'
-import { Zap, ShoppingCart, ChevronRight, ChevronLeft } from 'lucide-react'
+import { ShoppingCart, Zap, Check } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -12,209 +12,180 @@ interface FlashProduct {
   price: number;
   stock: number;
   category: string;
-  category_id?: string;
+  shop_id?: string;
 }
 
-const SECTIONS = [
-  { label: 'Homme', slug: 'homme' },
-  { label: 'Femme', slug: 'femme' },
-  { label: 'Enfant', slug: 'enfant' },
-  { label: 'Électronique', slug: 'electronique' }
-]
-
-// --- COMPOSANT DE RANGÉE COMPACTE ---
-function FlashRow({ title, products, loading, formatPrice, addToCart }: any) {
-  const rowRef = useRef<HTMLDivElement>(null);
-
-  const scroll = (direction: 'left' | 'right') => {
-    if (rowRef.current) {
-      const { scrollLeft, clientWidth } = rowRef.current;
-      const scrollTo = direction === 'left' ? scrollLeft - clientWidth / 1.5 : scrollLeft + clientWidth / 1.5;
-      rowRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
-    }
-  };
-
-  if (!loading && products.length === 0) return null;
-
-  return (
-    <div className="relative group/row">
-      <div className="flex items-center justify-between mb-6 px-2">
-        <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tight">
-          Rayon <span className="text-brand-primary">{title}</span>
-        </h3>
-        <Link 
-          to={`/shop?category=${encodeURIComponent(title)}`} 
-          className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-primary transition-colors"
-        >
-          Voir tout
-        </Link>
-      </div>
-
-      <button 
-        onClick={() => scroll('left')}
-        className="absolute -left-2 top-[35%] -translate-y-1/2 z-30 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center border border-slate-100 opacity-0 group-hover/row:opacity-100 transition-all hidden lg:flex"
-      >
-        <ChevronLeft size={20} />
-      </button>
-
-      <button 
-        onClick={() => scroll('right')}
-        className="absolute -right-2 top-[35%] -translate-y-1/2 z-30 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center border border-slate-100 opacity-0 group-hover/row:opacity-100 transition-all hidden lg:flex"
-      >
-        <ChevronRight size={20} />
-      </button>
-
-      <div 
-        ref={rowRef}
-        className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-6 px-2"
-      >
-        {loading ? (
-          [...Array(4)].map((_, i) => (
-            <div key={i} className="min-w-[200px] h-[280px] bg-slate-100 animate-pulse rounded-[2rem]" />
-          ))
-        ) : (
-          products.map((item: FlashProduct) => {
-            const discount = Math.round(((item.price - item.promo_price) / item.price) * 100);
-            return (
-              <div 
-                key={item.id} 
-                className="group min-w-[200px] lg:min-w-[220px] bg-white p-3 rounded-[2rem] border border-slate-100 hover:shadow-xl transition-all duration-300"
-              >
-                {/* ZONE IMAGE */}
-                <Link to={`/product/${item.id}`} className="relative block w-full h-[150px] overflow-hidden rounded-[1.5rem] bg-slate-50/50 mb-3">
-                  <div className="absolute top-2 left-2 z-10 bg-brand-primary text-[9px] text-white font-black px-2 py-0.5 rounded-full shadow-sm">
-                    -{discount}%
-                  </div>
-                  <img 
-                    src={item.images?.[0]} 
-                    alt={item.title} 
-                    className="w-full h-full object-contain p-4 transition-transform duration-500 group-hover:scale-105" 
-                  />
-                </Link>
-
-                <div className="px-1 text-center">
-                  <h4 className="font-bold text-slate-900 text-[11px] truncate mb-1 uppercase italic">
-                    {item.title}
-                  </h4>
-                  
-                  {/* ZONE PRIX MISE À JOUR : ROUGE POUR PROMO / NOIR POUR RÉEL */}
-                  <div className="flex flex-col items-center gap-0 mb-3">
-                    <span className="text-lg font-black text-red-600 leading-tight">
-                      {formatPrice(item.promo_price)}
-                    </span>
-                    <span className="text-[9px] text-slate-900 line-through font-bold opacity-40">
-                      {formatPrice(item.price)}
-                    </span>
-                  </div>
-
-                  <button 
-                    onClick={() => addToCart(item)}
-                    className="w-full py-2.5 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-brand-primary transition-all active:scale-95"
-                  >
-                    <ShoppingCart size={12} /> Acheter
-                  </button>
-                </div>
-              </div>
-            )
-          })
-        )}
-      </div>
-    </div>
-  );
-}
-
-// --- COMPOSANT PRINCIPAL ---
-export default function FlashDeals() {
-  const [groupedProducts, setGroupedProducts] = useState<Record<string, FlashProduct[]>>({})
+export default function FlashDeals({ setCart }: { setCart: any }) {
+  const [looks, setLooks] = useState<FlashProduct[][]>([])
   const [loading, setLoading] = useState(true)
+  const [addingId, setAddingId] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 })
 
   useEffect(() => {
-    async function fetchFlashProducts() {
+    async function fetchAndBuildLooks() {
       setLoading(true)
       try {
-        const { data: allCats } = await supabase.from('categories').select('id, slug, name, parent_id')
-        const { data: products } = await supabase.from('products').select('*').not('promo_price', 'is', null).neq('category', 'Packeo').gt('stock', 0)
+        const { data: products, error } = await supabase
+          .from('products')
+          .select('*')
+          .not('promo_price', 'is', null)
+          .gt('stock', 0);
 
-        if (products && allCats) {
-          const groups: Record<string, FlashProduct[]> = {}
-          SECTIONS.forEach(sec => {
-            const parentCat = allCats.find(c => c.slug === sec.slug)
-            if (parentCat) {
-              const familyIds = [parentCat.id, ...allCats.filter(c => c.parent_id === parentCat.id).map(c => c.id)]
-              groups[sec.label] = products.filter(p => (p.category_id && familyIds.includes(p.category_id)) || (p.category?.toLowerCase() === parentCat.name?.toLowerCase()))
-            }
-          })
-          setGroupedProducts(groups)
+        if (error) throw error;
+
+        if (products && products.length > 0) {
+          const filterByKeywords = (keywords: string[], exclude: string[] = []) => {
+            return products.filter(p => {
+              const cat = p.category?.toLowerCase() || "";
+              const hasIncluded = keywords.some(key => cat.includes(key.toLowerCase()));
+              const hasExcluded = exclude.some(ex => cat.includes(ex.toLowerCase()));
+              return hasIncluded && !hasExcluded;
+            });
+          };
+
+          const hauts = filterByKeywords(['t-shirt', 'tshirt', 'pull', 'chemise', 'veste', 'top', 'polo', 'sweat']);
+          const bas = filterByKeywords(['pantalon', 'jean', 'short', 'bas', 'jogging', 'culotte'], ['basket', 'chaussure']);
+          const chaussures = filterByKeywords(['basket', 'chaussure', 'sneaker', 'mous', 'soulier', 'pied']);
+          const accessoires = filterByKeywords(['montre', 'sac', 'lunette', 'casquette', 'ceinture', 'bijou', 'parfum', 'accessoire']);
+
+          const generatedLooks = [];
+          for (let i = 0; i < 4; i++) {
+            const row: FlashProduct[] = [];
+            if (hauts[i]) row.push(hauts[i]);
+            if (bas[i]) row.push(bas[i]);
+            if (chaussures[i]) row.push(chaussures[i]);
+            if (accessoires[i]) row.push(accessoires[i]);
+            if (row.length > 0) generatedLooks.push(row);
+          }
+          setLooks(generatedLooks);
         }
-      } catch (err) { console.error(err) } finally { setLoading(false) }
+      } catch (err) {
+        console.error("Erreur FlashDeals:", err);
+      } finally {
+        setLoading(false)
+      }
     }
-    fetchFlashProducts()
+    fetchAndBuildLooks();
 
     const timer = setInterval(() => {
       const now = new Date();
-      const endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59);
-      const diff = endOfDay.getTime() - now.getTime();
+      const end = new Date().setHours(23, 59, 59);
+      const diff = end - now.getTime();
       if (diff <= 0) clearInterval(timer);
-      else {
-        setTimeLeft({
-          hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-          minutes: Math.floor((diff / 1000 / 60) % 60),
-          seconds: Math.floor((diff / 1000) % 60)
-        });
-      }
+      else setTimeLeft({
+        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((diff / 1000 / 60) % 60),
+        seconds: Math.floor((diff / 1000) % 60)
+      });
     }, 1000);
     return () => clearInterval(timer);
   }, [])
 
-  const addToCart = (product: FlashProduct) => {
-    const currentCart = JSON.parse(localStorage.getItem('festi-cart') || '[]')
-    if (currentCart.find((item: any) => item.id === product.id)) {
-      toast.info("Déjà dans le panier"); return;
-    }
-    localStorage.setItem('festi-cart', JSON.stringify([...currentCart, { ...product, quantity: 1 }]))
-    window.dispatchEvent(new Event('cartUpdated'))
-    toast.success("Ajouté !")
+  const formatPrice = (p: number) => new Intl.NumberFormat('fr-FR').format(p) + ' F'
+
+  const handleAddToCart = (product: FlashProduct) => {
+    setAddingId(product.id);
+    
+    setCart((prev: any[]) => {
+      const variantId = `${product.id}-default-default`;
+      const existing = prev.find((item: any) => item.variantId === variantId);
+      
+      let newCart;
+      if (existing) {
+        newCart = prev.map((item: any) => 
+          item.variantId === variantId ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      } else {
+        newCart = [...prev, { 
+          ...product, 
+          variantId, 
+          selectedSize: 'Standard', 
+          selectedColor: 'Unique', 
+          quantity: 1,
+          displayPrice: product.promo_price,
+          shop_id: product.shop_id 
+        }];
+      }
+      
+      localStorage.setItem('festi_cart', JSON.stringify(newCart));
+      return newCart;
+    });
+
+    toast.success(`${product.title} ajouté ! 🌹`);
+    setTimeout(() => setAddingId(null), 1000);
   }
 
-  const formatPrice = (p: number) => new Intl.NumberFormat('fr-FR').format(p) + ' F'
-  const pad = (n: number) => n.toString().padStart(2, '0')
-
   return (
-    <section className="py-12 bg-slate-50/30 overflow-hidden">
+    <section className="py-6 bg-slate-50/50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4">
         
-        {/* HEADER COMPACT */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
-          <div>
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase italic leading-none">
-              Ventes <span className="text-brand-primary">Flash</span>
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-3 bg-slate-900 text-white px-4 py-2 rounded-2xl shadow-xl">
-             <span className="text-[9px] font-bold uppercase text-slate-400">Expire dans</span>
-             <div className="font-mono text-xl font-black text-brand-primary">
-                {pad(timeLeft.hours)}:{pad(timeLeft.minutes)}:{pad(timeLeft.seconds)}
+        {/* HEADER ET DÉCOMPTE RÉDUITS */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+          <h2 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter">
+            Ventes <span className="text-brand-primary">Flash</span>
+          </h2>
+          <div className="flex items-center gap-3 bg-slate-900 text-white px-4 py-2 rounded-xl border-b-2 border-brand-primary shadow-lg">
+             <div className="font-mono text-lg font-black text-brand-primary">
+                {String(timeLeft.hours).padStart(2,'0')}:{String(timeLeft.minutes).padStart(2,'0')}:{String(timeLeft.seconds).padStart(2,'0')}
              </div>
           </div>
         </div>
 
-        <div className="space-y-12">
-          {SECTIONS.map((section) => (
-            <FlashRow 
-              key={section.label}
-              title={section.label}
-              products={groupedProducts[section.label] || []}
-              loading={loading}
-              formatPrice={formatPrice}
-              addToCart={addToCart}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-72 bg-slate-200 rounded-[2.5rem]" />)}
+          </div>
+        ) : looks.length > 0 ? (
+          looks.map((row, idx) => (
+            <div key={idx} className="mb-8 last:mb-0">
+               <div className="flex items-center gap-4 mb-4">
+                 <div className="h-px flex-1 bg-slate-200"></div>
+                 <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 italic">Style Inspiration #{idx + 1}</h3>
+                 <div className="h-px flex-1 bg-slate-200"></div>
+               </div>
+               
+               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
+                  {row.map((item) => (
+                    <div key={item.id} className="group bg-white p-3 md:p-4 rounded-[2.8rem] border border-slate-100 shadow-sm hover:shadow-2xl transition-all duration-500">
+                      <Link to={`/product/${item.id}`} className="relative block aspect-[4/5] overflow-hidden rounded-[2.2rem] mb-5 bg-slate-50">
+                        <img src={item.images?.[0]} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={item.title} />
+                        <div className="absolute top-4 left-4 bg-red-600 text-white text-[9px] font-black px-3 py-1.5 rounded-full shadow-lg">
+                          -{Math.round(((item.price - item.promo_price) / item.price) * 100)}%
+                        </div>
+                      </Link>
+                      
+                      <div className="text-center px-2">
+                        <h4 className="font-bold text-[11px] text-slate-800 uppercase truncate mb-2 italic">
+                          {item.title}
+                        </h4>
+                        <div className="mb-5">
+                          <div className="text-2xl font-black text-slate-900 leading-none">{formatPrice(item.promo_price)}</div>
+                          <div className="text-[11px] text-slate-300 line-through font-bold mt-1">{formatPrice(item.price)}</div>
+                        </div>
+                        
+                        <button 
+                          onClick={() => handleAddToCart(item)}
+                          disabled={addingId === item.id}
+                          className={`w-full py-4 rounded-[1.4rem] text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2 ${
+                            addingId === item.id ? 'bg-emerald-500 text-white shadow-md' : 'bg-slate-900 text-white hover:bg-brand-primary'
+                          }`}
+                        >
+                          {addingId === item.id ? <Check size={14} strokeWidth={3} /> : <ShoppingCart size={14} />}
+                          {addingId === item.id ? 'Ajouté !' : 'Ajouter au panier'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+               </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-12 bg-white rounded-[4rem] border-2 border-dashed border-slate-100">
+            <Zap className="mx-auto text-slate-200 mb-4" size={50} />
+            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Aucune vente flash disponible</p>
+          </div>
+        )}
       </div>
-      <style>{`.scrollbar-hide::-webkit-scrollbar { display: none; }`}</style>
     </section>
   )
 }
