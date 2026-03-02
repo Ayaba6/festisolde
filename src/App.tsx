@@ -29,7 +29,7 @@ import PublicStore from './pages/Store/PublicStore';
 import ProductDetails from './pages/Store/ProductDetails';
 import Cart from './pages/Store/Cart';
 import Settings from './components/Settings';
-import Home from './pages/home/Home';
+import Home from './pages/Home/Home';
 
 // --- COMPOSANT HEADER VENDEUR ---
 const VendorHeader = ({ user, storeName, onOpenMenu }) => {
