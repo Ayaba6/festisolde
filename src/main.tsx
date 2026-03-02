@@ -1,25 +1,17 @@
-import './index.css'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
-import { registerSW } from 'virtual:pwa-register'
+import './index.css' 
+import { CartProvider } from './context/CartContext' // Import du fournisseur de panier
 
-// Enregistre le Service Worker pour activer les fonctionnalités PWA (hors-ligne, installation)
-registerSW({ 
-  immediate: true,
-  onRegistered(r) {
-    console.log('PWA : Service Worker enregistré avec succès');
-  },
-  onRegisterError(error) {
-    console.error('PWA : Erreur lors de l\'enregistrement du Service Worker', error);
-  }
-})
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
+ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      {/* On entoure App avec CartProvider pour que toutes les pages aient accès au panier */}
+      <CartProvider>
+        <App />
+      </CartProvider>
     </BrowserRouter>
   </React.StrictMode>
 )

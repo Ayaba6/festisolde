@@ -5,9 +5,10 @@ module.exports = {
     extend: {
       colors: {
         brand: {
-          primary: "#FF5A5A",
+          primary: "#FF5A5A", // Ton rouge corail
           dark: "#0F1115",
           slate: {
+            400: "#94a3b8", // <-- AJOUTÉ pour corriger l'erreur PostCSS
             500: "#64748b",
             900: "#0f172a",
           }
@@ -22,7 +23,24 @@ module.exports = {
         'festi-xs': ['0.688rem', { lineHeight: '1.2' }],   // 11px
       },
       borderRadius: {
-        'brand': '0.75rem', // Arrondi plus fin (12px) au lieu de 20px+
+        'brand': '0.75rem', 
+      },
+      gridTemplateColumns: {
+        'product-grid': 'repeat(auto-fill, minmax(200px, 1fr))',
+        'product-grid-mobile': 'repeat(auto-fill, minmax(150px, 1fr))',
+      },
+      aspectRatio: {
+        'fashion': '4 / 5',
+        'tech': '1 / 1',
+      },
+      animation: {
+        'shimmer': 'shimmer 2s infinite linear',
+      },
+      keyframes: {
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        }
       }
     },
   },

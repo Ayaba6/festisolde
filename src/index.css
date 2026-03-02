@@ -4,45 +4,65 @@
 
 @layer base {
   body {
-    @apply antialiased text-brand-slate-900 bg-white;
+    @apply antialiased text-brand-slate-900 bg-[#F9FAFB]; /* Un gris très léger en fond fait ressortir les cartes blanches */
   }
 }
 
 @layer components {
-  /* Titres */
-  .title-main { @apply text-festi-h1 font-black text-white; }
-  .title-section { @apply text-festi-h2 font-black text-brand-slate-900; }
+  /* --- TYPOGRAPHIE --- */
+  .title-main { @apply text-festi-h1 font-black tracking-tighter text-white; }
+  .title-section { @apply text-festi-h2 font-light tracking-tight text-brand-slate-900; } /* Passage en font-light pour le côté luxe */
   
-  /* Textes */
-  .text-p { @apply text-festi-base text-brand-slate-500 font-medium; }
-  .text-caption { @apply text-festi-xs font-bold uppercase tracking-wider text-brand-slate-500; }
+  .text-p { @apply text-festi-base text-brand-slate-500 font-normal leading-relaxed; }
+  .text-caption { @apply text-[10px] font-black uppercase tracking-[0.2em] text-brand-slate-400; }
 
-  /* Boutons plus fins */
+  /* --- BOUTONS ÉPURÉS --- */
   .btn-primary {
-    @apply px-5 py-2.5 bg-brand-primary text-white text-festi-sm font-bold rounded-brand 
-           transition-all active:scale-95 flex items-center justify-center gap-2 hover:brightness-105;
+    @apply px-6 py-3 bg-[#0866FF] text-white text-[11px] font-bold uppercase tracking-widest rounded-full 
+           transition-all active:scale-95 flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-blue-200/50;
   }
 
   .btn-dark {
-    @apply px-5 py-2.5 bg-brand-slate-900 text-white text-festi-sm font-bold rounded-brand 
-           transition-all active:scale-95 flex items-center justify-center gap-2;
+    @apply px-6 py-3 bg-brand-slate-900 text-white text-[11px] font-bold uppercase tracking-widest rounded-full 
+           transition-all active:scale-95 flex items-center justify-center gap-2 hover:bg-black;
   }
 
-  /* Carte Produit */
+  /* --- CARTES PRODUITS (MODE & TECH) --- */
   .card-product {
-    @apply bg-white border border-slate-100 rounded-brand p-2 transition-shadow hover:shadow-md;
+    @apply bg-white border border-gray-100 rounded-2xl overflow-hidden transition-all duration-500
+           hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:-translate-y-1;
+  }
+
+  /* --- EFFET SKELETON (SHIMMER) --- */
+  .skeleton-box {
+    @apply relative overflow-hidden bg-gray-100 before:absolute before:inset-0 
+           before:-translate-x-full before:animate-[shimmer_2s_infinite] 
+           before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent;
   }
 }
-@keyframes scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+
+@layer utilities {
+  /* --- ANIMATIONS --- */
+  @keyframes scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  @keyframes shimmer {
+    100% { transform: translateX(100%); }
+  }
+
+  .animate-infinite-scroll {
+    animation: scroll 25s linear infinite; /* Un peu plus lent pour plus de classe */
+  }
+
+  /* --- ASPECT RATIO MODE --- */
+  .aspect-fashion {
+    aspect-ratio: 4 / 5;
+  }
 }
 
-.animate-infinite-scroll {
-  animation: scroll 20s linear infinite;
-}
-
-/* Pause l'animation au survol pour que l'utilisateur puisse voir un logo */
-.animate-infinite-scroll:hover {
-  animation-play-state: paused;
+/* Utilitaires spécifiques pour les produits */
+.glass-effect {
+  @apply backdrop-blur-md bg-white/70 border border-white/20;
 }

@@ -1,199 +1,198 @@
-import { useEffect, useState } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
-import { supabase } from './lib/supabaseClient'
+import { useState, useEffect } from 'react';
+import { Routes, Route, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { supabase } from './lib/supabaseClient';
 
-// --- PAGES PUBLIQUES ---
-import Home from './pages/Home/Home'
-import Shop from './pages/Shop/Shop'
-import ProductDetail from './pages/Shop/ProductDetail'
-import Login from './pages/Auth/Login'
-import Register from './pages/Auth/Register'
-import Account from './pages/Account/AccountPage' 
-import Orders from './pages/Account/Orders'
-import Checkout from './pages/Checkout/Checkout'
-import OrderSuccess from './pages/Checkout/OrderSuccess'
-import VendorLanding from './pages/Vendor/VendorLanding'
-import Contact from './pages/Contact'
-import About from './pages/About'
-import Aide from './pages/Aide'
-import Privacy from './pages/Privacy' // <--- IMPORTATION DE LA POLITIQUE DE CONFIDENTIALITÉ
-import PackCreator from './pages/Home/components/PackCreator'
+// Import des icônes Lucide
+import { 
+  LayoutDashboard, 
+  Package, 
+  LogOut, 
+  Search, 
+  Bell, 
+  ExternalLink, 
+  ShieldCheck,
+  Wallet,
+  Palette,
+  Settings as SettingsIcon // Ajouté pour les paramètres
+} from 'lucide-react';
 
-// --- PAGES VENDEURS ---
-import VendorDashboard from './pages/Vendor/Dashboard'
-import AddProduct from './pages/Vendor/AddProduct'
-import EditProduct from './pages/Vendor/EditProduct' 
-import CreateShop from './pages/Vendor/CreateShop'
+// Pages
+import Auth from './pages/Auth/Auth';
+import Dashboard from './pages/Vendor/Dashboard';
+import ManageProducts from './pages/Vendor/ManageProducts';
+import Revenues from './pages/Vendor/Revenues';
+import StoreSettings from './pages/Store/StoreSettings';
+import AdminDashboard from './pages/Admin/AdminDashboard';
+import PublicStore from './pages/Store/PublicStore';
+import Settings from './components/Settings'; // Ton nouveau composant
 
-// --- PAGES ADMINISTRATEUR ---
-import AdminGeneral from './pages/Administrator/AdminGeneral'
-import AdminProducts from './pages/Administrator/AdminProducts'
-import AdminShops from './pages/Administrator/AdminShops'
+// NOUVELLES PAGES CLIENT
+import ProductDetails from './pages/Store/ProductDetails';
+import Cart from './pages/Store/Cart';
 
-// --- COMPOSANTS UI ---
-import Header from './components/Header'
-import Footer from './components/Footer'
-import CartDrawer from './components/CartDrawer'
-import ProtectedRoute from './components/ProtectedRoute'
-import VendorRoute from './components/VendorRoute'
-import AuthRedirect from './components/AuthRedirect' 
-import ScrollToTop from './components/ScrollToTop'
-
-/**
- * COMPOSANT DE PROTECTION ADMIN
- */
-const AdminRoute = ({ user, children }: { user: any, children: React.ReactNode }) => {
-  if (!user) return <Navigate to="/auth/login" replace />
-  if (user.role !== 'admin') return <Navigate to="/" replace />
-  return <>{children}</>
-}
-
-export default function App() {
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [isCartOpen, setIsCartOpen] = useState(false)
-  
-  // --- LOGIQUE DU PANIER ---
-  const [cart, setCart] = useState<any[]>(() => {
-    const savedCart = localStorage.getItem('festi_cart')
-    try {
-      return savedCart ? JSON.parse(savedCart) : []
-    } catch (e) { 
-      return [] 
-    }
-  })
-
-  useEffect(() => {
-    localStorage.setItem('festi_cart', JSON.stringify(cart))
-  }, [cart])
-
-  const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0)
-
-  const totalAmount = cart.reduce((acc, item) => {
-    const currentPrice = item.promo_price || item.price
-    return acc + (currentPrice * item.quantity)
-  }, 0)
-
-  const clearCart = () => {
-    setCart([])
-    localStorage.removeItem('festi_cart')
-  }
-
-  // --- GESTION UTILISATEUR & PROFIL ---
-  const loadUserWithProfile = async () => {
-    const { data: { user: authUser } } = await supabase.auth.getUser()
-    
-    if (!authUser) {
-      setUser(null)
-      setLoading(false)
-      return
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role, full_name')
-      .eq('id', authUser.id)
-      .maybeSingle() 
-
-    setUser({
-      ...authUser,
-      role: profile?.role || 'customer',
-      full_name: profile?.full_name || authUser.user_metadata?.full_name || '',
-    })
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    loadUserWithProfile()
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        setUser(null)
-        setLoading(false)
-      } else {
-        loadUserWithProfile()
-      }
-    })
-
-    return () => {
-      listener.subscription.unsubscribe()
-    }
-  }, [])
-
-  // --- ÉCRAN DE CHARGEMENT HARMONISÉ FESTISOLDE ---
-  if (loading) return (
-    <div className="h-screen flex items-center justify-center bg-white">
-      <div className="flex flex-col items-center gap-4">
-        <span className="text-4xl lg:text-5xl font-black text-red-600 animate-pulse italic tracking-tighter uppercase">
-          FESTISOLDE
-        </span>
-        <div className="w-16 h-1 bg-slate-100 rounded-full overflow-hidden">
-          <div className="w-full h-full bg-red-600 animate-[loading_1.5s_ease-in-out_infinite]"></div>
+// --- COMPOSANT HEADER VENDEUR ---
+const VendorHeader = ({ user, storeName }) => {
+  return (
+    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
+      <div className="flex-1 max-w-md hidden md:block">
+        <div className="relative group">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input 
+            type="text" 
+            placeholder="Rechercher... (Presser K)"
+            className="w-full bg-gray-50 border-none py-2 pl-10 pr-4 rounded-xl text-sm outline-none focus:ring-1 focus:ring-gray-200 transition-all"
+          />
         </div>
       </div>
-    </div>
-  )
+
+      <div className="flex items-center gap-4">
+        {storeName && (
+          <Link 
+            to={`/boutique/${storeName}`} 
+            target="_blank"
+            className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-100 transition border border-gray-100"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span className="hidden lg:inline">Voir le site</span>
+          </Link>
+        )}
+
+        <div className="flex items-center gap-2 border-l pl-4 border-gray-100">
+          <button className="p-2 hover:bg-gray-100 rounded-full transition text-gray-500">
+            <Bell className="w-5 h-5" />
+          </button>
+          <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center font-bold text-xs">
+            {user?.email?.charAt(0).toUpperCase()}
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+// --- COMPOSANT PRINCIPAL APP ---
+function App() {
+  const [user, setUser] = useState(null);
+  const [storeName, setStoreName] = useState("");
+  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const adminUid = import.meta.env.VITE_ADMIN_UID;
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    async function fetchStoreName() {
+      if (user) {
+        const { data } = await supabase
+          .from('stores')
+          .select('name')
+          .eq('owner_id', user.id)
+          .single();
+        if (data) setStoreName(data.name);
+      }
+    }
+    fetchStoreName();
+  }, [user]);
+
+  if (loading) return null;
+
+  const isPublicStore = location.pathname.startsWith('/boutique/');
+  const isProductPage = location.pathname.startsWith('/produit/');
+  const isCartPage = location.pathname === '/panier';
+  const isAuthPage = location.pathname === '/auth';
+  
+  const hideSidebar = isPublicStore || isProductPage || isCartPage || isAuthPage;
+  const showSidebar = !hideSidebar && user;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50/50 font-sans">
-      <ScrollToTop />
-
-      <Header 
-        user={user} 
-        setUser={setUser} 
-        cartCount={cartCount} 
-        onOpenCart={() => setIsCartOpen(true)} 
-      />
+    <div className="flex min-h-screen bg-[#F9FAFB] text-[#111827]">
       
-      <CartDrawer 
-        isOpen={isCartOpen} 
-        onClose={() => setIsCartOpen(false)}
-        cart={cart}
-        setCart={setCart}
-        total={totalAmount}
-      />
-      
-      <main className="flex-grow">
-        <Routes>
-          {/* --- ROUTES PUBLIQUES --- */}
-          <Route path="/" element={<Home />} />
-          <Route path="/shop" element={<Shop cart={cart} setCart={setCart} />} />
-          <Route path="/product/:id" element={<ProductDetail setCart={setCart} />} />
-          <Route path="/checkout" element={<Checkout cart={cart} total={totalAmount} clearCart={clearCart} />} />
-          <Route path="/order-success" element={<OrderSuccess />} />
-          <Route path="/vendre" element={<VendorLanding />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/aide" element={<Aide />} />
-          <Route path="/privacy" element={<Privacy />} /> {/* <--- ROUTE DE CONFIDENTIALITÉ AJOUTÉE */}
-          <Route path="/pack-creator" element={<PackCreator />} />
+      {showSidebar && (
+        <aside className="w-64 bg-white border-r border-gray-100 hidden md:flex flex-col sticky top-0 h-screen">
+          <div className="p-6 mb-8">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center text-white font-black">F</div>
+              <span className="text-xl font-black tracking-tighter uppercase">Festisolde</span>
+            </div>
+          </div>
 
-          {/* --- AUTHENTIFICATION --- */}
-          <Route path="/auth/login" element={user ? <AuthRedirect user={user} /> : <Login setUser={setUser} />} />
-          <Route path="/auth/register" element={user ? <AuthRedirect user={user} /> : <Register setUser={setUser} />} />
+          <nav className="flex-1 px-4 space-y-1">
+            <p className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Gestion</p>
+            
+            <Link to="/" className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${location.pathname === '/' ? 'bg-orange-50 text-orange-600' : 'text-gray-500 hover:bg-gray-50'}`}>
+              <LayoutDashboard size={18} /> Dashboard
+            </Link>
 
-          {/* --- COMPTE CLIENT (PROTEGÉ) --- */}
-          <Route path="/account" element={<ProtectedRoute user={user}><Account user={user} setUser={setUser} /></ProtectedRoute>} />
-          <Route path="/orders" element={<ProtectedRoute user={user}><Orders /></ProtectedRoute>} />
-          
-          {/* --- ADMINISTRATION (PROTEGÉ ADMIN) --- */}
-          <Route path="/admin-general" element={<AdminRoute user={user}><AdminGeneral /></AdminRoute>} />
-          <Route path="/admin/products" element={<AdminRoute user={user}><AdminProducts /></AdminRoute>} />
-          <Route path="/admin/shops" element={<AdminRoute user={user}><AdminShops /></AdminRoute>} />
-          <Route path="/admin" element={<Navigate to="/admin-general" replace />} />
-          
-          {/* --- ESPACE VENDEUR (PROTEGÉ VENDEUR) --- */}
-          <Route path="/vendor/dashboard" element={<VendorRoute user={user}><VendorDashboard /></VendorRoute>} />
-          <Route path="/vendor/add-product" element={<VendorRoute user={user}><AddProduct /></VendorRoute>} />
-          <Route path="/vendor/edit-product/:id" element={<VendorRoute user={user}><EditProduct /></VendorRoute>} />
-          <Route path="/vendor/create-shop" element={<ProtectedRoute user={user}><CreateShop /></ProtectedRoute>} />
+            <Link to="/products" className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${location.pathname === '/products' ? 'bg-orange-50 text-orange-600' : 'text-gray-500 hover:bg-gray-50'}`}>
+              <Package size={18} /> Mes Produits
+            </Link>
 
-          {/* --- REDIRECTION GLOBALE (404) --- */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
+            <Link to="/revenus" className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${location.pathname === '/revenus' ? 'bg-orange-50 text-orange-600' : 'text-gray-500 hover:bg-gray-50'}`}>
+              <Wallet size={18} /> Revenus
+            </Link>
 
-      <Footer />
+            <div className="pt-4 mt-4 border-t border-gray-50">
+              <p className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Configuration</p>
+              <Link to="/ma-boutique" className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${location.pathname === '/ma-boutique' ? 'bg-orange-50 text-orange-600' : 'text-gray-500 hover:bg-gray-50'}`}>
+                <Palette size={18} /> Ma Boutique
+              </Link>
+              
+              {/* LIEN AJOUTÉ : PARAMÈTRES COMPTE */}
+              <Link to="/settings" className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${location.pathname === '/settings' ? 'bg-orange-50 text-orange-600' : 'text-gray-500 hover:bg-gray-50'}`}>
+                <SettingsIcon size={18} /> Paramètres
+              </Link>
+            </div>
+
+            {user?.id === adminUid && (
+              <Link to="/admin" className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold text-sm mt-4 transition-all ${location.pathname === '/admin' ? 'bg-red-50 text-red-600' : 'text-red-500 hover:bg-red-50'}`}>
+                <ShieldCheck size={18} /> Admin Panel
+              </Link>
+            )}
+          </nav>
+
+          <div className="p-4 border-t border-gray-50 space-y-1">
+            <button onClick={async () => { await supabase.auth.signOut(); navigate('/auth'); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+              <LogOut size={18} /> Déconnexion
+            </button>
+          </div>
+        </aside>
+      )}
+
+      <div className="flex-1 flex flex-col min-w-0">
+        {showSidebar && <VendorHeader user={user} storeName={storeName} />}
+
+        <main className={`flex-1 ${hideSidebar ? '' : 'p-6 md:p-10'}`}>
+          <Routes>
+            <Route path="/" element={user ? <Dashboard /> : <Navigate to="/auth" />} />
+            <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/" />} />
+            <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/auth" />} />
+            <Route path="/products" element={user ? <ManageProducts /> : <Navigate to="/auth" />} />
+            <Route path="/revenus" element={user ? <Revenues /> : <Navigate to="/auth" />} />
+            <Route path="/ma-boutique" element={user ? <StoreSettings /> : <Navigate to="/auth" />} />
+            <Route path="/admin" element={user?.id === adminUid ? <AdminDashboard /> : <Navigate to="/" />} />
+            
+            {/* ROUTE AJOUTÉE : SETTINGS */}
+            <Route path="/settings" element={user ? <Settings /> : <Navigate to="/auth" />} />
+            
+            {/* ROUTES PUBLIQUES (CLIENTS) */}
+            <Route path="/boutique/:storeName" element={<PublicStore />} />
+            <Route path="/produit/:productId" element={<ProductDetails />} />
+            <Route path="/panier" element={<Cart />} />
+          </Routes>
+        </main>
+      </div>
     </div>
-  )
+  );
 }
+
+export default App;

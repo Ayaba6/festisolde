@@ -12,7 +12,7 @@
   "dependencies": {
     "@stripe/react-stripe-js": "^5.4.1",
     "@stripe/stripe-js": "^8.6.1",
-    "@supabase/supabase-js": "^2.90.1",
+    "@supabase/supabase-js": "^2.98.0",
     "@tanstack/react-query": "^5.90.16",
     "canvas-confetti": "^1.9.4",
     "fedapay": "^1.2.5",
