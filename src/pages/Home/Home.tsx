@@ -1,96 +1,132 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { Link } from 'react-router-dom';
+import { Plus, ArrowRight } from 'lucide-react';
+
+// Importation de tes composants stylisés
+import Header from './components/Header';
+import FeaturedSection from './components/FeaturedSection';
+import Footer from './components/Footer';
 
 export default function Home() {
+  const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchFeaturedProducts() {
-      const { data, error } = await supabase
-        .from('products')
-        .select(`
-          *,
-          stores ( name )
-        `)
-        .eq('is_featured_home', true)
-        .order('created_at', { ascending: false });
-
-      if (data) setProducts(data);
-      setLoading(false);
-    }
-    fetchFeaturedProducts();
+    fetchLatestProducts();
   }, []);
 
-  if (loading) return (
-    <div className="flex justify-center items-center h-64">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
-    </div>
-  );
+  async function fetchLatestProducts() {
+    setLoading(true);
+    const { data } = await supabase
+      .from('products')
+      .select('*, stores(name)')
+      .order('created_at', { ascending: false });
+    setProducts(data || []);
+    setLoading(false);
+  }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {/* Hero Section simple */}
-      <div className="text-center mb-16">
-        <h1 className="text-4xl md:text-6xl font-black text-gray-900 mb-4 tracking-tight">
-          🔥 Les pépites de <span className="text-orange-600 font-black italic">Festisolde</span>
-        </h1>
-        <p className="text-gray-500 text-lg">Les meilleures promotions près de chez vous, mises à jour en direct.</p>
-      </div>
+    <div className="min-h-screen bg-white font-sans text-gray-900 antialiased">
+      
+      {/* 1. Header (Navigation & Recherche harmonisée) */}
+      <Header searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 
-      {/* Grille de produits style E-commerce moderne */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        {products.map((product) => {
-          // Calcul du pourcentage de réduction
-          const discount = Math.round(((product.original_price - product.sale_price) / product.original_price) * 100);
+      {/* 2. Featured (Le Slider et les zones d'impact) */}
+      <FeaturedSection />
 
-          return (
-            <div key={product.id} className="group relative bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              
-              {/* Image avec Badge de réduction */}
-              <div className="relative aspect-square overflow-hidden bg-gray-100">
-                <img 
-                  src={product.image_url || 'https://via.placeholder.com/400x400?text=No+Image'} 
-                  alt={product.name}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute top-4 left-4 bg-red-600 text-white font-black px-3 py-1 rounded-full text-sm shadow-lg">
-                  -{discount}%
-                </div>
-              </div>
-
-              {/* Infos Produit */}
-              <div className="p-5">
-                <p className="text-xs font-bold text-orange-500 uppercase tracking-widest mb-1">
-                  📍 {product.stores?.name || "Boutique locale"}
-                </p>
-                <h3 className="text-xl font-bold text-gray-900 mb-2 truncate">
-                  {product.name}
-                </h3>
-                
-                <div className="flex items-baseline gap-3 mb-4">
-                  <span className="text-3xl font-black text-gray-900">
-                    {product.sale_price}€
-                  </span>
-                  <span className="text-lg text-gray-400 line-through font-medium">
-                    {product.original_price}€
-                  </span>
-                </div>
-
-                <button className="w-full bg-gray-900 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-wider hover:bg-orange-600 transition-colors shadow-lg active:scale-95">
-                  Récupérer l'offre
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {products.length === 0 && (
-        <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-          <p className="text-gray-400 text-xl font-medium">Aucune promotion disponible pour le moment... ⏳</p>
+      {/* 3. Section Boutique - Style Editorial */}
+      <main className="max-w-7xl mx-auto px-6 py-20">
+        
+        {/* En-tête de section raffiné */}
+        <div className="flex items-center justify-between mb-16 border-b border-gray-100 pb-8">
+          <div>
+            <h2 className="text-2xl font-light tracking-[0.2em] uppercase text-gray-400">
+              Nouveaux <span className="text-gray-900 font-medium">Arrivages</span>
+            </h2>
+          </div>
+          <div className="flex items-center gap-6">
+            <Link 
+              to="/products" 
+              className="group flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-gray-500 hover:text-red-600 transition-colors"
+            >
+              Explorer le catalogue 
+              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
         </div>
-      )}
+
+        {/* Grille de produits "Minimalist Chic" */}
+        {loading ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-12">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
+              <div key={n} className="animate-pulse space-y-4">
+                <div className="aspect-[4/5] bg-gray-50 rounded-sm" />
+                <div className="h-2 w-1/2 bg-gray-50" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-20">
+            {products.map((product) => (
+              <Link to={`/produit/${product.id}`} key={product.id} className="group">
+                
+                {/* Conteneur Image avec survol fluide */}
+                <div className="relative aspect-[4/5] overflow-hidden bg-gray-50 mb-6 border border-gray-50 transition-all duration-500 group-hover:shadow-sm">
+                  <img 
+                    src={product.image_url} 
+                    className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-105" 
+                    alt={product.name} 
+                  />
+                  
+                  {/* Badge boutique discret */}
+                  <div className="absolute bottom-4 left-4">
+                    <span className="text-[9px] font-bold tracking-widest text-white uppercase bg-black/40 backdrop-blur-md px-3 py-1.5">
+                      {product.stores?.name}
+                    </span>
+                  </div>
+
+                  {/* Bouton Plus (Quick View) */}
+                  <div className="absolute top-4 right-4 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                    <div className="w-10 h-10 bg-white flex items-center justify-center rounded-full shadow-lg hover:bg-red-600 hover:text-white transition-colors">
+                       <Plus size={18} strokeWidth={1.5} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Détails du produit épurés */}
+                <div className="space-y-2">
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400 group-hover:text-gray-900 transition-colors line-clamp-1">
+                    {product.name}
+                  </h3>
+                  <div className="flex items-baseline gap-3">
+                    <p className="text-sm font-medium tracking-tight text-gray-900">
+                      {product.sale_price?.toLocaleString()} CFA
+                    </p>
+                    {product.regular_price && (
+                      <span className="text-[10px] text-gray-300 line-through">
+                        {product.regular_price.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Bouton d'action secondaire */}
+        <div className="mt-32 flex justify-center">
+          <button className="px-12 py-4 border border-gray-200 text-[10px] font-bold uppercase tracking-[0.4em] hover:bg-black hover:text-white hover:border-black transition-all duration-500">
+            Afficher plus d'offres
+          </button>
+        </div>
+      </main>
+
+      {/* 4. Footer (Le grand footer sombre et stylé) */}
+      <Footer />
+
     </div>
   );
 }

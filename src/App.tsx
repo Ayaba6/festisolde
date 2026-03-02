@@ -2,67 +2,59 @@ import { useState, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabaseClient';
 
-// Import des icônes Lucide
+// --- IMPORT DES ICÔNES ---
 import { 
   LayoutDashboard, 
   Package, 
   LogOut, 
   Search, 
-  Bell, 
   ExternalLink, 
-  ShieldCheck,
-  Wallet,
-  Palette,
-  Settings as SettingsIcon // Ajouté pour les paramètres
+  ShieldCheck, 
+  Wallet, 
+  Palette, 
+  Settings as SettingsIcon,
+  Menu,
+  X 
 } from 'lucide-react';
 
-// Pages
+// --- IMPORT DES PAGES ---
 import Auth from './pages/Auth/Auth';
+import Register from './pages/Auth/Register'; // <-- AJOUTÉ
 import Dashboard from './pages/Vendor/Dashboard';
 import ManageProducts from './pages/Vendor/ManageProducts';
 import Revenues from './pages/Vendor/Revenues';
 import StoreSettings from './pages/Store/StoreSettings';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import PublicStore from './pages/Store/PublicStore';
-import Settings from './components/Settings'; // Ton nouveau composant
-
-// NOUVELLES PAGES CLIENT
 import ProductDetails from './pages/Store/ProductDetails';
 import Cart from './pages/Store/Cart';
+import Settings from './components/Settings';
+import Home from './pages/home/Home';
 
 // --- COMPOSANT HEADER VENDEUR ---
-const VendorHeader = ({ user, storeName }) => {
+const VendorHeader = ({ user, storeName, onOpenMenu }) => {
   return (
     <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
-      <div className="flex-1 max-w-md hidden md:block">
-        <div className="relative group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input 
-            type="text" 
-            placeholder="Rechercher... (Presser K)"
-            className="w-full bg-gray-50 border-none py-2 pl-10 pr-4 rounded-xl text-sm outline-none focus:ring-1 focus:ring-gray-200 transition-all"
-          />
-        </div>
+      <button onClick={onOpenMenu} className="md:hidden p-2 text-gray-600 hover:bg-gray-50 rounded-xl transition-colors">
+        <Menu size={22} />
+      </button>
+
+      <div className="flex-1 max-w-md hidden md:block text-center md:text-left">
+        <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-gray-300 italic">
+          Festisolde Management System
+        </span>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 md:gap-4">
         {storeName && (
-          <Link 
-            to={`/boutique/${storeName}`} 
-            target="_blank"
-            className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-100 transition border border-gray-100"
-          >
+          <Link to={`/boutique/${storeName}`} target="_blank" className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-orange-600 text-white rounded-xl text-[10px] md:text-xs font-bold hover:bg-orange-700 transition shadow-sm">
             <ExternalLink className="w-3.5 h-3.5" />
-            <span className="hidden lg:inline">Voir le site</span>
+            <span className="hidden sm:inline uppercase tracking-widest">Ma Boutique</span>
           </Link>
         )}
-
         <div className="flex items-center gap-2 border-l pl-4 border-gray-100">
-          <button className="p-2 hover:bg-gray-100 rounded-full transition text-gray-500">
-            <Bell className="w-5 h-5" />
-          </button>
-          <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center font-bold text-xs">
-            {user?.email?.charAt(0).toUpperCase()}
+          <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center font-bold text-xs uppercase tracking-tighter">
+            {user?.email?.charAt(0)}
           </div>
         </div>
       </div>
@@ -70,34 +62,35 @@ const VendorHeader = ({ user, storeName }) => {
   );
 };
 
-// --- COMPOSANT PRINCIPAL APP ---
 function App() {
   const [user, setUser] = useState(null);
   const [storeName, setStoreName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   const location = useLocation();
   const navigate = useNavigate();
-  const adminUid = import.meta.env.VITE_ADMIN_UID;
+  
+  const adminUid = import.meta.env.VITE_ADMIN_UID?.trim();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      setIsMobileMenuOpen(false);
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
     async function fetchStoreName() {
       if (user) {
-        const { data } = await supabase
-          .from('stores')
-          .select('name')
-          .eq('owner_id', user.id)
-          .single();
+        const { data } = await supabase.from('stores').select('name').eq('owner_id', user.id).single();
         if (data) setStoreName(data.name);
       }
     }
@@ -106,90 +99,130 @@ function App() {
 
   if (loading) return null;
 
-  const isPublicStore = location.pathname.startsWith('/boutique/');
-  const isProductPage = location.pathname.startsWith('/produit/');
-  const isCartPage = location.pathname === '/panier';
-  const isAuthPage = location.pathname === '/auth';
-  
-  const hideSidebar = isPublicStore || isProductPage || isCartPage || isAuthPage;
-  const showSidebar = !hideSidebar && user;
+  const isUserAdmin = user?.id?.trim() === adminUid;
+
+  const vendorPaths = ['/dashboard', '/products', '/revenus', '/ma-boutique', '/settings', '/admin'];
+  const isVendorArea = vendorPaths.some(path => location.pathname.startsWith(path));
+  const showSidebar = isVendorArea && user;
+
+  const SidebarLink = ({ to, icon: Icon, label, colorClass = "" }) => {
+    const isActive = location.pathname === to;
+    return (
+      <Link 
+        to={to} 
+        className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-[10px] uppercase tracking-[0.2em] transition-all 
+        ${isActive ? 'bg-orange-50 text-orange-600' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-900'} ${colorClass}`}
+      >
+        <Icon size={18} strokeWidth={1.5} /> {label}
+      </Link>
+    );
+  };
+
+  const SidebarContent = () => (
+    <div className="space-y-8">
+      <div>
+        <div className="px-4 mb-4 text-[8px] font-black text-gray-300 uppercase tracking-[0.4em]">Site</div>
+        <SidebarLink to="/" icon={ExternalLink} label="Retour à l'accueil" />
+      </div>
+      
+      <div>
+        <div className="px-4 mb-4 text-[8px] font-black text-gray-300 uppercase tracking-[0.4em]">Ma Gestion</div>
+        <SidebarLink to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
+        <SidebarLink to="/products" icon={Package} label="Stocks" />
+        <SidebarLink to="/revenus" icon={Wallet} label="Revenus" />
+      </div>
+
+      <div>
+        <div className="px-4 mb-4 text-[8px] font-black text-gray-300 uppercase tracking-[0.4em]">Configuration</div>
+        <SidebarLink to="/ma-boutique" icon={Palette} label="Identité Visuelle" />
+        <SidebarLink to="/settings" icon={SettingsIcon} label="Mon Compte" />
+      </div>
+
+      {isUserAdmin && (
+        <div className="pt-4 border-t border-gray-50">
+          <SidebarLink to="/admin" icon={ShieldCheck} label="Super-Admin" colorClass="text-red-500 hover:bg-red-50" />
+        </div>
+      )}
+    </div>
+  );
 
   return (
-    <div className="flex min-h-screen bg-[#F9FAFB] text-[#111827]">
+    <div className="flex min-h-screen bg-white text-gray-900 antialiased font-sans">
       
       {showSidebar && (
         <aside className="w-64 bg-white border-r border-gray-100 hidden md:flex flex-col sticky top-0 h-screen">
-          <div className="p-6 mb-8">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center text-white font-black">F</div>
-              <span className="text-xl font-black tracking-tighter uppercase">Festisolde</span>
-            </div>
+          <div className="p-8 mb-4 flex items-center gap-3">
+            <div className="w-8 h-8 bg-black flex items-center justify-center text-white font-black italic">F</div>
+            <span className="text-sm font-black uppercase tracking-widest">Festisolde</span>
           </div>
-
-          <nav className="flex-1 px-4 space-y-1">
-            <p className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Gestion</p>
-            
-            <Link to="/" className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${location.pathname === '/' ? 'bg-orange-50 text-orange-600' : 'text-gray-500 hover:bg-gray-50'}`}>
-              <LayoutDashboard size={18} /> Dashboard
-            </Link>
-
-            <Link to="/products" className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${location.pathname === '/products' ? 'bg-orange-50 text-orange-600' : 'text-gray-500 hover:bg-gray-50'}`}>
-              <Package size={18} /> Mes Produits
-            </Link>
-
-            <Link to="/revenus" className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${location.pathname === '/revenus' ? 'bg-orange-50 text-orange-600' : 'text-gray-500 hover:bg-gray-50'}`}>
-              <Wallet size={18} /> Revenus
-            </Link>
-
-            <div className="pt-4 mt-4 border-t border-gray-50">
-              <p className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Configuration</p>
-              <Link to="/ma-boutique" className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${location.pathname === '/ma-boutique' ? 'bg-orange-50 text-orange-600' : 'text-gray-500 hover:bg-gray-50'}`}>
-                <Palette size={18} /> Ma Boutique
-              </Link>
-              
-              {/* LIEN AJOUTÉ : PARAMÈTRES COMPTE */}
-              <Link to="/settings" className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${location.pathname === '/settings' ? 'bg-orange-50 text-orange-600' : 'text-gray-500 hover:bg-gray-50'}`}>
-                <SettingsIcon size={18} /> Paramètres
-              </Link>
-            </div>
-
-            {user?.id === adminUid && (
-              <Link to="/admin" className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold text-sm mt-4 transition-all ${location.pathname === '/admin' ? 'bg-red-50 text-red-600' : 'text-red-500 hover:bg-red-50'}`}>
-                <ShieldCheck size={18} /> Admin Panel
-              </Link>
-            )}
-          </nav>
-
-          <div className="p-4 border-t border-gray-50 space-y-1">
-            <button onClick={async () => { await supabase.auth.signOut(); navigate('/auth'); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 rounded-xl transition-colors">
-              <LogOut size={18} /> Déconnexion
+          <nav className="flex-1 px-4"><SidebarContent /></nav>
+          <div className="p-6 border-t border-gray-50">
+            <button 
+              onClick={async () => { await supabase.auth.signOut(); navigate('/'); }} 
+              className="w-full flex items-center gap-3 px-4 py-3 text-[9px] font-bold uppercase tracking-widest text-red-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
+            >
+              <LogOut size={16} /> Quitter la session
             </button>
           </div>
         </aside>
       )}
 
-      <div className="flex-1 flex flex-col min-w-0">
-        {showSidebar && <VendorHeader user={user} storeName={storeName} />}
+      {showSidebar && (
+        <div className={`fixed inset-0 z-50 md:hidden transition-all duration-300 ${isMobileMenuOpen ? 'visible' : 'invisible'}`}>
+          <div className={`absolute inset-0 bg-black/10 backdrop-blur-sm transition-opacity ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0'}`} onClick={() => setIsMobileMenuOpen(false)} />
+          <aside className={`absolute top-0 left-0 h-full w-72 bg-white shadow-2xl transition-transform duration-300 flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div className="p-6 flex items-center justify-between border-b border-gray-50">
+              <span className="font-black uppercase tracking-widest text-sm italic">Festisolde</span>
+              <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-300"><X size={20} /></button>
+            </div>
+            <nav className="flex-1 p-4 overflow-y-auto"><SidebarContent /></nav>
+          </aside>
+        </div>
+      )}
 
-        <main className={`flex-1 ${hideSidebar ? '' : 'p-6 md:p-10'}`}>
+      <div className="flex-1 flex flex-col min-w-0">
+        {showSidebar && <VendorHeader user={user} storeName={storeName} onOpenMenu={() => setIsMobileMenuOpen(true)} />}
+
+        <main className={`flex-1 ${!showSidebar ? '' : 'p-4 md:p-10 pb-24 md:pb-10'}`}>
           <Routes>
-            <Route path="/" element={user ? <Dashboard /> : <Navigate to="/auth" />} />
-            <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/" />} />
-            <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/auth" />} />
+            <Route path="/" element={<Home />} />
+            
+            {/* AUTH & REGISTER */}
+            <Route path="/auth" element={!user ? <Auth /> : (isUserAdmin ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />)} />
+            <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" replace />} />
+            
+            {/* ROUTES VENDEUR PROTEGEES */}
+            <Route path="/dashboard" element={user ? (isUserAdmin ? <Navigate to="/admin" replace /> : <Dashboard />) : <Navigate to="/auth" />} />
             <Route path="/products" element={user ? <ManageProducts /> : <Navigate to="/auth" />} />
             <Route path="/revenus" element={user ? <Revenues /> : <Navigate to="/auth" />} />
             <Route path="/ma-boutique" element={user ? <StoreSettings /> : <Navigate to="/auth" />} />
-            <Route path="/admin" element={user?.id === adminUid ? <AdminDashboard /> : <Navigate to="/" />} />
-            
-            {/* ROUTE AJOUTÉE : SETTINGS */}
             <Route path="/settings" element={user ? <Settings /> : <Navigate to="/auth" />} />
             
-            {/* ROUTES PUBLIQUES (CLIENTS) */}
+            {/* ADMIN PANEL */}
+            <Route path="/admin" element={user && isUserAdmin ? <AdminDashboard /> : <Navigate to="/dashboard" />} />
+            
+            {/* ROUTES PUBLIQUES */}
             <Route path="/boutique/:storeName" element={<PublicStore />} />
             <Route path="/produit/:productId" element={<ProductDetails />} />
             <Route path="/panier" element={<Cart />} />
           </Routes>
         </main>
+
+        {showSidebar && (
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-50 flex items-center justify-around py-3 z-40">
+            {[
+              { to: "/dashboard", icon: LayoutDashboard, label: "Dash" },
+              { to: "/products", icon: Package, label: "Stocks" },
+              { to: "/revenus", icon: Wallet, label: "CFA" },
+              { to: "/ma-boutique", icon: Palette, label: "Design" }
+            ].map((item) => (
+              <Link key={item.to} to={item.to} className={`flex flex-col items-center gap-1 ${location.pathname === item.to ? 'text-orange-600' : 'text-gray-300'}`}>
+                <item.icon size={18} strokeWidth={1.5} /> 
+                <span className="text-[7px] font-black uppercase tracking-widest">{item.label}</span>
+              </Link>
+            ))}
+          </nav>
+        )}
       </div>
     </div>
   );

@@ -1,204 +1,148 @@
-import { useState } from 'react'
-import { supabase } from '../../lib/supabaseClient'
-import { useNavigate } from 'react-router-dom'
-import { User, Mail, Lock, ShoppingBag, Store, Loader2, Sparkles, Phone } from 'lucide-react' // Ajout de Phone
+import { useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft, Loader2, Store, Sparkles } from 'lucide-react';
 
-interface RegisterProps {
-  setUser: (user: any) => void
-}
+export default function Register() {
+  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [storeName, setStoreName] = useState('');
+  const navigate = useNavigate();
 
-export default function Register({ setUser }: RegisterProps) {
-  const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('') // Nouvel état pour le téléphone
-  const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'customer' | 'vendor'>('customer')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const navigate = useNavigate()
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setLoading(true);
 
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      // 1. Inscription de l'utilisateur dans Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: { 
-          data: { 
-            full_name: fullName,
-            phone: phone, // Ajout du téléphone dans les metadata
-            role: role 
-          } 
-        },
-      })
+      });
 
-      if (signUpError) throw signUpError
-      if (!data.user) throw new Error('Erreur lors de la création du compte')
+      if (authError) throw authError;
 
-      // Mise à jour de l'état local avec toutes les infos
-      setUser({ ...data.user, role, full_name: fullName, phone })
+      if (authData.user) {
+        // 2. Génération d'un slug propre (ex: "Ma Boutique" -> "ma-boutique")
+        const slug = storeName
+          .toLowerCase()
+          .trim()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/[\s_-]+/g, '-')
+          .replace(/^-+|-+$/g, '');
 
-      if (role === 'vendor') {
-        navigate('/vendor/create-shop')
-      } else {
-        navigate('/')
+        // 3. Création de la boutique dans la table 'stores'
+        const { error: storeError } = await supabase
+          .from('stores')
+          .insert([
+            { 
+              name: storeName, 
+              owner_id: authData.user.id,
+              slug: slug 
+            }
+          ]);
+
+        if (storeError) throw storeError;
+
+        alert('Compte créé avec succès ! Vérifiez vos e-mails pour confirmer.');
+        navigate('/auth');
       }
-
-    } catch (err: any) {
-      setError(err.message)
+    } catch (error) {
+      console.error("Erreur d'inscription:", error.message);
+      alert(error.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB] py-12 px-4">
-      <div className="w-full max-w-xl bg-white rounded-[2.5rem] shadow-2xl shadow-gray-200/50 p-8 md:p-12 border border-gray-100">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 antialiased">
+      
+      {/* Bouton Retour */}
+      <Link to="/auth" className="absolute top-10 left-10 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 hover:text-black transition-colors">
+        <ArrowLeft size={14} /> Retour
+      </Link>
+
+      <div className="w-full max-w-[380px] space-y-12">
         
-        {/* HEADER */}
-        <div className="text-center mb-10">
-          <div className="w-16 h-16 bg-gray-900 rounded-2xl flex items-center justify-center text-brand-primary mx-auto mb-6 shadow-lg rotate-3">
-             <Sparkles size={28} fill="currentColor" />
+        {/* Header de la page */}
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Store size={22} strokeWidth={1.5} />
           </div>
-          <h1 className="text-4xl font-black text-gray-900 italic tracking-tighter uppercase leading-none">
-            Rejoignez <span className="text-brand-primary">FestiSolde</span>
+          <h1 className="text-xl font-light uppercase tracking-[0.4em] text-gray-900">
+            Nouveau <span className="font-medium">Vendeur</span>
           </h1>
-          <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest mt-4">Le futur du shopping au Burkina Faso</p>
+          <p className="text-[9px] font-bold text-gray-300 uppercase tracking-[0.2em]">
+            Lancez votre boutique digitale aujourd'hui
+          </p>
         </div>
 
-        {error && (
-          <div className="bg-rose-50 text-rose-600 text-xs font-black p-4 rounded-2xl mb-8 border border-rose-100 flex items-center gap-3">
-            <div className="w-2 h-2 bg-rose-600 rounded-full animate-pulse" />
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleRegister} className="space-y-6">
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Nom Complet */}
-            <div className="relative">
-              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-4">Identité</label>
-              <div className="relative">
-                <User className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
-                <input
-                  type="text"
-                  placeholder="Nom complet"
-                  className="w-full pl-14 pr-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:border-brand-primary focus:bg-white outline-none font-bold text-gray-900 transition-all"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Téléphone */}
-            <div className="relative">
-              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-4">Téléphone</label>
-              <div className="relative">
-                <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
-                <input
-                  type="tel"
-                  placeholder="Ex: +226 01..."
-                  className="w-full pl-14 pr-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:border-brand-primary focus:bg-white outline-none font-bold text-gray-900 transition-all"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Email */}
-          <div className="relative">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-4">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
-              <input
-                type="email"
-                placeholder="votre@email.com"
-                className="w-full pl-14 pr-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:border-brand-primary focus:bg-white outline-none font-bold text-gray-900 transition-all"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+        {/* Formulaire Register */}
+        <form className="space-y-8" onSubmit={handleRegister}>
+          <div className="space-y-6">
+            
+            {/* Champ Nom de Boutique */}
+            <div className="group relative">
+              <label className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1 block">Nom de l'enseigne</label>
+              <input 
+                type="text" 
+                placeholder="EX: MAISON VINTAGE" 
+                className="w-full border-b border-gray-100 py-4 text-[11px] font-medium uppercase tracking-[0.2em] outline-none focus:border-orange-600 transition-colors bg-transparent placeholder:text-gray-200"
+                value={storeName} 
+                onChange={(e) => setStoreName(e.target.value)} 
                 required
+              />
+            </div>
+
+            {/* Champ Email */}
+            <div className="group relative">
+              <label className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1 block">Email professionnel</label>
+              <input 
+                type="email" 
+                placeholder="PRO@EMAIL.COM" 
+                className="w-full border-b border-gray-100 py-4 text-[11px] font-medium uppercase tracking-[0.2em] outline-none focus:border-orange-600 transition-colors bg-transparent placeholder:text-gray-200"
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                required
+              />
+            </div>
+
+            {/* Champ Mot de passe */}
+            <div className="group relative">
+              <label className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1 block">Sécurité (8 caractères)</label>
+              <input 
+                type="password" 
+                placeholder="••••••••" 
+                className="w-full border-b border-gray-100 py-4 text-[11px] font-medium uppercase tracking-[0.2em] outline-none focus:border-orange-600 transition-colors bg-transparent placeholder:text-gray-200"
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                required
+                minLength={8}
               />
             </div>
           </div>
 
-          {/* Mot de passe */}
-          <div className="relative">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-4">Sécurité</label>
-            <div className="relative">
-              <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
-              <input
-                type="password"
-                placeholder="Mot de passe (6+ caractères)"
-                className="w-full pl-14 pr-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:border-brand-primary focus:bg-white outline-none font-bold text-gray-900 transition-all"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
+          <div className="pt-4">
+            <button 
+              type="submit"
+              disabled={loading}
+              className="w-full bg-black text-white py-5 text-[10px] font-bold uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-orange-600 transition-all duration-300 disabled:bg-gray-100 disabled:text-gray-400"
+            >
+              {loading ? <Loader2 className="animate-spin" size={16} /> : "Créer ma boutique"}
+            </button>
           </div>
-
-          {/* Choix du Rôle */}
-          <div className="space-y-3">
-             <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-4 text-center">Choisissez votre profil</label>
-             <div className="grid grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  onClick={() => setRole('customer')}
-                  className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] border-2 transition-all duration-300 ${
-                    role === 'customer' 
-                    ? 'border-brand-primary bg-brand-primary/5 text-gray-900 shadow-lg shadow-brand-primary/10' 
-                    : 'border-gray-100 bg-gray-50 text-gray-400 opacity-60 hover:opacity-100'
-                  }`}
-                >
-                  <ShoppingBag size={28} className={role === 'customer' ? 'text-brand-primary' : ''} />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Acheteur</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setRole('vendor')}
-                  className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] border-2 transition-all duration-300 ${
-                    role === 'vendor' 
-                    ? 'border-brand-primary bg-brand-primary/5 text-gray-900 shadow-lg shadow-brand-primary/10' 
-                    : 'border-gray-100 bg-gray-50 text-gray-400 opacity-60 hover:opacity-100'
-                  }`}
-                >
-                  <Store size={28} className={role === 'vendor' ? 'text-brand-primary' : ''} />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Vendeur</span>
-                </button>
-             </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gray-900 text-white py-5 rounded-[1.5rem] font-black text-sm uppercase tracking-widest hover:bg-brand-primary hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-gray-200 flex items-center justify-center gap-3 disabled:opacity-50 mt-4"
-          >
-            {loading ? (
-              <Loader2 className="animate-spin" size={20} />
-            ) : (
-              'Démarrer l’expérience'
-            )}
-          </button>
         </form>
 
-        <p className="text-center text-gray-400 font-bold text-xs mt-10 uppercase tracking-tight">
-          Déjà inscrit ?{' '}
-          <button 
-            onClick={() => navigate('/auth/login')} 
-            className="text-brand-primary font-black hover:underline"
-          >
-            Connectez-vous ici
-          </button>
-        </p>
+        {/* Footer info */}
+        <div className="text-center">
+          <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest leading-relaxed">
+            En cliquant sur créer, vous acceptez nos <br/>
+            <span className="text-gray-900 border-b border-gray-900 cursor-pointer">Conditions Partenaires</span>
+          </p>
+        </div>
       </div>
     </div>
-  )
+  );
 }
