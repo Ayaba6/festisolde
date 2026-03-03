@@ -15,7 +15,6 @@ export default function Register() {
     setLoading(true);
 
     try {
-      // 1. Inscription de l'utilisateur dans Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -24,7 +23,6 @@ export default function Register() {
       if (authError) throw authError;
 
       if (authData.user) {
-        // 2. Génération d'un slug propre (ex: "Ma Boutique" -> "ma-boutique")
         const slug = storeName
           .toLowerCase()
           .trim()
@@ -32,7 +30,6 @@ export default function Register() {
           .replace(/[\s_-]+/g, '-')
           .replace(/^-+|-+$/g, '');
 
-        // 3. Création de la boutique dans la table 'stores'
         const { error: storeError } = await supabase
           .from('stores')
           .insert([
@@ -83,7 +80,6 @@ export default function Register() {
         <form className="space-y-8" onSubmit={handleRegister}>
           <div className="space-y-6">
             
-            {/* Champ Nom de Boutique */}
             <div className="group relative">
               <label className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1 block">Nom de l'enseigne</label>
               <input 
@@ -96,7 +92,6 @@ export default function Register() {
               />
             </div>
 
-            {/* Champ Email */}
             <div className="group relative">
               <label className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1 block">Email professionnel</label>
               <input 
@@ -109,7 +104,6 @@ export default function Register() {
               />
             </div>
 
-            {/* Champ Mot de passe */}
             <div className="group relative">
               <label className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1 block">Sécurité (8 caractères)</label>
               <input 
@@ -135,12 +129,21 @@ export default function Register() {
           </div>
         </form>
 
-        {/* Footer info */}
-        <div className="text-center">
+        {/* Footer info & Connexion */}
+        <div className="text-center space-y-8">
           <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest leading-relaxed">
             En cliquant sur créer, vous acceptez nos <br/>
             <span className="text-gray-900 border-b border-gray-900 cursor-pointer">Conditions Partenaires</span>
           </p>
+
+          <div className="pt-4 border-t border-gray-50">
+            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">
+              Déjà partenaire ?{' '}
+              <Link to="/auth" className="text-orange-600 font-black hover:underline ml-2 transition-all">
+                Connectez-vous
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

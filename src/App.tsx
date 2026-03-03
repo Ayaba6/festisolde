@@ -14,14 +14,16 @@ import {
   Palette, 
   Settings as SettingsIcon,
   Menu,
-  X 
+  X,
+  PlusCircle 
 } from 'lucide-react';
 
 // --- IMPORT DES PAGES ---
 import Auth from './pages/Auth/Auth';
-import Register from './pages/Auth/Register'; // <-- AJOUTÉ
+import Register from './pages/Auth/Register';
 import Dashboard from './pages/Vendor/Dashboard';
 import ManageProducts from './pages/Vendor/ManageProducts';
+import AddProduct from './pages/Store/AddProduct';
 import Revenues from './pages/Vendor/Revenues';
 import StoreSettings from './pages/Store/StoreSettings';
 import AdminDashboard from './pages/Admin/AdminDashboard';
@@ -32,7 +34,7 @@ import Settings from './components/Settings';
 import Home from './pages/Home/Home';
 
 // --- COMPOSANT HEADER VENDEUR ---
-const VendorHeader = ({ user, storeName, onOpenMenu }) => {
+const VendorHeader = ({ user, storeSlug, onOpenMenu }) => {
   return (
     <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
       <button onClick={onOpenMenu} className="md:hidden p-2 text-gray-600 hover:bg-gray-50 rounded-xl transition-colors">
@@ -46,8 +48,12 @@ const VendorHeader = ({ user, storeName, onOpenMenu }) => {
       </div>
 
       <div className="flex items-center gap-3 md:gap-4">
-        {storeName && (
-          <Link to={`/boutique/${storeName}`} target="_blank" className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-orange-600 text-white rounded-xl text-[10px] md:text-xs font-bold hover:bg-orange-700 transition shadow-sm">
+        {storeSlug && (
+          <Link 
+            to={`/boutique/${storeSlug}`} 
+            target="_blank" 
+            className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-orange-600 text-white rounded-xl text-[10px] md:text-xs font-bold hover:bg-orange-700 transition shadow-sm"
+          >
             <ExternalLink className="w-3.5 h-3.5" />
             <span className="hidden sm:inline uppercase tracking-widest">Ma Boutique</span>
           </Link>
@@ -64,7 +70,7 @@ const VendorHeader = ({ user, storeName, onOpenMenu }) => {
 
 function App() {
   const [user, setUser] = useState(null);
-  const [storeName, setStoreName] = useState("");
+  const [storeSlug, setStoreSlug] = useState(""); // Changé de storeName à storeSlug
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -87,21 +93,27 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Récupération du SLUG pour le lien de la boutique
   useEffect(() => {
-    async function fetchStoreName() {
+    async function fetchStoreSlug() {
       if (user) {
-        const { data } = await supabase.from('stores').select('name').eq('owner_id', user.id).single();
-        if (data) setStoreName(data.name);
+        const { data, error } = await supabase
+          .from('stores')
+          .select('slug')
+          .eq('owner_id', user.id)
+          .single();
+        
+        if (data) setStoreSlug(data.slug);
       }
     }
-    fetchStoreName();
+    fetchStoreSlug();
   }, [user]);
 
   if (loading) return null;
 
   const isUserAdmin = user?.id?.trim() === adminUid;
 
-  const vendorPaths = ['/dashboard', '/products', '/revenus', '/ma-boutique', '/settings', '/admin'];
+  const vendorPaths = ['/dashboard', '/products', '/add-product', '/revenus', '/ma-boutique', '/settings', '/admin'];
   const isVendorArea = vendorPaths.some(path => location.pathname.startsWith(path));
   const showSidebar = isVendorArea && user;
 
@@ -129,6 +141,7 @@ function App() {
         <div className="px-4 mb-4 text-[8px] font-black text-gray-300 uppercase tracking-[0.4em]">Ma Gestion</div>
         <SidebarLink to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
         <SidebarLink to="/products" icon={Package} label="Stocks" />
+        <SidebarLink to="/add-product" icon={PlusCircle} label="Nouvel Article" colorClass="text-orange-500" />
         <SidebarLink to="/revenus" icon={Wallet} label="Revenus" />
       </div>
 
@@ -181,19 +194,19 @@ function App() {
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        {showSidebar && <VendorHeader user={user} storeName={storeName} onOpenMenu={() => setIsMobileMenuOpen(true)} />}
+        {showSidebar && <VendorHeader user={user} storeSlug={storeSlug} onOpenMenu={() => setIsMobileMenuOpen(true)} />}
 
         <main className={`flex-1 ${!showSidebar ? '' : 'p-4 md:p-10 pb-24 md:pb-10'}`}>
           <Routes>
             <Route path="/" element={<Home />} />
             
-            {/* AUTH & REGISTER */}
             <Route path="/auth" element={!user ? <Auth /> : (isUserAdmin ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />)} />
             <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" replace />} />
             
             {/* ROUTES VENDEUR PROTEGEES */}
             <Route path="/dashboard" element={user ? (isUserAdmin ? <Navigate to="/admin" replace /> : <Dashboard />) : <Navigate to="/auth" />} />
             <Route path="/products" element={user ? <ManageProducts /> : <Navigate to="/auth" />} />
+            <Route path="/add-product" element={user ? <AddProduct /> : <Navigate to="/auth" />} />
             <Route path="/revenus" element={user ? <Revenues /> : <Navigate to="/auth" />} />
             <Route path="/ma-boutique" element={user ? <StoreSettings /> : <Navigate to="/auth" />} />
             <Route path="/settings" element={user ? <Settings /> : <Navigate to="/auth" />} />
@@ -201,8 +214,8 @@ function App() {
             {/* ADMIN PANEL */}
             <Route path="/admin" element={user && isUserAdmin ? <AdminDashboard /> : <Navigate to="/dashboard" />} />
             
-            {/* ROUTES PUBLIQUES */}
-            <Route path="/boutique/:storeName" element={<PublicStore />} />
+            {/* ROUTES PUBLIQUES - Changé storeName en storeSlug */}
+            <Route path="/boutique/:storeSlug" element={<PublicStore />} />
             <Route path="/produit/:productId" element={<ProductDetails />} />
             <Route path="/panier" element={<Cart />} />
           </Routes>
@@ -213,8 +226,8 @@ function App() {
             {[
               { to: "/dashboard", icon: LayoutDashboard, label: "Dash" },
               { to: "/products", icon: Package, label: "Stocks" },
-              { to: "/revenus", icon: Wallet, label: "CFA" },
-              { to: "/ma-boutique", icon: Palette, label: "Design" }
+              { to: "/add-product", icon: PlusCircle, label: "Ajout" },
+              { to: "/revenus", icon: Wallet, label: "CFA" }
             ].map((item) => (
               <Link key={item.to} to={item.to} className={`flex flex-col items-center gap-1 ${location.pathname === item.to ? 'text-orange-600' : 'text-gray-300'}`}>
                 <item.icon size={18} strokeWidth={1.5} /> 

@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2, ShieldCheck, Mail, Lock } from 'lucide-react';
+import { ArrowLeft, Loader2, ShieldCheck, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -14,7 +15,6 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      // 1. Tentative de connexion
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email: email.trim(), 
         password: password 
@@ -23,106 +23,125 @@ export default function Auth() {
       if (error) throw error;
 
       if (data?.user) {
-        // 2. Récupération et nettoyage des IDs pour la redirection
         const currentUserId = data.user.id.trim();
         const adminUid = import.meta.env.VITE_ADMIN_UID?.trim();
 
-        console.log("Connexion réussie. ID:", currentUserId);
-
-        // 3. Redirection conditionnelle
+        // Redirection intelligente
         if (adminUid && currentUserId === adminUid) {
-          console.log("Direction : Espace Admin");
           navigate('/admin');
         } else {
-          console.log("Direction : Espace Vendeur");
           navigate('/dashboard');
         }
       }
     } catch (error) {
-      console.error("Erreur de connexion:", error.message);
-      alert("Erreur : " + error.message);
+      console.error("Erreur:", error.message);
+      alert("Identifiants incorrects ou compte inexistant.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 antialiased font-sans">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 antialiased">
       
-      {/* Retour à l'accueil du site public */}
-      <Link to="/" className="absolute top-10 left-10 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-gray-300 hover:text-orange-600 transition-all">
-        <ArrowLeft size={14} /> Accueil Festisolde
+      {/* --- BACK LINK --- */}
+      <Link 
+        to="/" 
+        className="absolute top-10 left-6 md:left-10 flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.4em] text-gray-300 hover:text-black transition-all group"
+      >
+        <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> 
+        Retour
       </Link>
 
-      <div className="w-full max-w-[380px] space-y-12">
+      <div className="w-full max-w-[400px] space-y-12">
         
-        {/* En-tête du formulaire */}
-        <div className="text-center space-y-4">
-          <div className="flex justify-center mb-6">
-             <div className="w-10 h-10 bg-black text-white flex items-center justify-center font-black italic text-xl shadow-lg">F</div>
+        {/* --- LOGO & HEADER --- */}
+        <div className="text-center space-y-6">
+          <div className="flex justify-center">
+            <div className="w-14 h-14 bg-black text-white flex items-center justify-center font-black italic text-2xl shadow-[0_20px_40px_rgba(0,0,0,0.1)] rounded-xl">
+              F
+            </div>
           </div>
-          <h1 className="text-xl font-light uppercase tracking-[0.4em] text-gray-900">
-            Espace <span className="font-medium">Pro</span>
-          </h1>
-          <p className="text-[9px] font-bold text-gray-300 uppercase tracking-[0.2em]">
-            Gérez votre catalogue et vos ventes
-          </p>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-black uppercase tracking-[0.2em] text-gray-900 italic">
+              ESPACE <span className="text-orange-600 italic-none">PRO</span>
+            </h1>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em]">
+              Connectez-vous à votre terminal de vente
+            </p>
+          </div>
         </div>
 
-        {/* Formulaire de connexion */}
+        {/* --- FORMULAIRE --- */}
         <form className="space-y-8" onSubmit={handleLogin}>
-          <div className="space-y-6">
-            {/* Champ Email */}
-            <div className="relative group">
+          <div className="space-y-1">
+            
+            {/* EMAIL */}
+            <div className="group relative border-b-2 border-gray-100 focus-within:border-orange-600 transition-all duration-500">
+              <Mail className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-orange-600" size={16} />
               <input 
                 type="email" 
-                placeholder="VOTRE EMAIL" 
-                className="w-full border-b border-gray-100 py-4 text-[11px] font-medium uppercase tracking-[0.2em] outline-none focus:border-orange-600 transition-colors bg-transparent placeholder:text-gray-200"
+                placeholder="ADRESSE EMAIL" 
+                className="w-full pl-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] outline-none bg-transparent placeholder:text-gray-200"
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 required
               />
             </div>
 
-            {/* Champ Password */}
-            <div className="relative group">
+            {/* PASSWORD */}
+            <div className="group relative border-b-2 border-gray-100 focus-within:border-orange-600 transition-all duration-500">
+              <Lock className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-orange-600" size={16} />
               <input 
-                type="password" 
+                type={showPassword ? "text" : "password"} 
                 placeholder="MOT DE PASSE" 
-                className="w-full border-b border-gray-100 py-4 text-[11px] font-medium uppercase tracking-[0.2em] outline-none focus:border-orange-600 transition-colors bg-transparent placeholder:text-gray-200"
+                className="w-full pl-8 pr-10 py-5 text-[11px] font-bold uppercase tracking-[0.2em] outline-none bg-transparent placeholder:text-gray-200"
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 required
               />
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
 
-          <div className="flex flex-col gap-4 pt-4">
-            {/* Bouton Principal : Connexion */}
+          <div className="flex flex-col gap-5 pt-4">
             <button 
               type="submit"
               disabled={loading}
-              className="w-full bg-black text-white py-5 text-[10px] font-bold uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-orange-600 transition-all duration-500 shadow-sm disabled:bg-gray-50 disabled:text-gray-300"
+              className="w-full bg-black text-white py-6 text-[11px] font-black uppercase tracking-[0.4em] flex items-center justify-center gap-3 hover:bg-orange-600 transition-all duration-500 shadow-2xl shadow-orange-100 disabled:bg-gray-100 disabled:text-gray-400 italic"
             >
-              {loading ? <Loader2 className="animate-spin" size={16} /> : "Accéder à mon espace"}
+              {loading ? <Loader2 className="animate-spin" size={18} /> : "Lancer la session"}
             </button>
 
-            {/* Bouton Secondaire : Redirection vers l'inscription */}
+            <div className="relative py-4">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-50"></div></div>
+              <div className="relative flex justify-center text-[9px] font-black uppercase tracking-widest text-gray-300 bg-white px-4">Ou</div>
+            </div>
+
             <Link 
               to="/register" 
-              className="w-full border border-gray-100 py-5 text-[10px] font-bold uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:border-black transition-all duration-300 text-gray-400 hover:text-black text-center"
+              className="w-full border-2 border-gray-900 py-5 text-[11px] font-black uppercase tracking-[0.4em] flex items-center justify-center gap-3 hover:bg-black hover:text-white transition-all duration-300 italic"
             >
-              Devenir Vendeur Partenaire
+              Devenir Partenaire
             </Link>
           </div>
         </form>
 
-        {/* Footer de sécurité */}
-        <div className="pt-10 flex justify-center">
+        {/* --- FOOTER --- */}
+        <div className="pt-8 flex flex-col items-center gap-6">
           <div className="flex items-center gap-3 text-gray-200">
-            <ShieldCheck size={14} strokeWidth={1.5} />
-            <span className="text-[8px] font-bold uppercase tracking-[0.3em]">Protocole sécurisé Festisolde</span>
+            <ShieldCheck size={16} strokeWidth={2} />
+            <span className="text-[9px] font-black uppercase tracking-[0.3em]">Accès Crypté & Sécurisé</span>
           </div>
+          <p className="text-[10px] text-gray-300 font-medium italic">
+            Festisolde &copy; 2026 — Terminal Vendeur v2.0
+          </p>
         </div>
       </div>
     </div>

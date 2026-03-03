@@ -2,25 +2,44 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { useCart } from '../../context/CartContext';
-import { ChevronLeft, ShoppingCart, ShieldCheck, Truck, MessageCircle, Share2, Plus, Minus } from 'lucide-react';
+import { 
+  ChevronLeft, 
+  ShoppingCart, 
+  ShieldCheck, 
+  Truck, 
+  MessageCircle, 
+  Share2, 
+  Plus, 
+  Minus,
+  LayoutGrid
+} from 'lucide-react';
 
 export default function ProductDetails() {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const { addToCart, cart } = useCart(); // On récupère cart pour le badge
+  const { addToCart, cart } = useCart();
   
   const [product, setProduct] = useState(null);
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
-  const [showToast, setShowToast] = useState(false); // État pour la notification
+  const [showToast, setShowToast] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
-  // Calcul du nombre total d'articles pour le badge
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   useEffect(() => {
     fetchProductData();
   }, [productId]);
+
+  const getImages = (prod) => {
+    if (!prod?.images) return [];
+    if (Array.isArray(prod.images)) return prod.images;
+    if (typeof prod.images === 'string' && prod.images.startsWith('{')) {
+      return prod.images.replace('{', '').replace('}', '').split(',').map(url => url.trim());
+    }
+    return [prod.image_url || prod.images];
+  };
 
   async function fetchProductData() {
     setLoading(true);
@@ -32,6 +51,9 @@ export default function ProductDetails() {
 
     if (productData) {
       setProduct(productData);
+      const imgs = getImages(productData);
+      setSelectedImage(imgs[0]);
+
       const { data: storeData } = await supabase
         .from('stores')
         .select('*')
@@ -43,10 +65,7 @@ export default function ProductDetails() {
   }
 
   const handleAddToCart = () => {
-    // On ajoute le numéro du store à l'objet produit pour que le panier sache qui contacter
     addToCart({ ...product, seller_phone: store?.phone }, quantity);
-    
-    // Affichage de la notification
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
   };
@@ -58,132 +77,149 @@ export default function ProductDetails() {
     window.open(whatsappUrl, '_blank');
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-400">Chargement...</div>;
-  if (!product) return <div className="p-20 text-center font-bold">Produit introuvable.</div>;
+  if (loading) return (
+    <div className="h-screen flex items-center justify-center bg-white">
+      <div className="w-7 h-7 border-2 border-gray-100 border-t-orange-600 rounded-full animate-spin" />
+    </div>
+  );
+  
+  if (!product) return <div className="p-20 text-center text-sm font-bold uppercase tracking-widest text-gray-400">Produit introuvable.</div>;
+
+  const allImages = getImages(product);
 
   return (
-    <div className="min-h-screen bg-[#F0F2F5] pb-20">
+    <div className="min-h-screen bg-white pb-32 antialiased text-gray-900">
       
-      {/* --- BARRE DE RETOUR AVEC BADGE --- */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-900 font-bold text-sm bg-gray-50 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
-            <ChevronLeft size={20} /> Retour
+      {/* --- HEADER --- */}
+      <div className="bg-white/95 backdrop-blur-md sticky top-0 z-50 border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider bg-gray-50 px-4 py-2 rounded-full hover:bg-gray-100 transition-all">
+            <ChevronLeft size={16} /> Retour
           </button>
           
-          <div className="flex gap-4 items-center">
-             <button className="p-2 hover:bg-gray-50 rounded-full transition-colors text-gray-500">
-                <Share2 size={20} />
-             </button>
-             
-             {/* Icône Panier avec Badge Rouge */}
-             <div className="relative cursor-pointer p-2 hover:bg-gray-50 rounded-full transition-colors" onClick={() => navigate('/panier')}>
-                <ShoppingCart size={22} className="text-gray-700" />
+          <div className="flex gap-3 items-center">
+             <button className="p-2 text-gray-400 hover:text-black transition-colors"><Share2 size={20} /></button>
+             <div className="relative cursor-pointer p-2 bg-black rounded-full text-white shadow-xl shadow-black/10" onClick={() => navigate('/panier')}>
+                <ShoppingCart size={18} />
                 {cartCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-black min-w-[18px] h-[18px] flex items-center justify-center rounded-full border-2 border-white animate-in zoom-in">
-                    {cartCount}
-                  </span>
+                  <span className="absolute -top-1 -right-1 bg-orange-600 text-white text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">{cartCount}</span>
                 )}
              </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto mt-6 px-0 md:px-4">
-        <div className="flex flex-col md:flex-row gap-8 bg-white md:rounded-3xl shadow-sm overflow-hidden border border-gray-100">
+      <div className="max-w-7xl mx-auto mt-8 px-4 md:px-6">
+        <div className="flex flex-col lg:flex-row gap-10 lg:gap-16">
           
-          {/* SECTION IMAGE */}
-          <div className="md:w-1/2 bg-gray-50 flex items-center justify-center p-6 md:p-12 border-r border-gray-50">
-            <img 
-              src={product.image_url} 
-              alt={product.name} 
-              className="w-full h-auto max-h-[500px] object-contain rounded-2xl"
-            />
-          </div>
-
-          {/* SECTION INFOS */}
-          <div className="md:w-1/2 p-6 md:p-12 flex flex-col justify-center">
-            {store && (
-              <div 
-                className="flex items-center gap-2 mb-6 bg-blue-50 w-fit px-3 py-1.5 rounded-full cursor-pointer hover:bg-blue-100 transition-colors" 
-                onClick={() => navigate(`/boutique/${store.name}`)}
-              >
-                <img src={store.logo_url} className="w-5 h-5 rounded-full object-cover" alt="Logo" />
-                <span className="text-xs font-bold text-[#0866FF] uppercase tracking-wider">{store.name}</span>
+          {/* --- SECTION VISUELS (IMAGE MOINS HAUTE) --- */}
+          <div className="lg:w-[55%] flex flex-col-reverse lg:flex-row gap-4">
+            
+            {/* Miniatures verticales */}
+            {allImages.length > 1 && (
+              <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto scrollbar-hide lg:w-[80px] shrink-0 lg:max-h-[450px]">
+                {allImages.map((img, idx) => (
+                  <button 
+                    key={idx}
+                    onClick={() => setSelectedImage(img)}
+                    className={`min-w-[65px] h-[65px] lg:min-w-full lg:h-[75px] rounded-xl overflow-hidden border-2 transition-all flex items-center justify-center bg-[#FBFBFB] shrink-0 ${
+                      selectedImage === img ? 'border-orange-600 shadow-md scale-95' : 'border-transparent opacity-60'
+                    }`}
+                  >
+                    <img src={img} className="max-w-full max-h-full object-contain p-1" alt="" />
+                  </button>
+                ))}
               </div>
             )}
 
-            <h1 className="text-3xl md:text-4xl font-black text-gray-900 leading-tight">
+            {/* Image Principale RÉDUITE EN HAUTEUR */}
+            <div className="flex-1 h-[300px] md:h-[450px] bg-[#FBFBFB] rounded-[2.5rem] overflow-hidden flex items-center justify-center border border-gray-50 shadow-inner">
+              <img 
+                src={selectedImage} 
+                alt={product.name} 
+                className="max-w-full max-h-full object-contain p-6 md:p-8"
+              />
+            </div>
+          </div>
+
+          {/* --- SECTION INFOS --- */}
+          <div className="lg:w-[45%] flex flex-col pt-0">
+            {store && (
+              <div 
+                className="flex items-center gap-3 mb-4 cursor-pointer group w-fit" 
+                onClick={() => navigate(`/boutique/${store.slug || store.name}`)}
+              >
+                <img src={store.logo_url} className="w-6 h-6 rounded-full object-cover" alt="" />
+                <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest group-hover:text-orange-600 transition-colors">
+                  {store.name}
+                </span>
+              </div>
+            )}
+
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-[1.1] uppercase italic text-gray-900">
               {product.name}
             </h1>
 
-            <div className="mt-6 flex items-baseline gap-4">
-              <span className="text-3xl font-black text-[#0866FF]">{product.sale_price?.toLocaleString()} FCFA</span>
+            <div className="mt-4 flex items-baseline gap-4">
+              <span className="text-3xl font-black text-orange-600 italic">
+                {product.sale_price?.toLocaleString()} <span className="text-sm not-italic ml-0.5 font-bold text-gray-400">FCFA</span>
+              </span>
               {product.sale_price < product.price && (
-                <span className="text-xl text-gray-300 line-through font-bold">{product.price?.toLocaleString()} FCFA</span>
+                <span className="text-lg text-gray-300 line-through font-bold italic">{product.price?.toLocaleString()}</span>
               )}
             </div>
 
-            <div className="mt-8 space-y-4">
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Description du produit</h3>
-              <p className="text-gray-600 leading-relaxed">
-                {product.description || "Détails non spécifiés."}
+            <div className="mt-8 pt-8 border-t border-gray-50 space-y-3">
+              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                <LayoutGrid size={14} className="text-orange-600" /> Description
+              </h3>
+              <p className="text-[14px] text-gray-600 leading-relaxed font-medium">
+                {product.description || "Article premium sélectionné par Festisolde pour sa qualité exceptionnelle."}
               </p>
             </div>
 
-            {/* Sélecteur de quantité */}
-            <div className="mt-10">
-              <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Quantité à commander</label>
-              <div className="flex items-center gap-4 mt-3">
-                <div className="flex items-center border-2 border-gray-100 rounded-xl bg-gray-50 overflow-hidden">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-3 px-5 hover:bg-gray-200 transition-colors font-black text-lg"><Minus size={18}/></button>
-                  <span className="px-6 font-black text-xl text-gray-900">{quantity}</span>
-                  <button onClick={() => setQuantity(quantity + 1)} className="p-3 px-5 hover:bg-gray-200 transition-colors font-black text-lg"><Plus size={18}/></button>
-                </div>
+            {/* Quantité */}
+            <div className="mt-8">
+              <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest italic">Quantité</span>
+              <div className="flex items-center mt-3 w-fit bg-gray-50 p-1 rounded-xl border border-gray-100">
+                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-sm hover:text-orange-600 transition-all"><Minus size={14}/></button>
+                <span className="w-12 text-center font-black text-base italic">{quantity}</span>
+                <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-sm hover:text-orange-600 transition-all"><Plus size={14}/></button>
               </div>
             </div>
 
-            {/* Actions d'achat */}
-            <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button 
-                onClick={handleAddToCart}
-                className="py-4 bg-gray-900 text-white rounded-2xl font-black hover:bg-black transition-all flex items-center justify-center gap-3 active:scale-95 shadow-xl shadow-gray-200"
-              >
-                <ShoppingCart size={22} /> Ajouter au panier
+            {/* Boutons d'achat */}
+            <div className="mt-8 flex flex-col gap-3">
+              <button onClick={handleAddToCart} className="w-full py-4 bg-black text-white rounded-2xl font-black uppercase tracking-wider text-xs hover:bg-orange-600 transition-all active:scale-95 shadow-xl shadow-black/10 flex items-center justify-center gap-3">
+                <ShoppingCart size={18} /> Ajouter au panier
               </button>
-              
-              <button 
-                onClick={handleWhatsAppOrder}
-                className="py-4 bg-[#25D366] text-white rounded-2xl font-black hover:bg-[#1ebd5e] transition-all flex items-center justify-center gap-3 active:scale-95 shadow-xl shadow-green-100"
-              >
-                <MessageCircle size={22} /> WhatsApp direct
+              <button onClick={handleWhatsAppOrder} className="w-full py-4 border-2 border-gray-900 text-gray-900 rounded-2xl font-black uppercase tracking-wider text-xs hover:bg-gray-900 hover:text-white transition-all flex items-center justify-center gap-3 active:scale-95">
+                <MessageCircle size={18} /> WhatsApp Direct
               </button>
             </div>
 
             {/* Réassurance */}
-            <div className="mt-12 flex flex-wrap gap-6 pt-8 border-t border-gray-100">
-              <div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-tighter">
-                <ShieldCheck size={18} className="text-green-600" />
-                Vendeur Vérifié
+            <div className="mt-10 grid grid-cols-2 gap-6 pt-8 border-t border-gray-50">
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase italic text-gray-500">
+                 <ShieldCheck size={16} className="text-green-600" /> Vendeur Vérifié
               </div>
-              <div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-tighter">
-                <Truck size={18} className="text-[#0866FF]" />
-                Livraison Partout
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase italic text-gray-600">
+                 <Truck size={16} className="text-blue-600" /> Livraison Rapide
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* --- NOTIFICATION TOAST --- */}
+      {/* --- TOAST --- */}
       {showToast && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] bg-gray-900 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom-10 border border-gray-700">
-          <div className="bg-green-500 rounded-full p-1">
-            <ShieldCheck size={20} className="text-white" />
-          </div>
-          <div className="flex flex-col">
-             <span className="text-sm font-black italic">Excellent choix !</span>
-             <span className="text-[10px] text-gray-400 font-bold uppercase">Article ajouté au panier</span>
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-[360px]">
+          <div className="bg-black text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center justify-between border border-white/10 animate-in slide-in-from-bottom-5">
+            <div className="flex flex-col">
+              <span className="text-xs font-black italic uppercase">Ajouté !</span>
+              <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">Article prêt au panier</span>
+            </div>
+            <button onClick={() => navigate('/panier')} className="text-[10px] font-black uppercase tracking-widest bg-orange-600 px-4 py-2 rounded-lg">Voir</button>
           </div>
         </div>
       )}

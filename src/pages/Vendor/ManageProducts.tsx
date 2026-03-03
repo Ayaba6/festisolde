@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { 
-  Plus, Search, Filter, MoreVertical, Trash2, 
-  X, ImageIcon, Save, Loader2, FileText, ExternalLink 
+  Plus, Search, Trash2, X, ImageIcon, Save, Loader2, 
+  ExternalLink 
 } from 'lucide-react';
 
 export default function ManageProducts() {
@@ -11,16 +11,19 @@ export default function ManageProducts() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [filter, setFilter] = useState('Tout');
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // État du formulaire
-  const [previewUrl, setPreviewUrl] = useState(null);
+  // GESTION MULTI-IMAGES
+  const [imageFiles, setImageFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: '',
     sale_price: '',
     stock_quantity: '1',
-    image_file: null
+    category: 'Vêtements'
   });
 
   useEffect(() => {
@@ -40,12 +43,20 @@ export default function ManageProducts() {
     setLoading(false);
   }
 
+  // Gestion de la sélection multiple
   const handleImageChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setFormData({ ...formData, image_file: file });
-      setPreviewUrl(URL.createObjectURL(file));
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setImageFiles(prev => [...prev, ...files]);
+      
+      const newPreviews = files.map(file => URL.createObjectURL(file));
+      setPreviews(prev => [...prev, ...newPreviews]);
     }
+  };
+
+  const removeImage = (index) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
@@ -55,29 +66,41 @@ export default function ManageProducts() {
       const { data: { user } } = await supabase.auth.getUser();
       const { data: store } = await supabase.from('stores').select('id').eq('owner_id', user?.id).single();
 
-      let image_url = "";
-      if (formData.image_file && user) {
-        const filePath = `${user.id}/${Math.random()}.${formData.image_file.name.split('.').pop()}`;
-        await supabase.storage.from('product-images').upload(filePath, formData.image_file);
-        const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(filePath);
-        image_url = urlData.publicUrl;
+      // 1. Upload de toutes les images vers Storage
+      const uploadedUrls = [];
+      for (const file of imageFiles) {
+        const filePath = `${user.id}/${Date.now()}-${file.name}`;
+        const { error: uploadError } = await supabase.storage.from('product-images').upload(filePath, file);
+        
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(filePath);
+          uploadedUrls.push(urlData.publicUrl);
+        }
       }
 
+      // 2. Détermination du type (pour activer la grille)
+      const isPack = formData.category === 'Packs Promo' || formData.name.toLowerCase().includes('pack');
+
+      // 3. Insertion dans la base de données
       const { error } = await supabase.from('products').insert([{
         store_id: store.id,
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price),
-        sale_price: parseFloat(formData.sale_price),
+        sale_price: formData.sale_price ? parseFloat(formData.sale_price) : null,
         stock_quantity: parseInt(formData.stock_quantity),
-        image_url
+        image_url: uploadedUrls[0] || "", // Image de couverture
+        images: uploadedUrls,             // TABLEAU pour la grille
+        product_type: isPack ? 'pack' : 'simple',
+        category: formData.category
       }]);
 
       if (!error) {
         setIsModalOpen(false);
         fetchProducts();
-        setPreviewUrl(null);
-        setFormData({ name: '', description: '', price: '', sale_price: '', stock_quantity: '1', image_file: null });
+        setPreviews([]);
+        setImageFiles([]);
+        setFormData({ name: '', description: '', price: '', sale_price: '', stock_quantity: '1', category: 'Vêtements' });
       }
     } catch (err) {
       console.error(err);
@@ -86,174 +109,206 @@ export default function ManageProducts() {
     }
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center text-[10px] uppercase tracking-[0.3em] text-gray-400 font-light">Accès à l'inventaire...</div>;
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    if (filter === 'En Stock') return matchesSearch && (p.stock_quantity || 0) > 0;
+    if (filter === 'Rupture') return matchesSearch && (p.stock_quantity || 0) <= 0;
+    return matchesSearch;
+  });
+
+  const inputStyle = "w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-900 outline-none focus:border-orange-500 focus:bg-white transition-all placeholder:font-normal text-gray-700";
+  const labelStyle = "block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1";
+
+  if (loading) return (
+    <div className="h-screen flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="animate-spin text-orange-600" size={32} />
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400">Accès à l'inventaire...</p>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="max-w-[1400px] mx-auto px-6 py-10 antialiased">
-      
-      {/* --- HEADER ÉPURÉ --- */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
-        <div className="space-y-1">
-          <p className="text-[10px] font-bold text-[#0866FF] uppercase tracking-[0.4em] ml-1">Catalogue</p>
-          <h1 className="text-3xl font-light text-gray-900 tracking-tight">Gestion des <span className="text-gray-300">Produits</span></h1>
+    <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
+      {/* --- HEADER --- */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+        <div>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight uppercase italic">
+            VOTRE <span className="text-orange-600 italic-none">STOCK</span>
+          </h1>
+          <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">
+            {filteredProducts.length} Articles affichés
+          </p>
         </div>
         
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="group flex items-center gap-3 bg-gray-900 text-white px-6 py-3 rounded-full text-[11px] font-bold tracking-widest hover:bg-[#0866FF] transition-all duration-500 shadow-xl shadow-gray-200"
+          className="flex items-center justify-center gap-3 bg-black text-white px-8 py-4 rounded-2xl text-[11px] font-black tracking-widest hover:bg-orange-600 transition-all shadow-xl shadow-gray-200"
         >
-          <Plus size={16} className="group-hover:rotate-90 transition-transform" /> AJOUTER UNE RÉFÉRENCE
+          <Plus size={18} strokeWidth={3} /> AJOUTER UNE RÉFÉRENCE
         </button>
-      </header>
+      </div>
 
-      {/* --- BARRE DE RECHERCHE & FILTRES (DÉZOOMÉS) --- */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-gray-100 pb-6">
-        <div className="flex gap-8">
-          {['Tout', 'Publié', 'Brouillon'].map((tab) => (
+      {/* --- FILTRES & RECHERCHE (Inchangés) --- */}
+      <div className="bg-white p-4 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
+        <div className="flex bg-gray-100 p-1.5 rounded-2xl w-full md:w-auto">
+          {['Tout', 'En Stock', 'Rupture'].map((tab) => (
             <button
               key={tab}
               onClick={() => setFilter(tab)}
-              className={`text-[11px] font-bold uppercase tracking-[0.2em] transition-all relative pb-2 ${
-                filter === tab ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'
+              className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                filter === tab ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
               {tab}
-              {filter === tab && <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#0866FF]" />}
             </button>
           ))}
         </div>
 
-        <div className="relative group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#0866FF] transition-colors" size={14} />
+        <div className="relative w-full md:w-80 group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-600" size={16} />
           <input 
             type="text" 
-            placeholder="RECHERCHER..." 
-            className="pl-10 pr-4 py-2 bg-transparent border-b border-gray-100 text-[11px] focus:border-[#0866FF] outline-none w-64 transition-all tracking-widest" 
+            placeholder="RECHERCHER UN ARTICLE..." 
+            className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-transparent rounded-2xl text-[11px] font-bold outline-none focus:bg-white focus:border-orange-500 transition-all tracking-widest"
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
 
-      {/* --- TABLEAU INVENTAIRE (STYLE PRO) --- */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50/50 text-gray-400 text-[9px] uppercase font-bold tracking-[0.2em]">
-            <tr>
-              <th className="px-8 py-4">Article</th>
-              <th className="px-8 py-4 text-center border-x border-gray-50/50">Prix de vente</th>
-              <th className="px-8 py-4 text-center">Disponibilité</th>
-              <th className="px-8 py-4 text-right">Options</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {products.map((p) => (
-              <tr key={p.id} className="hover:bg-gray-50/30 transition-colors group">
-                <td className="px-8 py-5">
-                  <div className="flex items-center gap-5">
-                    <div className="w-12 h-12 rounded-sm overflow-hidden bg-gray-100 border border-gray-50 grayscale group-hover:grayscale-0 transition-all duration-700">
-                      <img src={p.image_url} className="w-full h-full object-cover" />
-                    </div>
-                    <div>
-                      <p className="text-[13px] font-semibold text-gray-800 tracking-tight">{p.name}</p>
-                      <p className="text-[10px] text-gray-400 font-light mt-0.5 truncate w-48">{p.description || "Aucune description"}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-8 py-5 text-center">
-                  <span className="text-[13px] font-bold text-gray-900 tracking-tighter italic">{p.sale_price?.toLocaleString()}</span>
-                  <span className="text-[9px] text-gray-400 ml-1">CFA</span>
-                </td>
-                <td className="px-8 py-5 text-center">
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-blue-500 bg-blue-50 px-3 py-1 rounded-full">
-                    En Ligne
-                  </span>
-                </td>
-                <td className="px-8 py-5 text-right">
-                  <button className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100">
-                    <Trash2 size={16} />
-                  </button>
-                </td>
+      {/* --- TABLEAU INVENTAIRE (Inchangé) --- */}
+      <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-gray-50/50 border-b border-gray-100">
+              <tr>
+                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Article</th>
+                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Prix</th>
+                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Stock</th>
+                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {filteredProducts.map((p) => (
+                <tr key={p.id} className="hover:bg-gray-50/50 transition-colors group">
+                  <td className="px-8 py-5">
+                    <div className="flex items-center gap-5">
+                      <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gray-100 border border-gray-100 flex-shrink-0 shadow-inner">
+                        <img src={p.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={p.name} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-black text-gray-900 uppercase truncate max-w-[200px]">{p.name || 'Sans nom'}</p>
+                        <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-tighter">REF: {p.id?.slice(0, 8)}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-8 py-5 text-center">
+                    <p className="text-sm font-black text-gray-900 tracking-tighter">
+                      {(p.sale_price || p.price || 0).toLocaleString()} <span className="text-[10px] text-gray-400">CFA</span>
+                    </p>
+                  </td>
+                  <td className="px-8 py-5 text-center">
+                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                      (p.stock_quantity || 0) > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {(p.stock_quantity || 0) > 0 ? 'Disponible' : 'Rupture'}
+                    </span>
+                  </td>
+                  <td className="px-8 py-5 text-right">
+                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button className="p-3 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all">
+                        <ExternalLink size={18} />
+                      </button>
+                      <button className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* --- MODAL HARMONISÉE --- */}
+      {/* --- MODAL AMELIOREE --- */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-          
-          <div className="relative bg-white w-full max-w-xl rounded-2xl shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 overflow-hidden">
-            <div className="p-8 border-b border-gray-50 flex justify-between items-center">
-              <div>
-                <p className="text-[9px] font-bold text-[#0866FF] uppercase tracking-[0.3em]">Nouvelle Entrée</p>
-                <h2 className="text-xl font-light text-gray-900 tracking-tight">Configuration Produit</h2>
-              </div>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-900 transition-colors"><X size={20}/></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setIsModalOpen(false)} />
+          <div className="relative bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl animate-in fade-in zoom-in duration-300 overflow-hidden">
+            <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h2 className="text-xl font-black text-gray-900 uppercase italic">Ajouter au Stock</h2>
+              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-white rounded-full transition-colors">
+                <X size={24} strokeWidth={3}/>
+              </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-8 space-y-8 max-h-[80vh] overflow-y-auto">
-              {/* Upload Image Minimaliste */}
-              <div 
-                onClick={() => document.getElementById('modal-upload')?.click()}
-                className="w-full h-48 border border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#0866FF] hover:bg-blue-50/30 transition-all group overflow-hidden relative"
-              >
-                {previewUrl ? (
-                  <img src={previewUrl} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="text-center">
-                    <ImageIcon className="mx-auto text-gray-200 group-hover:text-[#0866FF] transition-colors mb-3" size={32} />
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Cliquer pour charger un visuel</p>
-                  </div>
-                )}
-                <input id="modal-upload" type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+            <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[80vh] overflow-y-auto">
+              
+              {/* ZONE MULTI-UPLOAD */}
+              <div className="space-y-3">
+                <label className={labelStyle}>Photos de l'article (Max 3 pour la grille)</label>
+                <div className="grid grid-cols-3 gap-4">
+                  {previews.map((url, i) => (
+                    <div key={i} className="relative aspect-square rounded-2xl overflow-hidden border-2 border-gray-100 group">
+                      <img src={url} className="w-full h-full object-cover" />
+                      <button 
+                        type="button" 
+                        onClick={() => removeImage(i)}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                  {previews.length < 3 && (
+                    <button 
+                      type="button"
+                      onClick={() => document.getElementById('modal-upload')?.click()}
+                      className="aspect-square bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center hover:border-orange-500 transition-all"
+                    >
+                      <Plus className="text-gray-300" size={24} />
+                      <span className="text-[8px] font-black text-gray-400 mt-2 uppercase">Ajouter</span>
+                    </button>
+                  )}
+                </div>
+                <input id="modal-upload" type="file" multiple className="hidden" accept="image/*" onChange={handleImageChange} />
               </div>
 
-              <div className="space-y-6">
-                <div className="space-y-2 border-l-2 border-gray-100 pl-4 focus-within:border-[#0866FF] transition-colors">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Libellé du produit</label>
-                  <input 
-                    required placeholder="Nom de l'article..." 
-                    className="w-full text-lg font-light outline-none bg-transparent"
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className={labelStyle}>Désignation</label>
+                  <input required placeholder="Nom du produit..." className={inputStyle}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                </div>
+                
+                <div>
+                  <label className={labelStyle}>Catégorie</label>
+                  <select 
+                    className={inputStyle}
+                    value={formData.category}
+                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  >
+                    <option value="Vêtements">Vêtements</option>
+                    <option value="Chaussures">Chaussures</option>
+                    <option value="Accessoires">Accessoires</option>
+                    <option value="Packs Promo">Packs Promo (Active la grille)</option>
+                  </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-12">
-                  <div className="space-y-2 border-l-2 border-gray-100 pl-4">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Prix Standard</label>
-                    <input 
-                      required type="number" placeholder="0.00"
-                      className="w-full text-lg font-light outline-none bg-transparent"
-                      onChange={(e) => setFormData({...formData, price: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2 border-l-2 border-[#0866FF] pl-4">
-                    <label className="text-[10px] font-bold text-[#0866FF] uppercase tracking-widest">Prix Solde</label>
-                    <input 
-                      required type="number" placeholder="0.00"
-                      className="w-full text-lg font-black outline-none bg-transparent text-[#0866FF]"
-                      onChange={(e) => setFormData({...formData, sale_price: e.target.value})}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2 border-l-2 border-gray-100 pl-4">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-[10px]">Description & Détails</label>
-                  <textarea 
-                    placeholder="Informations complémentaires..." rows={2}
-                    className="w-full text-sm font-light outline-none bg-transparent resize-none"
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  />
+                <div>
+                  <label className={labelStyle}>Prix Standard (CFA)</label>
+                  <input required type="number" className={inputStyle}
+                    onChange={(e) => setFormData({...formData, price: e.target.value})} />
                 </div>
               </div>
 
               <button 
-                type="submit" disabled={adding}
-                className="w-full bg-gray-900 text-white font-bold py-4 rounded-full text-[11px] tracking-[0.2em] shadow-xl hover:bg-[#0866FF] transition-all flex items-center justify-center gap-3"
+                type="submit" disabled={adding || imageFiles.length === 0}
+                className="w-full bg-black text-white font-black py-5 rounded-2xl text-[11px] tracking-[0.3em] hover:bg-orange-600 transition-all flex items-center justify-center gap-3 disabled:bg-gray-200"
               >
-                {adding ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                {adding ? "SYNCHRONISATION..." : "ENREGISTRER LA RÉFÉRENCE"}
+                {adding ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                {adding ? "CHARGEMENT..." : "ENREGISTRER L'ARTICLE"}
               </button>
             </form>
           </div>
