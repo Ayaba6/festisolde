@@ -7,7 +7,6 @@ import {
   LayoutDashboard, 
   Package, 
   LogOut, 
-  Search, 
   ExternalLink, 
   ShieldCheck, 
   Wallet, 
@@ -15,7 +14,8 @@ import {
   Settings as SettingsIcon,
   Menu,
   X,
-  PlusCircle 
+  PlusCircle,
+  Zap // Icône pour le Marketing/Boost
 } from 'lucide-react';
 
 // --- IMPORT DES PAGES ---
@@ -32,7 +32,8 @@ import ProductDetails from './pages/Store/ProductDetails';
 import Cart from './pages/Store/Cart';
 import Settings from './components/Settings';
 import Home from './pages/Home/Home';
-import Shop from './pages/Home/components/Shop'; // <-- AJOUT DE LA PAGE CATALOGUE
+import Shop from './pages/Home/components/Shop'; 
+import RequestBoost from './pages/Vendor/RequestBoost'; // <-- Ton nouveau composant
 
 // --- COMPOSANT HEADER VENDEUR ---
 const VendorHeader = ({ user, storeSlug, onOpenMenu }) => {
@@ -43,7 +44,7 @@ const VendorHeader = ({ user, storeSlug, onOpenMenu }) => {
       </button>
 
       <div className="flex-1 max-w-md hidden md:block text-center md:text-left">
-        <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-gray-300 italic">
+        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-300 italic">
           Festisolde Management System
         </span>
       </div>
@@ -53,15 +54,14 @@ const VendorHeader = ({ user, storeSlug, onOpenMenu }) => {
           <Link 
             to={`/boutique/${storeSlug}`} 
             target="_blank" 
-            className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-orange-600 text-white rounded-xl text-[10px] md:text-xs font-bold hover:bg-orange-700 transition shadow-sm"
+            className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-black text-white rounded-xl text-[10px] font-black hover:bg-orange-600 transition shadow-sm uppercase tracking-widest"
           >
-            <ExternalLink className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline uppercase tracking-widest">Ma Boutique</span>
+            <ExternalLink className="w-3 h-3" /> Voir ma boutique
           </Link>
         )}
         <div className="flex items-center gap-2 border-l pl-4 border-gray-100">
-          <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center font-bold text-xs uppercase tracking-tighter">
-            {user?.email?.charAt(0)}
+          <div className="w-8 h-8 bg-orange-600 text-white rounded-full flex items-center justify-center font-black text-xs">
+            {user?.email?.charAt(0).toUpperCase()}
           </div>
         </div>
       </div>
@@ -77,7 +77,6 @@ function App() {
 
   const location = useLocation();
   const navigate = useNavigate();
-  
   const adminUid = import.meta.env.VITE_ADMIN_UID?.trim();
 
   useEffect(() => {
@@ -97,12 +96,7 @@ function App() {
   useEffect(() => {
     async function fetchStoreSlug() {
       if (user) {
-        const { data } = await supabase
-          .from('stores')
-          .select('slug')
-          .eq('owner_id', user.id)
-          .single();
-        
+        const { data } = await supabase.from('stores').select('slug').eq('owner_id', user.id).single();
         if (data) setStoreSlug(data.slug);
       }
     }
@@ -112,8 +106,7 @@ function App() {
   if (loading) return null;
 
   const isUserAdmin = user?.id?.trim() === adminUid;
-
-  const vendorPaths = ['/dashboard', '/products', '/add-product', '/revenus', '/ma-boutique', '/settings', '/admin'];
+  const vendorPaths = ['/dashboard', '/products-manage', '/add-product', '/revenus', '/marketing', '/ma-boutique', '/settings', '/admin'];
   const isVendorArea = vendorPaths.some(path => location.pathname.startsWith(path));
   const showSidebar = isVendorArea && user;
 
@@ -123,9 +116,9 @@ function App() {
       <Link 
         to={to} 
         className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-[10px] uppercase tracking-[0.2em] transition-all 
-        ${isActive ? 'bg-orange-50 text-orange-600' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-900'} ${colorClass}`}
+        ${isActive ? 'bg-orange-50 text-orange-600 shadow-sm' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-900'} ${colorClass}`}
       >
-        <Icon size={18} strokeWidth={1.5} /> {label}
+        <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} /> {label}
       </Link>
     );
   };
@@ -133,16 +126,21 @@ function App() {
   const SidebarContent = () => (
     <div className="space-y-8">
       <div>
-        <div className="px-4 mb-4 text-[8px] font-black text-gray-300 uppercase tracking-[0.4em]">Site</div>
-        <SidebarLink to="/" icon={ExternalLink} label="Retour à l'accueil" />
+        <div className="px-4 mb-4 text-[8px] font-black text-gray-300 uppercase tracking-[0.4em]">Navigation</div>
+        <SidebarLink to="/" icon={ExternalLink} label="Accueil Client" />
       </div>
       
       <div>
         <div className="px-4 mb-4 text-[8px] font-black text-gray-300 uppercase tracking-[0.4em]">Ma Gestion</div>
         <SidebarLink to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
-        <SidebarLink to="/products" icon={Package} label="Stocks" />
+        <SidebarLink to="/products-manage" icon={Package} label="Stocks" />
         <SidebarLink to="/add-product" icon={PlusCircle} label="Nouvel Article" colorClass="text-orange-500" />
         <SidebarLink to="/revenus" icon={Wallet} label="Revenus" />
+      </div>
+
+      <div>
+        <div className="px-4 mb-4 text-[8px] font-black text-gray-300 uppercase tracking-[0.4em]">Marketing</div>
+        <SidebarLink to="/marketing" icon={Zap} label="Booster Ventes" colorClass="text-orange-600 animate-pulse" />
       </div>
 
       <div>
@@ -152,7 +150,7 @@ function App() {
       </div>
 
       {isUserAdmin && (
-        <div className="pt-4 border-t border-gray-50">
+        <div className="pt-4 border-t border-gray-100">
           <SidebarLink to="/admin" icon={ShieldCheck} label="Super-Admin" colorClass="text-red-500 hover:bg-red-50" />
         </div>
       )}
@@ -168,24 +166,25 @@ function App() {
             <div className="w-8 h-8 bg-black flex items-center justify-center text-white font-black italic">F</div>
             <span className="text-sm font-black uppercase tracking-widest">Festisolde</span>
           </div>
-          <nav className="flex-1 px-4"><SidebarContent /></nav>
+          <nav className="flex-1 px-4 overflow-y-auto scrollbar-hide"><SidebarContent /></nav>
           <div className="p-6 border-t border-gray-50">
             <button 
               onClick={async () => { await supabase.auth.signOut(); navigate('/'); }} 
-              className="w-full flex items-center gap-3 px-4 py-3 text-[9px] font-bold uppercase tracking-widest text-red-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
+              className="w-full flex items-center gap-3 px-4 py-3 text-[9px] font-black uppercase tracking-widest text-red-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
             >
-              <LogOut size={16} /> Quitter la session
+              <LogOut size={16} /> Quitter
             </button>
           </div>
         </aside>
       )}
 
+      {/* MOBILE MENU */}
       {showSidebar && (
         <div className={`fixed inset-0 z-50 md:hidden transition-all duration-300 ${isMobileMenuOpen ? 'visible' : 'invisible'}`}>
-          <div className={`absolute inset-0 bg-black/10 backdrop-blur-sm transition-opacity ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0'}`} onClick={() => setIsMobileMenuOpen(false)} />
+          <div className={`absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0'}`} onClick={() => setIsMobileMenuOpen(false)} />
           <aside className={`absolute top-0 left-0 h-full w-72 bg-white shadow-2xl transition-transform duration-300 flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
             <div className="p-6 flex items-center justify-between border-b border-gray-50">
-              <span className="font-black uppercase tracking-widest text-sm italic">Festisolde</span>
+              <span className="font-black uppercase tracking-widest text-sm italic text-orange-600">Festisolde</span>
               <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-300"><X size={20} /></button>
             </div>
             <nav className="flex-1 p-4 overflow-y-auto"><SidebarContent /></nav>
@@ -196,10 +195,10 @@ function App() {
       <div className="flex-1 flex flex-col min-w-0">
         {showSidebar && <VendorHeader user={user} storeSlug={storeSlug} onOpenMenu={() => setIsMobileMenuOpen(true)} />}
 
-        <main className={`flex-1 ${!showSidebar ? '' : 'p-4 md:p-10 pb-24 md:pb-10'}`}>
+        <main className={`flex-1 ${!showSidebar ? '' : 'p-4 md:p-10 pb-24 md:pb-10 bg-[#FAFAFA]'}`}>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/products" element={<Shop />} /> {/* <-- ROUTE CATALOGUE PUBLIQUE */}
+            <Route path="/products" element={<Shop />} /> 
             
             <Route path="/auth" element={!user ? <Auth /> : (isUserAdmin ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />)} />
             <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" replace />} />
@@ -207,6 +206,7 @@ function App() {
             <Route path="/dashboard" element={user ? (isUserAdmin ? <Navigate to="/admin" replace /> : <Dashboard />) : <Navigate to="/auth" />} />
             <Route path="/products-manage" element={user ? <ManageProducts /> : <Navigate to="/auth" />} />
             <Route path="/add-product" element={user ? <AddProduct /> : <Navigate to="/auth" />} />
+            <Route path="/marketing" element={user ? <RequestBoost /> : <Navigate to="/auth" />} />
             <Route path="/revenus" element={user ? <Revenues /> : <Navigate to="/auth" />} />
             <Route path="/ma-boutique" element={user ? <StoreSettings /> : <Navigate to="/auth" />} />
             <Route path="/settings" element={user ? <Settings /> : <Navigate to="/auth" />} />
@@ -219,16 +219,17 @@ function App() {
           </Routes>
         </main>
 
+        {/* BOTTOM NAV MOBILE */}
         {showSidebar && (
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-50 flex items-center justify-around py-3 z-40">
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 flex items-center justify-around py-3 z-40 px-2 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
             {[
-              { to: "/dashboard", icon: LayoutDashboard, label: "Dash" },
+              { to: "/dashboard", icon: LayoutDashboard, label: "Studio" },
               { to: "/products-manage", icon: Package, label: "Stocks" },
-              { to: "/add-product", icon: PlusCircle, label: "Ajout" },
-              { to: "/revenus", icon: Wallet, label: "CFA" }
+              { to: "/marketing", icon: Zap, label: "Boost", color: "text-orange-600" },
+              { to: "/revenus", icon: Wallet, label: "Argent" }
             ].map((item) => (
-              <Link key={item.to} to={item.to} className={`flex flex-col items-center gap-1 ${location.pathname === item.to ? 'text-orange-600' : 'text-gray-300'}`}>
-                <item.icon size={18} strokeWidth={1.5} /> 
+              <Link key={item.to} to={item.to} className={`flex flex-col items-center gap-1.5 px-2 ${location.pathname === item.to ? (item.color || 'text-black') : 'text-gray-300'}`}>
+                <item.icon size={19} strokeWidth={location.pathname === item.to ? 2.5 : 1.5} /> 
                 <span className="text-[7px] font-black uppercase tracking-widest">{item.label}</span>
               </Link>
             ))}
