@@ -11,7 +11,8 @@ import {
   Share2, 
   Plus, 
   Minus,
-  LayoutGrid
+  LayoutGrid,
+  Eye // Ajout de l'icône Eye
 } from 'lucide-react';
 
 export default function ProductDetails() {
@@ -43,6 +44,12 @@ export default function ProductDetails() {
 
   async function fetchProductData() {
     setLoading(true);
+
+    // --- 1. INC RÉMENTATION DES VUES ---
+    // On appelle la fonction RPC créée dans Supabase
+    await supabase.rpc('increment_product_views', { row_id: productId });
+
+    // --- 2. RÉCUPÉRATION DES DONNÉES ---
     const { data: productData } = await supabase
       .from('products')
       .select('*')
@@ -112,10 +119,8 @@ export default function ProductDetails() {
       <div className="max-w-7xl mx-auto mt-8 px-4 md:px-6">
         <div className="flex flex-col lg:flex-row gap-10 lg:gap-16">
           
-          {/* --- SECTION VISUELS (IMAGE MOINS HAUTE) --- */}
+          {/* --- SECTION VISUELS --- */}
           <div className="lg:w-[55%] flex flex-col-reverse lg:flex-row gap-4">
-            
-            {/* Miniatures verticales */}
             {allImages.length > 1 && (
               <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto scrollbar-hide lg:w-[80px] shrink-0 lg:max-h-[450px]">
                 {allImages.map((img, idx) => (
@@ -132,7 +137,6 @@ export default function ProductDetails() {
               </div>
             )}
 
-            {/* Image Principale RÉDUITE EN HAUTEUR */}
             <div className="flex-1 h-[300px] md:h-[450px] bg-[#FBFBFB] rounded-[2.5rem] overflow-hidden flex items-center justify-center border border-gray-50 shadow-inner">
               <img 
                 src={selectedImage} 
@@ -144,17 +148,27 @@ export default function ProductDetails() {
 
           {/* --- SECTION INFOS --- */}
           <div className="lg:w-[45%] flex flex-col pt-0">
-            {store && (
-              <div 
-                className="flex items-center gap-3 mb-4 cursor-pointer group w-fit" 
-                onClick={() => navigate(`/boutique/${store.slug || store.name}`)}
-              >
-                <img src={store.logo_url} className="w-6 h-6 rounded-full object-cover" alt="" />
-                <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest group-hover:text-orange-600 transition-colors">
-                  {store.name}
-                </span>
-              </div>
-            )}
+            <div className="flex items-center justify-between mb-4">
+               {store && (
+                <div 
+                  className="flex items-center gap-3 cursor-pointer group" 
+                  onClick={() => navigate(`/boutique/${store.slug || store.name}`)}
+                >
+                  <img src={store.logo_url} className="w-6 h-6 rounded-full object-cover" alt="" />
+                  <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest group-hover:text-orange-600 transition-colors">
+                    {store.name}
+                  </span>
+                </div>
+               )}
+
+               {/* COMPTEUR DE VUES */}
+               <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-50 rounded-full">
+                  <Eye size={12} className="text-gray-400" />
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">
+                    {product.views || 0} vues
+                  </span>
+               </div>
+            </div>
 
             <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-[1.1] uppercase italic text-gray-900">
               {product.name}
@@ -178,7 +192,6 @@ export default function ProductDetails() {
               </p>
             </div>
 
-            {/* Quantité */}
             <div className="mt-8">
               <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest italic">Quantité</span>
               <div className="flex items-center mt-3 w-fit bg-gray-50 p-1 rounded-xl border border-gray-100">
@@ -188,7 +201,6 @@ export default function ProductDetails() {
               </div>
             </div>
 
-            {/* Boutons d'achat */}
             <div className="mt-8 flex flex-col gap-3">
               <button onClick={handleAddToCart} className="w-full py-4 bg-black text-white rounded-2xl font-black uppercase tracking-wider text-xs hover:bg-orange-600 transition-all active:scale-95 shadow-xl shadow-black/10 flex items-center justify-center gap-3">
                 <ShoppingCart size={18} /> Ajouter au panier
@@ -198,7 +210,6 @@ export default function ProductDetails() {
               </button>
             </div>
 
-            {/* Réassurance */}
             <div className="mt-10 grid grid-cols-2 gap-6 pt-8 border-t border-gray-50">
               <div className="flex items-center gap-2 text-[10px] font-black uppercase italic text-gray-500">
                  <ShieldCheck size={16} className="text-green-600" /> Vendeur Vérifié

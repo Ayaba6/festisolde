@@ -13,15 +13,18 @@ import {
   Package,
   ChevronDown,
   X,
-  Tag
+  Tag,
+  Users // Icône pour les visiteurs
 } from 'lucide-react';
 
 export default function Header({ searchQuery, setSearchQuery }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [dbCategories, setDbCategories] = useState([]);
+  const [globalViews, setGlobalViews] = useState(0); // État pour les vues
   const navigate = useNavigate();
 
   useEffect(() => {
+    // 1. Récupérer les catégories
     async function fetchCategories() {
       const { data, error } = await supabase
         .from('products')
@@ -33,7 +36,23 @@ export default function Header({ searchQuery, setSearchQuery }) {
         setDbCategories(uniqueNames);
       }
     }
+
+    // 2. Récupérer le total des vues (Visiteurs)
+    async function fetchGlobalViews() {
+      const { data } = await supabase.from('products').select('views');
+      if (data) {
+        const total = data.reduce((acc, curr) => acc + (curr.views || 0), 0);
+        // On peut ajouter un petit bonus de base (ex: +1200) pour le lancement
+        setGlobalViews(total); 
+      }
+    }
+
     fetchCategories();
+    fetchGlobalViews();
+
+    // Optionnel: rafraîchir le compteur toutes les minutes
+    const interval = setInterval(fetchGlobalViews, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   const getCategoryStyle = (catName) => {
@@ -58,7 +77,6 @@ export default function Header({ searchQuery, setSearchQuery }) {
       {/* --- TOP BAR --- */}
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <Link to="/" className="flex items-center">
-          {/* Utilisation de ton logo officiel */}
           <img 
             src="/logo-festisolde.png" 
             alt="Festisolde" 
@@ -66,7 +84,19 @@ export default function Header({ searchQuery, setSearchQuery }) {
           />
         </Link>
 
+        {/* --- NAVIGATION & COMPTEUR LIVE --- */}
         <nav className="hidden lg:flex items-center gap-10">
+          {/* COMPTEUR DE VISITEURS LIVE */}
+          <div className="flex items-center gap-2.5 bg-gray-50 px-4 py-2 rounded-full border border-gray-100">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+            </span>
+            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+              <span className="text-black">{globalViews.toLocaleString()}</span> Visiteurs
+            </span>
+          </div>
+
           {['Grossistes', 'Déstockage', 'Aide'].map((item) => (
             <span key={item} className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] hover:text-orange-500 cursor-pointer transition-colors">
               {item}
