@@ -32,6 +32,7 @@ import ProductDetails from './pages/Store/ProductDetails';
 import Cart from './pages/Store/Cart';
 import Settings from './components/Settings';
 import Home from './pages/Home/Home';
+import Shop from './pages/Home/components/Shop'; // <-- AJOUT DE LA PAGE CATALOGUE
 
 // --- COMPOSANT HEADER VENDEUR ---
 const VendorHeader = ({ user, storeSlug, onOpenMenu }) => {
@@ -70,7 +71,7 @@ const VendorHeader = ({ user, storeSlug, onOpenMenu }) => {
 
 function App() {
   const [user, setUser] = useState(null);
-  const [storeSlug, setStoreSlug] = useState(""); // Changé de storeName à storeSlug
+  const [storeSlug, setStoreSlug] = useState(""); 
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -93,11 +94,10 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Récupération du SLUG pour le lien de la boutique
   useEffect(() => {
     async function fetchStoreSlug() {
       if (user) {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('stores')
           .select('slug')
           .eq('owner_id', user.id)
@@ -199,22 +199,20 @@ function App() {
         <main className={`flex-1 ${!showSidebar ? '' : 'p-4 md:p-10 pb-24 md:pb-10'}`}>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/products" element={<Shop />} /> {/* <-- ROUTE CATALOGUE PUBLIQUE */}
             
             <Route path="/auth" element={!user ? <Auth /> : (isUserAdmin ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />)} />
             <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" replace />} />
             
-            {/* ROUTES VENDEUR PROTEGEES */}
             <Route path="/dashboard" element={user ? (isUserAdmin ? <Navigate to="/admin" replace /> : <Dashboard />) : <Navigate to="/auth" />} />
-            <Route path="/products" element={user ? <ManageProducts /> : <Navigate to="/auth" />} />
+            <Route path="/products-manage" element={user ? <ManageProducts /> : <Navigate to="/auth" />} />
             <Route path="/add-product" element={user ? <AddProduct /> : <Navigate to="/auth" />} />
             <Route path="/revenus" element={user ? <Revenues /> : <Navigate to="/auth" />} />
             <Route path="/ma-boutique" element={user ? <StoreSettings /> : <Navigate to="/auth" />} />
             <Route path="/settings" element={user ? <Settings /> : <Navigate to="/auth" />} />
             
-            {/* ADMIN PANEL */}
             <Route path="/admin" element={user && isUserAdmin ? <AdminDashboard /> : <Navigate to="/dashboard" />} />
             
-            {/* ROUTES PUBLIQUES - Changé storeName en storeSlug */}
             <Route path="/boutique/:storeSlug" element={<PublicStore />} />
             <Route path="/produit/:productId" element={<ProductDetails />} />
             <Route path="/panier" element={<Cart />} />
@@ -225,7 +223,7 @@ function App() {
           <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-50 flex items-center justify-around py-3 z-40">
             {[
               { to: "/dashboard", icon: LayoutDashboard, label: "Dash" },
-              { to: "/products", icon: Package, label: "Stocks" },
+              { to: "/products-manage", icon: Package, label: "Stocks" },
               { to: "/add-product", icon: PlusCircle, label: "Ajout" },
               { to: "/revenus", icon: Wallet, label: "CFA" }
             ].map((item) => (
