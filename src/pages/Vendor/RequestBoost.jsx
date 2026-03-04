@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
-import { Zap, Megaphone, Send, LayoutGrid, CheckCircle2, MessageCircle, Package } from 'lucide-react';
+import { supabase } from '../../lib/supabaseClient'; 
+import { 
+  Zap, 
+  Megaphone, 
+  Send, 
+  LayoutGrid, 
+  CheckCircle2, 
+  MessageCircle, 
+  Package, 
+  ChevronDown 
+} from 'lucide-react';
 
 export default function RequestBoost() {
   const [selectedPack, setSelectedPack] = useState(null);
@@ -35,34 +44,22 @@ export default function RequestBoost() {
       duration: '14 jours',
       features: ['Bannière Accueil', 'Diffusion WhatsApp Pro', 'Support dédié'],
       icon: <LayoutGrid size={20} />,
-      color: 'border-black text-black'
+      color: 'border-gray-900 text-gray-900'
     }
   ];
 
-  // --- LOGIQUE DE RÉCUPÉRATION DES PRODUITS CORRIGÉE ---
   useEffect(() => {
     async function getMyProducts() {
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (user) {
-        // 1. On récupère d'abord l'ID de la boutique du vendeur
-        const { data: storeData } = await supabase
-          .from('stores')
-          .select('id')
-          .eq('owner_id', user.id)
-          .single();
-
+        const { data: storeData } = await supabase.from('stores').select('id').eq('owner_id', user.id).single();
         if (storeData) {
-          // 2. On récupère les produits liés à ce store_id
           const { data: productsData, error } = await supabase
             .from('products')
             .select('id, name')
             .eq('store_id', storeData.id)
             .order('name', { ascending: true });
-
-          if (!error && productsData) {
-            setUserProducts(productsData);
-          }
+          if (!error && productsData) setUserProducts(productsData);
         }
       }
     }
@@ -73,75 +70,53 @@ export default function RequestBoost() {
     const phoneNumber = "22670189912"; 
     const pack = packs.find(p => p.id === selectedPack);
     const product = userProducts.find(p => p.id === selectedProductId);
-    
-    const message = `Bonjour Festisolde ! 👋 
-Je souhaite activer un boost pour mon arrivage.
-
-🚀 Produit : ${product?.name || 'ID: ' + selectedProductId}
-💎 Pack : ${pack?.name}
-💰 Montant : ${pack?.price} CFA
-
-Merci de m'indiquer la marche à suivre pour le règlement.`;
-
+    const message = `Bonjour Festisolde ! 👋\nJe souhaite activer un boost.\n\n🚀 Produit : ${product?.name}\n💎 Pack : ${pack?.name}\n💰 Montant : ${pack?.price} CFA`;
     return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     const { data: { user } } = await supabase.auth.getUser();
     const currentPack = packs.find(p => p.id === selectedPack);
 
     if (!user || !selectedProductId) {
-        alert("Erreur : Veuillez sélectionner un produit dans la liste.");
+        alert("Sélectionnez un produit.");
         setLoading(false);
         return;
     }
 
-    const { error } = await supabase
-      .from('marketing_requests')
-      .insert([
-        { 
-          seller_id: user.id,
-          product_id: selectedProductId,
-          pack_type: selectedPack,
-          price: parseInt(currentPack.price.replace(/\s/g, '')),
-          status: 'en_attente'
-        }
-      ]);
+    const { error } = await supabase.from('marketing_requests').insert([{ 
+      seller_id: user.id,
+      product_id: selectedProductId,
+      pack_type: selectedPack,
+      price: parseInt(currentPack.price.replace(/\s/g, '')),
+      status: 'en_attente'
+    }]);
 
-    if (!error) {
-      setSubmitted(true);
-    } else {
-      console.error("Erreur Supabase:", error);
-      alert("Erreur lors de l'enregistrement. Vérifiez votre connexion.");
-    }
+    if (!error) setSubmitted(true);
     setLoading(false);
   };
 
   if (submitted) {
     return (
-      <div className="max-w-md mx-auto bg-white p-12 rounded-[2.5rem] text-center space-y-6 shadow-2xl border border-gray-50">
-        <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto animate-bounce">
-          <CheckCircle2 size={40} />
+      <div className="max-w-md mx-auto bg-white p-12 rounded-[2.5rem] text-center space-y-8 shadow-2xl border-2 border-gray-100">
+        <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto shadow-inner">
+          <CheckCircle2 size={40} strokeWidth={3} />
         </div>
-        <h3 className="text-2xl font-black uppercase italic tracking-tighter">Demande Envoyée !</h3>
-        <p className="text-gray-500 text-[10px] uppercase tracking-[0.2em] font-bold leading-relaxed">
-          Votre demande est en attente. Pour une activation immédiate, contactez-nous sur WhatsApp.
-        </p>
+        <div className="space-y-2">
+            <h3 className="text-2xl font-black uppercase italic tracking-tighter">Demande Transmise</h3>
+            <p className="text-gray-400 text-[10px] uppercase tracking-[0.2em] font-black italic">Validation en cours</p>
+        </div>
         
-        <div className="flex flex-col gap-3 pt-4">
-            <a 
-              href={generateWhatsAppLink()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-[#25D366] text-white py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-105 transition-transform shadow-lg shadow-green-200"
+        <div className="flex flex-col gap-3">
+            <a href={generateWhatsAppLink()} target="_blank" rel="noopener noreferrer"
+              className="bg-[#25D366] text-white py-5 rounded-2xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] transition-all shadow-xl shadow-green-100"
             >
-              <MessageCircle size={18} /> Finaliser sur WhatsApp
+              <MessageCircle size={18} fill="white" /> Activer via WhatsApp
             </a>
-            <button onClick={() => setSubmitted(false)} className="text-[9px] font-black uppercase text-gray-400 hover:text-black">
-              Retour au formulaire
+            <button onClick={() => setSubmitted(false)} className="py-4 text-[9px] font-black uppercase text-gray-400 hover:text-black tracking-widest">
+              Retour au Studio
             </button>
         </div>
       </div>
@@ -149,42 +124,49 @@ Merci de m'indiquer la marche à suivre pour le règlement.`;
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 md:p-10 bg-white rounded-[3rem] shadow-2xl border border-gray-50">
-      <div className="mb-10 text-center">
-        <h2 className="text-3xl font-black uppercase italic tracking-tighter">
-          Propulsez vos <span className="text-orange-600">Arrivages</span>
+    <div className="max-w-4xl mx-auto p-4 md:p-12 bg-white rounded-[3rem] shadow-2xl border-2 border-gray-100 font-sans">
+      <div className="mb-12 text-center space-y-2">
+        <h2 className="text-3xl font-black uppercase italic tracking-tighter leading-none">
+          Propulser mon <span className="text-orange-600">Arrivage</span>
         </h2>
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-300 mt-2">
-          Visibilité maximale auprès des revendeurs Festisolde
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 italic">
+          Visibilité premium pour vos stocks
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-10">
+      <form onSubmit={handleSubmit} className="space-y-12">
         {/* Grille des Packs */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {packs.map((pack) => (
             <div 
               key={pack.id}
               onClick={() => setSelectedPack(pack.id)}
-              className={`relative p-6 rounded-[2rem] border-2 cursor-pointer transition-all duration-300 ${
+              className={`relative p-6 rounded-[2.5rem] border-2 cursor-pointer transition-all duration-300 group ${
                 selectedPack === pack.id 
-                ? `${pack.color} bg-white shadow-xl scale-105` 
-                : 'border-gray-100 bg-gray-50 grayscale opacity-60 hover:grayscale-0 hover:opacity-100'
+                ? `${pack.color} bg-white shadow-2xl scale-[1.03] ring-4 ring-orange-50` 
+                : 'border-gray-100 bg-gray-50/50 opacity-60 hover:opacity-100'
               }`}
             >
-              <div className="flex justify-between items-start mb-4">
-                <div className="p-3 rounded-2xl bg-white shadow-sm">{pack.icon}</div>
-                <span className="text-[10px] font-black">{pack.duration}</span>
+              <div className="flex justify-between items-start mb-6">
+                <div className={`p-3 rounded-2xl bg-white shadow-sm transition-transform group-hover:rotate-12`}>
+                  {pack.icon}
+                </div>
+                {/* JOURS EN NOIR FONCÉ INTENSE */}
+                <span className="text-[10px] font-black uppercase bg-black text-white px-3 py-1.5 rounded-xl shadow-lg tracking-widest">
+                  {pack.duration}
+                </span>
               </div>
-              <h4 className="text-[12px] font-black uppercase tracking-widest mb-1">{pack.name}</h4>
-              <div className="flex items-baseline gap-1 mb-4">
-                <span className="text-xl font-black italic">{pack.price}</span>
-                <span className="text-[8px] font-bold uppercase">CFA</span>
+              
+              <h4 className="text-[11px] font-black uppercase tracking-widest mb-1">{pack.name}</h4>
+              <div className="flex items-baseline gap-1 mb-6">
+                <span className="text-2xl font-black italic">{pack.price}</span>
+                <span className="text-[9px] font-black opacity-40 uppercase tracking-tighter text-gray-900">CFA</span>
               </div>
-              <ul className="space-y-2">
+              
+              <ul className="space-y-3">
                 {pack.features.map((f, i) => (
-                  <li key={i} className="text-[9px] font-bold uppercase tracking-tight flex items-center gap-2">
-                    <div className="w-1 h-1 bg-current rounded-full" /> {f}
+                  <li key={i} className="text-[9px] font-black uppercase tracking-tight flex items-center gap-2 text-gray-500">
+                    <div className="w-1 h-1 bg-orange-600 rounded-full" /> {f}
                   </li>
                 ))}
               </ul>
@@ -192,29 +174,25 @@ Merci de m'indiquer la marche à suivre pour le règlement.`;
           ))}
         </div>
 
-        {/* Sélection du produit (CORRIGÉ) */}
-        <div className="space-y-4">
-          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 flex items-center gap-2">
-            <Package size={14} /> Quel arrivage souhaitez-vous booster ?
+        {/* Sélection du produit */}
+        <div className="space-y-4 max-w-xl mx-auto">
+          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4 flex items-center gap-2 italic">
+            <Package size={14} className="text-orange-600" /> Article à mettre en avant
           </label>
-          <div className="relative">
+          <div className="relative group">
             <select 
               required
               value={selectedProductId}
               onChange={(e) => setSelectedProductId(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-100 p-5 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-orange-500 transition-all appearance-none cursor-pointer"
+              className="w-full bg-white border-2 border-gray-900 p-5 rounded-[1.5rem] text-[11px] font-black uppercase outline-none focus:border-orange-500 transition-all appearance-none cursor-pointer tracking-widest text-black shadow-sm"
             >
-              <option value="" disabled>-- Sélectionner un produit dans mon catalogue --</option>
-              {userProducts.length > 0 ? (
-                userProducts.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))
-              ) : (
-                <option disabled>Aucun produit trouvé dans votre stock</option>
-              )}
+              <option value="" disabled className="text-gray-300">-- Choisir dans mon stock --</option>
+              {userProducts.map(p => (
+                <option key={p.id} value={p.id} className="text-black font-black">{p.name}</option>
+              ))}
             </select>
-            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                <LayoutGrid size={16} />
+            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-black group-hover:text-orange-600 transition-colors">
+                <ChevronDown size={20} strokeWidth={4} />
             </div>
           </div>
         </div>
@@ -222,13 +200,13 @@ Merci de m'indiquer la marche à suivre pour le règlement.`;
         <button 
           type="submit"
           disabled={!selectedPack || !selectedProductId || loading}
-          className={`w-full py-5 rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 ${
+          className={`w-full py-6 rounded-2xl text-[11px] font-black uppercase tracking-[0.4em] transition-all flex items-center justify-center gap-4 shadow-xl active:scale-95 ${
             selectedPack && selectedProductId && !loading
-            ? 'bg-black text-white hover:bg-orange-600 shadow-xl' 
-            : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+            ? 'bg-black text-white hover:bg-orange-600 shadow-orange-100' 
+            : 'bg-gray-100 text-gray-300 cursor-not-allowed border-2 border-gray-50 shadow-none'
           }`}
         >
-          {loading ? "Enregistrement..." : "Confirmer le boost"} <Send size={16} />
+          {loading ? "TRAITEMENT EN COURS..." : "VALIDER LE BOOST"} <Send size={18} strokeWidth={3} />
         </button>
       </form>
     </div>

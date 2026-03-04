@@ -48,7 +48,6 @@ export default function StoreSettings() {
       const fileExt = file.name.split('.').pop();
       const filePath = `${user?.id}/${type}-${Math.random()}.${fileExt}`;
 
-      // Upload vers le bucket 'store-assets'
       const { error: uploadError } = await supabase.storage
         .from('store-assets')
         .upload(filePath, file);
@@ -59,7 +58,6 @@ export default function StoreSettings() {
       
       setStoreData(prev => ({ ...prev, [type]: urlData.publicUrl }));
       
-      // Mise à jour immédiate en base pour ne pas perdre l'image
       await supabase
         .from('stores')
         .update({ [type]: urlData.publicUrl })
@@ -102,69 +100,72 @@ export default function StoreSettings() {
   };
 
   if (loading) return (
-    <div className="h-screen flex items-center justify-center">
+    <div className="h-screen flex items-center justify-center bg-white">
       <div className="flex flex-col items-center gap-4">
-        <Loader2 className="animate-spin text-orange-600" size={32} />
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400">Configuration du studio...</p>
+        <Loader2 className="animate-spin text-orange-600" size={40} strokeWidth={3} />
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 italic">Synchronisation...</p>
       </div>
     </div>
   );
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10 antialiased">
+    <div className="max-w-6xl mx-auto px-4 py-8 md:py-12 antialiased">
       
       {/* --- HEADER --- */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
-        <div className="space-y-1">
-          <p className="text-[10px] font-black text-orange-600 uppercase tracking-[0.4em] ml-1">Configuration</p>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight uppercase italic">
-            IDENTITÉ DE <span className="text-gray-300 italic-none">MARQUE</span>
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+        <div className="space-y-2">
+          <p className="text-[10px] font-black text-orange-600 uppercase tracking-[0.5em]">Settings</p>
+          <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase italic leading-none">
+            Store <span className="text-gray-300 italic-none">Identity</span>
           </h1>
         </div>
         
         {message && (
-          <div className="flex items-center gap-2 text-[#25D366] text-[10px] font-black uppercase tracking-widest bg-green-50 px-4 py-2 rounded-full border border-green-100 animate-in fade-in slide-in-from-top-2">
-            <CheckCircle2 size={14} /> {message}
+          <div className="flex items-center gap-2 text-green-600 text-[10px] font-black uppercase tracking-widest bg-green-50 px-6 py-3 rounded-2xl border border-green-100 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+            <CheckCircle2 size={16} strokeWidth={3} /> {message}
           </div>
         )}
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
         
         {/* --- COLONNE GAUCHE : VISUELS --- */}
-        <div className="lg:col-span-7 space-y-12">
+        <div className="lg:col-span-7 space-y-10">
           
           <div className="relative group">
-            <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4">Aperçu de la vitrine</p>
+            <div className="flex justify-between items-center mb-4 px-2">
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Aperçu Vitrine</p>
+                <span className="text-[8px] font-black text-white bg-black px-2 py-1 rounded-md uppercase">Public view</span>
+            </div>
             
             {/* Banner Container */}
-            <div className="h-64 bg-gray-100 rounded-[2rem] overflow-hidden border border-gray-100 relative group/banner shadow-inner">
+            <div className="h-72 bg-gray-50 rounded-[2.5rem] overflow-hidden border-2 border-gray-100 relative group/banner shadow-xl">
               {storeData.banner_url ? (
-                <img src={storeData.banner_url} className="w-full h-full object-cover transition-transform duration-700 group-hover/banner:scale-105" alt="Banner" />
+                <img src={storeData.banner_url} className="w-full h-full object-cover transition-transform duration-1000 group-hover/banner:scale-110" alt="Banner" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-[10px] uppercase tracking-widest text-gray-300 font-black italic">Fond de boutique vide</div>
+                <div className="w-full h-full flex items-center justify-center text-[10px] uppercase tracking-widest text-gray-300 font-black italic">Aucune bannière définie</div>
               )}
-              <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/banner:opacity-100 transition-all flex items-center justify-center cursor-pointer backdrop-blur-sm">
-                <div className="bg-white px-6 py-3 rounded-2xl flex items-center gap-3 text-[10px] font-black tracking-widest shadow-2xl scale-90 group-hover/banner:scale-100 transition-transform">
-                  <Camera size={16} /> ÉDITER LA BANNIÈRE
+              <label className="absolute inset-0 bg-black/50 opacity-0 group-hover/banner:opacity-100 transition-all flex items-center justify-center cursor-pointer backdrop-blur-sm">
+                <div className="bg-white px-8 py-4 rounded-2xl flex items-center gap-3 text-[11px] font-black tracking-[0.2em] shadow-2xl scale-90 group-hover/banner:scale-100 transition-transform text-black">
+                  <Camera size={18} strokeWidth={3} /> MODIFIER LA BANNIÈRE
                 </div>
                 <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'banner_url')} />
               </label>
             </div>
 
             {/* Logo Overlay */}
-            <div className="absolute -bottom-8 left-10">
-              <div className="w-32 h-32 bg-white rounded-[2rem] p-2 shadow-2xl shadow-gray-300/50 relative group/logo border border-gray-50">
-                <div className="w-full h-full rounded-[1.5rem] overflow-hidden bg-gray-50 relative border border-gray-100">
+            <div className="absolute -bottom-10 left-12">
+              <div className="w-36 h-36 bg-white rounded-[2.5rem] p-2 shadow-2xl relative group/logo border-2 border-gray-100">
+                <div className="w-full h-full rounded-[2rem] overflow-hidden bg-gray-50 relative">
                   {storeData.logo_url ? (
                     <img src={storeData.logo_url} className="w-full h-full object-cover" alt="Logo" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-3xl font-black text-gray-200 uppercase italic">
+                    <div className="w-full h-full flex items-center justify-center text-4xl font-black text-gray-200 uppercase italic">
                       {storeData.name?.charAt(0) || 'S'}
                     </div>
                   )}
-                  <label className="absolute inset-0 bg-orange-600/80 opacity-0 group-hover/logo:opacity-100 transition-all flex items-center justify-center cursor-pointer">
-                    <Upload size={24} className="text-white" />
+                  <label className="absolute inset-0 bg-orange-600/90 opacity-0 group-hover/logo:opacity-100 transition-all flex items-center justify-center cursor-pointer">
+                    <Upload size={28} className="text-white" strokeWidth={3} />
                     <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'logo_url')} />
                   </label>
                 </div>
@@ -172,66 +173,66 @@ export default function StoreSettings() {
             </div>
           </div>
 
-          {/* LIEN PUBLIC COMPACT */}
-          <div className="pt-12">
-             <div className="bg-white p-6 rounded-[2rem] border border-gray-100 flex items-center justify-between group shadow-sm">
-                <div className="flex items-center gap-5">
-                   <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600">
-                      <Globe size={20} />
+          {/* URL DE PARTAGE */}
+          <div className="pt-14">
+             <div className="bg-gray-900 p-8 rounded-[2.5rem] flex items-center justify-between group shadow-2xl">
+                <div className="flex items-center gap-6">
+                   <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-orange-500 shadow-inner">
+                      <Globe size={24} strokeWidth={2.5} />
                    </div>
                    <div>
-                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">URL de partage boutique</p>
-                      <p className="text-sm font-bold text-gray-900 italic">
-                        festisolde.com/{(storeData.name || 'ma-boutique').toLowerCase().replace(/\s+/g, '-')}
+                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Votre lien de vitrine</p>
+                      <p className="text-base font-black text-white italic tracking-tight">
+                         festisolde.com/{(storeData.name || 'ma-boutique').toLowerCase().replace(/\s+/g, '-')}
                       </p>
                    </div>
                 </div>
                 <button 
                   onClick={copyToClipboard}
-                  className="p-3 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all"
+                  className="p-4 bg-white/5 text-white hover:bg-orange-600 hover:text-white rounded-2xl transition-all active:scale-90"
                 >
-                   <Copy size={20} />
+                   <Copy size={22} />
                 </button>
              </div>
           </div>
         </div>
 
         {/* --- COLONNE DROITE : ÉDITION --- */}
-        <div className="lg:col-span-5 space-y-10">
-           <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-8">
-              <div className="space-y-3 border-l-4 border-gray-50 pl-6 focus-within:border-orange-500 transition-all">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nom Commercial</label>
+        <div className="lg:col-span-5 space-y-8">
+           <div className="bg-white p-10 rounded-[3rem] border-2 border-gray-100 shadow-sm space-y-10">
+              <div className="space-y-4 border-l-4 border-gray-100 pl-8 focus-within:border-orange-500 transition-all duration-300">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nom du Store</label>
                 <input 
                   value={storeData.name}
                   onChange={(e) => setStoreData({...storeData, name: e.target.value})}
-                  className="w-full text-2xl font-black italic outline-none bg-transparent text-gray-900 placeholder:text-gray-200"
-                  placeholder="NOM DE VOTRE STORE"
+                  className="w-full text-3xl font-black italic outline-none bg-transparent text-gray-900 placeholder:text-gray-100 uppercase"
+                  placeholder="EX: M&M FASHION"
                 />
               </div>
 
-              <div className="space-y-3 border-l-4 border-gray-50 pl-6 focus-within:border-orange-500 transition-all">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Slogan de la marque</label>
+              <div className="space-y-4 border-l-4 border-gray-100 pl-8 focus-within:border-orange-500 transition-all duration-300">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Description / Slogan</label>
                 <textarea 
-                  rows={4}
+                  rows={5}
                   value={storeData.description}
                   onChange={(e) => setStoreData({...storeData, description: e.target.value})}
-                  className="w-full text-sm font-bold outline-none bg-transparent text-gray-500 leading-relaxed resize-none placeholder:font-normal"
-                  placeholder="Décrivez l'univers de votre boutique..."
+                  className="w-full text-sm font-bold outline-none bg-transparent text-gray-500 leading-relaxed resize-none placeholder:font-normal placeholder:italic"
+                  placeholder="Parlez de votre style, vos arrivages et votre univers..."
                 />
               </div>
            </div>
 
-           <div>
+           <div className="space-y-6">
               <button 
                 onClick={handleSave}
                 disabled={updating}
-                className="w-full bg-black text-white font-black py-5 rounded-[2rem] text-[11px] tracking-[0.3em] shadow-xl hover:bg-orange-600 transition-all flex items-center justify-center gap-3 disabled:bg-gray-200"
+                className="w-full bg-black text-white font-black py-6 rounded-2xl text-[12px] tracking-[0.4em] shadow-2xl hover:bg-orange-600 transition-all flex items-center justify-center gap-4 disabled:bg-gray-100 active:scale-95"
               >
-                {updating ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                {updating ? "SYNCHRONISATION..." : "METTRE À JOUR L'IDENTITÉ"}
+                {updating ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} strokeWidth={3} />}
+                {updating ? "SYNCHRONISATION..." : "SAUVEGARDER L'IDENTITÉ"}
               </button>
-              <p className="text-center text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-6 italic opacity-50">
-                Les changements impactent votre vitrine publique instantanément.
+              <p className="text-center text-[9px] text-gray-400 font-black uppercase tracking-[0.2em] italic opacity-60">
+                Mise à jour immédiate de la vitrine
               </p>
            </div>
         </div>

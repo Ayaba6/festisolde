@@ -1,17 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { 
-  User, 
-  Lock, 
-  Smartphone, 
-  Bell, 
-  ShieldCheck, 
-  Save, 
-  Loader2, 
-  LogOut,
-  ChevronRight,
-  CheckCircle2,
-  Wallet
+  User, Lock, Smartphone, ShieldCheck, Save, Loader2, LogOut, ChevronRight, CheckCircle2, Wallet 
 } from 'lucide-react';
 
 export default function Settings() {
@@ -46,164 +36,123 @@ export default function Settings() {
       ...profile,
       updated_at: new Date()
     });
-    
     if (!error) {
-      setMessage("Profil synchronisé");
+      setMessage("Profil à jour");
       setTimeout(() => setMessage(''), 3000);
     }
     setUpdating(false);
   };
 
-  if (loading) return (
-    <div className="h-screen flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="animate-spin text-orange-600" size={32} />
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 font-light">Accès au centre de contrôle...</p>
-      </div>
-    </div>
-  );
+  if (loading) return null;
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10 antialiased text-gray-900">
+    <div className="max-w-4xl mx-auto px-4 py-6 antialiased text-black font-sans">
       
-      {/* --- HEADER --- */}
-      <header className="mb-16 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-gray-100 pb-10">
-        <div className="space-y-1">
-          <p className="text-[10px] font-black text-orange-600 uppercase tracking-[0.4em] ml-1">Configuration</p>
-          <h1 className="text-3xl font-black tracking-tight uppercase italic">
-            COMPTE <span className="text-gray-300 italic-none">&</span> SÉCURITÉ
+      {/* HEADER COMPACT */}
+      <header className="mb-8 flex justify-between items-center border-b-4 border-black pb-4">
+        <div>
+          <h1 className="text-2xl font-black tracking-tighter uppercase italic leading-none">
+            Settings <span className="text-gray-400">Hub</span>
           </h1>
         </div>
         
         <div className="flex items-center gap-4">
           {message && (
-            <div className="flex items-center gap-2 text-[#25D366] text-[9px] font-black uppercase tracking-widest bg-green-50 px-4 py-2 rounded-full border border-green-100">
-              <CheckCircle2 size={12} /> {message}
-            </div>
+            <span className="text-[9px] font-black uppercase text-green-600 bg-green-50 px-3 py-1 border border-green-200">
+              {message}
+            </span>
           )}
           <button 
             onClick={() => supabase.auth.signOut()}
-            className="group flex items-center gap-2 text-[10px] font-black text-gray-400 hover:text-red-500 uppercase tracking-widest transition-all"
+            className="text-[9px] font-black text-gray-400 hover:text-black uppercase tracking-widest flex items-center gap-2 border border-gray-200 px-3 py-1.5 rounded-lg transition-colors"
           >
-            <LogOut size={14} className="group-hover:-translate-x-1 transition-transform" /> 
-            Déconnexion
+            <LogOut size={12} strokeWidth={3} /> Logout
           </button>
         </div>
       </header>
 
-      <div className="space-y-24">
+      <div className="space-y-6">
         
-        {/* --- SECTION 1 : IDENTITÉ --- */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-12">
-          <div className="space-y-3">
-            <h2 className="text-[11px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
-              <User size={14} className="text-orange-600"/> Identité
+        {/* SECTION IDENTITÉ - GRID SERRÉE */}
+        <section className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
+          <div className="md:col-span-1">
+            <h2 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 flex items-center gap-2">
+              <User size={12} /> Profil
             </h2>
-            <p className="text-[11px] text-gray-400 leading-relaxed font-bold uppercase tracking-tighter italic">
-              Informations privées pour la gestion de vos revenus.
-            </p>
           </div>
-          
-          <div className="md:col-span-2 space-y-10">
-            <div className="grid grid-cols-1 gap-10">
+          <div className="md:col-span-3 bg-white border-2 border-black p-5 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.05)]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <InputGroup 
-                label="Nom complet ou Raison Sociale" 
+                label="Nom Commercial" 
                 value={profile.full_name} 
                 onChange={(v) => setProfile({...profile, full_name: v})} 
-                placeholder="Ex: Boutique Horizon"
+                placeholder="Nom du store"
               />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <InputGroup 
-                  label="Email de gestion" 
-                  value={user?.email} 
-                  disabled 
-                />
-                <InputGroup 
-                  label="WhatsApp Finance" 
-                  value={profile.whatsapp_number} 
-                  onChange={(v) => setProfile({...profile, whatsapp_number: v})} 
-                  placeholder="+226 ..."
-                />
+              <InputGroup 
+                label="WhatsApp Finance" 
+                value={profile.whatsapp_number} 
+                onChange={(v) => setProfile({...profile, whatsapp_number: v})} 
+                placeholder="+226..."
+              />
+              <div className="md:col-span-2 opacity-50">
+                <InputGroup label="Email (Lecture seule)" value={user?.email} disabled />
               </div>
             </div>
           </div>
         </section>
 
-        {/* --- SECTION 2 : PAIEMENTS --- */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-12">
-          <div className="space-y-3">
-            <h2 className="text-[11px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
-              <Wallet size={14} className="text-orange-600"/> Retraits
+        {/* SECTION RETRAITS - CARTES COMPACTES */}
+        <section className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
+          <div className="md:col-span-1">
+            <h2 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 flex items-center gap-2">
+              <Wallet size={12} /> Paiements
             </h2>
-            <p className="text-[11px] text-gray-400 leading-relaxed font-bold uppercase tracking-tighter italic">
-              Comment souhaitez-vous encaisser vos ventes ?
-            </p>
           </div>
-          
-          <div className="md:col-span-2">
-            <div className="bg-gray-50/50 rounded-[2rem] p-8 border border-gray-100 space-y-6">
-              {/* Option Active */}
-              <div className="flex items-center justify-between p-4 bg-white rounded-2xl border-2 border-orange-500 shadow-sm shadow-orange-100 transition-all">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
-                    <Smartphone size={20} strokeWidth={2.5}/>
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-black text-gray-900 uppercase">Mobile Money</p>
-                    <p className="text-[10px] font-bold text-orange-600 italic">Orange / Moov / Wave</p>
-                  </div>
+          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="border-2 border-black p-4 rounded-xl flex items-center gap-4 bg-white relative overflow-hidden">
+                <div className="bg-black text-white p-1 rounded-full absolute -top-1 -right-1 scale-75">
+                  <CheckCircle2 size={16} />
                 </div>
-                <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-orange-200">
-                  <div className="w-2.5 h-2.5 bg-white rounded-full"></div>
+                <div className="w-10 h-10 bg-orange-50 text-orange-600 rounded-lg flex items-center justify-center">
+                  <Smartphone size={20} strokeWidth={3}/>
                 </div>
-              </div>
-
-              {/* Option Grisée */}
-              <div className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border-2 border-transparent opacity-40 cursor-not-allowed">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center text-gray-500">
-                    <ShieldCheck size={20}/>
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-black text-gray-900 uppercase">Virement Bancaire</p>
-                    <p className="text-[10px] font-bold text-gray-400 italic">Bientôt disponible</p>
-                  </div>
+                <div>
+                  <p className="text-[11px] font-black uppercase">Mobile Money</p>
+                  <p className="text-[9px] font-bold text-orange-600 italic">Orange/Moov/Wave</p>
                 </div>
-                <ChevronRight size={16} className="text-gray-300" />
-              </div>
+            </div>
+            <div className="border border-gray-200 p-4 rounded-xl flex items-center gap-4 bg-gray-50 opacity-40 grayscale">
+                <div className="w-10 h-10 bg-gray-200 text-gray-400 rounded-lg flex items-center justify-center">
+                  <ShieldCheck size={20}/>
+                </div>
+                <p className="text-[11px] font-black uppercase">Virement Bancaire</p>
             </div>
           </div>
         </section>
 
-        {/* --- SECTION 3 : SÉCURITÉ --- */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-12">
-          <div className="space-y-3">
-            <h2 className="text-[11px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
-              <Lock size={14} className="text-orange-600"/> Sécurité
-            </h2>
-            <p className="text-[11px] text-gray-400 leading-relaxed font-bold uppercase tracking-tighter italic">
-              Gestion des accès et protection des données.
-            </p>
+        {/* SECTION SÉCURITÉ - SIMPLE LIGNE */}
+        <section className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center border-t border-gray-100 pt-6">
+          <div className="md:col-span-1 italic">
+             <h2 className="text-[10px] font-black uppercase tracking-widest text-red-500">Sécurité</h2>
           </div>
-          
-          <div className="md:col-span-2">
-            <button className="text-[10px] font-black text-gray-900 border-2 border-gray-900 px-8 py-4 rounded-2xl hover:bg-black hover:text-white transition-all tracking-[0.2em] uppercase italic">
-              Réinitialiser le mot de passe
+          <div className="md:col-span-3">
+            <button className="text-[9px] font-black text-black border border-black px-4 py-2 rounded-lg hover:bg-black hover:text-white transition-all uppercase tracking-widest">
+              Réinitialiser Pass
             </button>
           </div>
         </section>
 
       </div>
 
-      {/* --- BOTTON SAVE --- */}
-      <footer className="mt-32 pt-10 border-t border-gray-100 flex justify-end">
+      {/* FOOTER FIXÉ OU SERRÉ */}
+      <footer className="mt-12 flex justify-end">
         <button 
           onClick={handleUpdate}
           disabled={updating}
-          className="flex items-center gap-4 bg-black text-white px-12 py-5 rounded-[2rem] text-[11px] font-black tracking-[0.3em] shadow-2xl hover:bg-orange-600 transition-all disabled:opacity-50 uppercase italic"
+          className="w-full md:w-auto bg-black text-white px-10 py-4 rounded-xl text-[10px] font-black tracking-[0.3em] flex items-center justify-center gap-3 active:scale-95 transition-transform"
         >
-          {updating ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-          {updating ? "SYNCHRONISATION..." : "ENREGISTRER LES PARAMÈTRES"}
+          {updating ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} strokeWidth={3} />}
+          {updating ? "SYNC..." : "VALIDER LES MODIFS"}
         </button>
       </footer>
     </div>
@@ -212,17 +161,15 @@ export default function Settings() {
 
 function InputGroup({ label, value, onChange, placeholder, disabled = false }) {
   return (
-    <div className="space-y-3 group">
-      <label className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">{label}</label>
-      <div className={`border-b-2 transition-all duration-500 ${disabled ? 'border-gray-100' : 'border-gray-200 group-focus-within:border-orange-500'}`}>
-        <input 
-          value={value}
-          disabled={disabled}
-          onChange={(e) => onChange && onChange(e.target.value)}
-          placeholder={placeholder}
-          className={`w-full py-3 text-sm font-bold outline-none bg-transparent ${disabled ? 'text-gray-300 italic' : 'text-gray-900'}`}
-        />
-      </div>
+    <div className="space-y-1">
+      <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest ml-1">{label}</label>
+      <input 
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange && onChange(e.target.value)}
+        placeholder={placeholder}
+        className={`w-full border-b-2 border-gray-100 py-1 text-xs font-black outline-none transition-colors focus:border-black ${disabled ? 'text-gray-300' : 'text-black'}`}
+      />
     </div>
   );
 }

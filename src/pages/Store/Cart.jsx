@@ -29,7 +29,8 @@ export default function Cart() {
       const total = getCartTotal();
       const storeId = cart[0]?.store_id;
 
-      const { error } = await supabase
+      // 1. Enregistrement de la commande dans la table 'orders'
+      const { error: orderError } = await supabase
         .from('orders')
         .insert([
           {
@@ -43,8 +44,23 @@ export default function Cart() {
           }
         ]);
 
-      if (error) throw error;
+      if (orderError) throw orderError;
 
+      // 2. MISE À JOUR SYNCHRONISÉE : Stock & Compteur de ventes
+      // On utilise Promise.all pour exécuter les mises à jour de tous les articles en parallèle
+      await Promise.all(cart.map(async (item) => {
+        const { error: updateError } = await supabase.rpc('increment_sales', { 
+          row_id: item.id, 
+          qty: item.quantity 
+        });
+        
+        if (updateError) {
+            console.error(`Erreur de mise à jour pour le produit ${item.id}:`, updateError);
+            // On peut décider de ne pas bloquer la commande si une mise à jour de stock échoue
+        }
+      }));
+
+      // 3. Préparation du message WhatsApp
       const productList = cart.map(item => 
         `• ${item.name} (x${item.quantity}) - ${(item.sale_price * item.quantity).toLocaleString()} FCFA`
       ).join('\n');
@@ -59,13 +75,14 @@ export default function Cart() {
       const sellerPhone = cart[0]?.seller_phone || "22600000000"; 
       const whatsappUrl = `https://wa.me/${sellerPhone}?text=${encodeURIComponent(message)}`;
       
+      // 4. Finalisation
       clearCart();
       window.open(whatsappUrl, '_blank');
       navigate('/');
 
     } catch (error) {
       console.error("Erreur commande:", error);
-      alert("Erreur lors de l'enregistrement.");
+      alert("Erreur lors de l'enregistrement de la commande. Veuillez réessayer.");
     } finally {
       setLoading(false);
     }
@@ -163,7 +180,6 @@ export default function Cart() {
               </div>
 
               {!isOrdering ? (
-                /* BOUTON VALIDER : ORANGE PAR DÉFAUT, NOIR AU SURVOL */
                 <button 
                   onClick={() => setIsOrdering(true)}
                   className="w-full py-5 bg-orange-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-black transition-all shadow-xl shadow-orange-600/20 active:scale-95 flex items-center justify-center gap-3 group"
@@ -193,7 +209,6 @@ export default function Cart() {
                     />
                   </div>
 
-                  {/* BOUTON CONFIRMER : ÉGALEMENT ORANGE PAR DÉFAUT, NOIR AU SURVOL */}
                   <button 
                     disabled={loading}
                     className="w-full py-5 bg-orange-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-black transition-all shadow-lg shadow-orange-600/20 flex items-center justify-center gap-3 disabled:opacity-50 active:scale-95"
