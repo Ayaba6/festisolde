@@ -209,7 +209,7 @@ function App() {
         <aside className="w-64 bg-white hidden md:flex flex-col sticky top-0 h-screen border-r border-gray-100">
           <div className="p-8 flex items-center gap-3">
             <div className="w-10 h-10 bg-black rounded-2xl flex items-center justify-center text-white font-black italic shadow-xl">S</div>
-            <span className="font-black text-base uppercase tracking-tighter">Studio</span>
+            <span className="font-black text-base uppercase tracking-tighter">FESTISOLDE</span>
           </div>
           <nav className="flex-1 px-4 overflow-y-auto scrollbar-hide">
             <SidebarContent />
