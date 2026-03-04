@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'; // Ajout de useRef
+import { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabaseClient';
 
@@ -16,11 +16,10 @@ import {
   X,
   PlusCircle,
   Zap,
-  ChevronDown,
-  User
+  ChevronDown
 } from 'lucide-react';
 
-// --- IMPORT DES PAGES (Gardés tels quels) ---
+// --- IMPORT DES PAGES ---
 import Auth from './pages/Auth/Auth';
 import Register from './pages/Auth/Register';
 import Dashboard from './pages/Vendor/Dashboard';
@@ -31,6 +30,7 @@ import AdminDashboard from './pages/Admin/AdminDashboard';
 import PublicStore from './pages/Store/PublicStore';
 import ProductDetails from './pages/Store/ProductDetails';
 import Cart from './pages/Store/Cart';
+import OrderSuccess from './pages/Store/OrderSuccess'; // <-- AJOUTÉ
 import Settings from './components/Settings';
 import Home from './pages/Home/Home';
 import Shop from './pages/Home/components/Shop'; 
@@ -40,7 +40,6 @@ const VendorHeader = ({ user, storeSlug, onOpenMenu, onSignOut }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Fermer le menu si on clique ailleurs
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -69,46 +68,40 @@ const VendorHeader = ({ user, storeSlug, onOpenMenu, onSignOut }) => {
           <Link 
             to={`/boutique/${storeSlug}`} 
             target="_blank" 
-            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gray-50 text-black border border-gray-200 rounded-xl text-[10px] font-bold uppercase hover:bg-black hover:text-white hover:border-black transition-all active:scale-95"
+            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gray-50 text-black border border-gray-200 rounded-xl text-[10px] font-bold uppercase hover:bg-black hover:text-white transition-all active:scale-95"
           >
             <ExternalLink size={14} strokeWidth={2.5} />
             <span>Ma Boutique</span>
           </Link>
         )}
         
-        {/* PROFILE DROPDOWN */}
         <div className="relative" ref={dropdownRef}>
           <button 
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className="flex items-center gap-2 p-1 pr-3 hover:bg-gray-50 rounded-full transition-all border border-transparent hover:border-gray-100"
           >
-            <div className="w-9 h-9 bg-gradient-to-tr from-orange-500 to-orange-400 rounded-full flex items-center justify-center text-white text-xs font-black shadow-md shadow-orange-100 border-2 border-white">
+            <div className="w-9 h-9 bg-gradient-to-tr from-orange-500 to-orange-400 rounded-full flex items-center justify-center text-white text-xs font-black shadow-md border-2 border-white">
               {user?.email?.charAt(0).toUpperCase()}
             </div>
             <ChevronDown size={14} className={`text-gray-400 transition-transform duration-300 ${isProfileOpen ? 'rotate-180' : ''}`} />
           </button>
 
-          {/* DROPDOWN MENU */}
           {isProfileOpen && (
             <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 animate-in fade-in zoom-in duration-200 z-50">
               <div className="px-4 py-3 border-b border-gray-50 mb-1">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Compte</p>
                 <p className="text-xs font-bold truncate text-gray-700">{user?.email}</p>
               </div>
-              
-              <Link to="/settings" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+              <Link to="/settings" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-gray-600 hover:bg-orange-50 hover:text-orange-600">
                 <SettingsIcon size={16} /> RÉGLAGES
               </Link>
-              
-              <Link to="/ma-boutique" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+              <Link to="/ma-boutique" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-gray-600 hover:bg-orange-50 hover:text-orange-600">
                 <Palette size={16} /> DESIGN BOUTIQUE
               </Link>
-
               <div className="h-px bg-gray-50 my-1" />
-              
               <button 
                 onClick={() => { setIsProfileOpen(false); onSignOut(); }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-red-500 hover:bg-red-50 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-red-500 hover:bg-red-50"
               >
                 <LogOut size={16} /> DÉCONNEXION
               </button>
@@ -239,6 +232,10 @@ function App() {
             <Route path="/boutique/:storeSlug" element={<PublicStore />} />
             <Route path="/produit/:productId" element={<ProductDetails />} />
             <Route path="/panier" element={<Cart />} />
+            
+            {/* --- PAGE DE CONFIRMATION --- */}
+            <Route path="/confirmation" element={<OrderSuccess />} />
+
             <Route path="/auth" element={!user ? <Auth /> : (isUserAdmin ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />)} />
             <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={user ? (isUserAdmin ? <Navigate to="/admin" replace /> : <Dashboard />) : <Navigate to="/auth" />} />
