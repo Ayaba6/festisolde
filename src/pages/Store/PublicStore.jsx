@@ -2,14 +2,16 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { useCart } from '../../context/CartContext';
-import { ProductCard } from './ProductCard'; // Assure-toi que le chemin est correct
+import { ProductCard } from './ProductCard';
 import { 
   Share2, 
   CheckCircle2, 
   ShoppingCart, 
   ArrowLeft, 
   LayoutGrid, 
-  ShieldCheck 
+  ShieldCheck,
+  Instagram,
+  Phone
 } from 'lucide-react';
 
 export default function PublicStore() {
@@ -80,7 +82,7 @@ export default function PublicStore() {
   );
 
   return (
-    <div className="min-h-screen bg-white pb-32 antialiased">
+    <div className="min-h-screen bg-white antialiased">
       
       {/* --- BANNIÈRE --- */}
       <div className="relative w-full flex justify-center">
@@ -89,7 +91,7 @@ export default function PublicStore() {
             <img src={store.banner_url} className="w-full h-full object-cover" alt="" />
           ) : (
             <div className="w-full h-full bg-neutral-900 flex items-center justify-center">
-               <span className="text-[10px] text-white/10 font-black tracking-[0.5em] uppercase italic">Festisolde Premium</span>
+                <span className="text-[10px] text-white/10 font-black tracking-[0.5em] uppercase italic">Festisolde Premium</span>
             </div>
           )}
           <div className="absolute inset-0 bg-black/10" />
@@ -134,7 +136,7 @@ export default function PublicStore() {
           </div>
         </div>
 
-        {/* --- GRILLE PRODUITS HARMONISÉE --- */}
+        {/* --- GRILLE PRODUITS --- */}
         <div className="py-10">
           <div className="flex items-center gap-2 mb-8">
             <LayoutGrid size={14} className="text-orange-600" />
@@ -155,6 +157,40 @@ export default function PublicStore() {
           )}
         </div>
       </div>
+
+     {/* --- FOOTER COMPACT NOIR --- */}
+      <footer className="mt-12 py-8 bg-black">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col items-center gap-6">
+          
+          {/* Social Links - Compact */}
+          <div className="flex gap-3">
+            <a href="#" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-orange-600 transition-all">
+              <Instagram size={14} />
+            </a>
+            <a href="#" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-green-600 transition-all">
+              <Phone size={14} />
+            </a>
+          </div>
+
+          {/* Brand & Copyright - Compact */}
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 opacity-20 mb-2">
+              <ShieldCheck size={12} className="text-white" />
+              <span className="text-[8px] font-black uppercase tracking-[0.4em] text-white italic">Festisolde</span>
+            </div>
+            <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">
+              © {new Date().getFullYear()} {store.name}
+            </p>
+          </div>
+
+          {/* Bottom Links - Compact */}
+          <div className="flex gap-6 border-t border-white/5 pt-6 w-full max-w-[300px] justify-center">
+            <button onClick={() => navigate('/')} className="text-[7px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors">Accueil</button>
+            <button className="text-[7px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors">Mentions</button>
+            <button className="text-[7px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors">Aide</button>
+          </div>
+        </div>
+      </footer>
       
       {/* --- PANIER FLOTTANT --- */}
       {cartItemsCount > 0 && (

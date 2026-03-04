@@ -48,6 +48,22 @@ export default function ManageProducts() {
     setLoading(false);
   }
 
+  // Fonctions pour gérer les listes de tailles et couleurs
+  const addTag = (type, value) => {
+    if (!value.trim()) return;
+    const key = type === 'size' ? 'sizes' : 'colors';
+    const val = type === 'size' ? value.toUpperCase() : value;
+    if (!formData[key].includes(val)) {
+      setFormData({ ...formData, [key]: [...formData[key], val] });
+    }
+    type === 'size' ? setNewSize('') : setNewColor('');
+  };
+
+  const removeTag = (type, val) => {
+    const key = type === 'size' ? 'sizes' : 'colors';
+    setFormData({ ...formData, [key]: formData[key].filter(item => item !== val) });
+  };
+
   const handleEdit = (product) => {
     setEditingId(product.id);
     setFormData({
@@ -130,7 +146,7 @@ export default function ManageProducts() {
     } catch (err) { console.error(err); } finally { setProcessing(false); }
   };
 
-  const inputStyle = "w-full border-2 border-gray-400 rounded-xl px-4 py-3 text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none bg-white font-medium";
+  const inputStyle = "w-full border-2 border-gray-400 rounded-xl px-4 py-3 text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none bg-white font-medium transition-all";
   const labelStyle = "block text-sm font-black text-gray-800 mb-2 uppercase tracking-wider text-[11px]";
 
   return (
@@ -277,6 +293,12 @@ export default function ManageProducts() {
                   <input required className={inputStyle} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Ex: Basket Nike..." />
                 </div>
 
+                {/* CHAMP DESCRIPTION */}
+                <div>
+                  <label className={labelStyle}>Description</label>
+                  <textarea className={`${inputStyle} h-24 resize-none`} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Détails, matière, état..." />
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className={labelStyle}>Catégorie</label>
@@ -299,6 +321,53 @@ export default function ManageProducts() {
                   <div>
                     <label className={`${labelStyle} text-orange-600`}>Prix Promo (CFA)</label>
                     <input type="number" className={`${inputStyle} border-orange-300 bg-orange-50/20`} value={formData.sale_price} onChange={e => setFormData({...formData, sale_price: e.target.value})} />
+                  </div>
+                </div>
+
+                {/* CHAMPS TAILLES ET COULEURS */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                  {/* TAILLES */}
+                  <div>
+                    <label className={labelStyle}>Tailles disponibles</label>
+                    <div className="flex gap-2 mb-3">
+                      <input 
+                        className={`${inputStyle} py-2 text-sm`} 
+                        placeholder="Ex: 42, XL..." 
+                        value={newSize} 
+                        onChange={e => setNewSize(e.target.value)}
+                        onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addTag('size', newSize))}
+                      />
+                      <button type="button" onClick={() => addTag('size', newSize)} className="bg-gray-900 text-white px-4 rounded-xl font-bold">+</button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.sizes.map(s => (
+                        <span key={s} className="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg text-[10px] font-black flex items-center gap-2">
+                          {s} <X size={12} className="cursor-pointer" onClick={() => removeTag('size', s)} />
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* COULEURS */}
+                  <div>
+                    <label className={labelStyle}>Couleurs disponibles</label>
+                    <div className="flex gap-2 mb-3">
+                      <input 
+                        className={`${inputStyle} py-2 text-sm`} 
+                        placeholder="Ex: Rouge, Bleu..." 
+                        value={newColor} 
+                        onChange={e => setNewColor(e.target.value)}
+                        onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addTag('color', newColor))}
+                      />
+                      <button type="button" onClick={() => addTag('color', newColor)} className="bg-gray-900 text-white px-4 rounded-xl font-bold">+</button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.colors.map(c => (
+                        <span key={c} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-[10px] font-black flex items-center gap-2 border-2 border-gray-200">
+                          {c} <X size={12} className="cursor-pointer" onClick={() => removeTag('color', c)} />
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>

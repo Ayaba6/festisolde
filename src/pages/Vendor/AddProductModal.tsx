@@ -163,7 +163,6 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }) {
                 <input required className={inputStyle} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Ex: Chemise en lin blanc" />
               </div>
               
-              {/* SECTION DESCRIPTION RÉTABLIE */}
               <div className="md:col-span-2">
                 <label className={labelStyle}>Description</label>
                 <textarea rows="3" className={`${inputStyle} resize-none`} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Détails, matière, état de l'article..." />
@@ -190,44 +189,74 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }) {
               </div>
             </div>
 
-            {/* VARIANTES OU PACK */}
-            {productType === 'simple' ? (
+            {/* COULEURS ET TAILLES (Visible si Produit Simple) */}
+            {productType === 'simple' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-gray-50 p-6 rounded-[32px]">
-                  <label className={labelStyle}>Couleurs</label>
-                  <div className="flex gap-2">
-                    <input value={newColor} onChange={e => setNewColor(e.target.value)} className="flex-1 p-3 rounded-xl border-none font-bold text-sm" placeholder="Noir..." />
-                    <button type="button" onClick={() => addTag('color', newColor)} className="bg-black text-white px-4 rounded-xl"><Plus size={18}/></button>
+                {/* BLOC COULEURS */}
+                <div className="bg-gray-50 p-6 rounded-[32px] border border-gray-100">
+                  <label className={labelStyle}>Couleurs Disponibles</label>
+                  <div className="flex gap-2 mb-4">
+                    <input 
+                      value={newColor} 
+                      onChange={e => setNewColor(e.target.value)} 
+                      className="flex-1 p-3 rounded-xl border-none font-bold text-sm shadow-inner" 
+                      placeholder="Ex: Noir" 
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag('color', newColor))}
+                    />
+                    <button type="button" onClick={() => addTag('color', newColor)} className="bg-black text-white px-4 rounded-xl hover:bg-orange-600 transition-colors">
+                      <Plus size={18}/>
+                    </button>
                   </div>
-                  <div className="flex flex-wrap gap-2 mt-4">
+                  <div className="flex flex-wrap gap-2">
                     {formData.colors.map((c, i) => (
-                      <span key={i} className="bg-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 shadow-sm">
+                      <span key={i} className="bg-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 shadow-sm border border-gray-100">
                         {c} <X size={12} className="text-red-500 cursor-pointer" onClick={() => removeTag('color', i)} />
                       </span>
                     ))}
                   </div>
                 </div>
-                <div className="bg-gray-50 p-6 rounded-[32px]">
-                  <label className={labelStyle}>Tailles</label>
-                  <div className="flex gap-2">
-                    <input value={newSize} onChange={e => setNewSize(e.target.value)} className="flex-1 p-3 rounded-xl border-none font-bold text-sm" placeholder="XL..." />
-                    <button type="button" onClick={() => addTag('size', newSize)} className="bg-black text-white px-4 rounded-xl"><Plus size={18}/></button>
+
+                {/* BLOC TAILLES */}
+                <div className="bg-gray-50 p-6 rounded-[32px] border border-gray-100">
+                  <label className={labelStyle}>Tailles Disponibles</label>
+                  <div className="flex gap-2 mb-4">
+                    <input 
+                      value={newSize} 
+                      onChange={e => setNewSize(e.target.value)} 
+                      className="flex-1 p-3 rounded-xl border-none font-bold text-sm shadow-inner" 
+                      placeholder="Ex: XL" 
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag('size', newSize))}
+                    />
+                    <button type="button" onClick={() => addTag('size', newSize)} className="bg-black text-white px-4 rounded-xl hover:bg-orange-600 transition-colors">
+                      <Plus size={18}/>
+                    </button>
                   </div>
-                  <div className="flex flex-wrap gap-2 mt-4">
+                  <div className="flex flex-wrap gap-2">
                     {formData.sizes.map((s, i) => (
-                      <span key={i} className="bg-orange-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase flex items-center gap-2">
+                      <span key={i} className="bg-orange-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 shadow-lg shadow-orange-100">
                         {s} <X size={12} className="cursor-pointer" onClick={() => removeTag('size', i)} />
                       </span>
                     ))}
                   </div>
                 </div>
               </div>
-            ) : (
+            )}
+
+            {/* BLOC PACK (Visible si Produit Pack) */}
+            {productType === 'pack' && (
               <div className="bg-black p-8 rounded-[32px] text-white">
                 <label className="text-orange-500 text-[10px] font-black uppercase tracking-widest mb-4 block">Articles inclus dans le pack</label>
                 <div className="flex gap-3">
-                  <input value={newPackItem} onChange={e => setNewPackItem(e.target.value)} className="flex-1 bg-gray-900 p-4 rounded-2xl border-none outline-none text-white font-bold" placeholder="Ex: 1 Chemise..." />
-                  <button type="button" onClick={() => addTag('pack_items', newPackItem)} className="bg-orange-500 p-4 rounded-2xl text-white"><Plus /></button>
+                  <input 
+                    value={newPackItem} 
+                    onChange={e => setNewPackItem(e.target.value)} 
+                    className="flex-1 bg-gray-900 p-4 rounded-2xl border-none outline-none text-white font-bold" 
+                    placeholder="Ex: 1 Chemise + 1 Pantalon" 
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag('pack_items', newPackItem))}
+                  />
+                  <button type="button" onClick={() => addTag('pack_items', newPackItem)} className="bg-orange-500 p-4 rounded-2xl text-white hover:bg-orange-400 transition-colors">
+                    <Plus />
+                  </button>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {formData.pack_items.map((item, i) => (
@@ -239,7 +268,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }) {
               </div>
             )}
 
-            <button type="submit" disabled={loading} className="w-full bg-orange-600 text-white py-6 rounded-[32px] font-black text-xl flex items-center justify-center gap-4 transition-all hover:bg-orange-700 shadow-xl shadow-orange-100">
+            <button type="submit" disabled={loading} className="w-full bg-orange-600 text-white py-6 rounded-[32px] font-black text-xl flex items-center justify-center gap-4 transition-all hover:bg-orange-700 shadow-xl shadow-orange-100 disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? <Loader2 className="animate-spin" /> : <Save />}
               {loading ? "PUBLICATION..." : "PUBLIER L'ARTICLE"}
             </button>
