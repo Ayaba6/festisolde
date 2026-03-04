@@ -29,7 +29,6 @@ export default function Revenues() {
     fetchSalesData();
   }, []);
 
-  // Calcul de l'aperçu dynamique dès que les dates ou les ventes changent
   useEffect(() => {
     let filtered = [...sales];
     if (dateStart) {
@@ -37,7 +36,7 @@ export default function Revenues() {
     }
     if (dateEnd) {
       const end = new Date(dateEnd);
-      end.setHours(23, 59, 59); // Inclure toute la journée de fin
+      end.setHours(23, 59, 59);
       filtered = filtered.filter(s => new Date(s.created_at) <= end);
     }
     setPreviewData(filtered);
@@ -72,7 +71,7 @@ export default function Revenues() {
   };
 
   const exportCSV = () => {
-    const data = previewData; // Utilise les données filtrées de l'aperçu
+    const data = previewData;
     const headers = ["Date", "Client", "Telephone", "Total (CFA)", "Statut"];
     const rows = data.map(s => [
       new Date(s.created_at).toLocaleDateString('fr-FR'),
@@ -164,7 +163,43 @@ export default function Revenues() {
         />
       </div>
 
-      {/* TABLEAU PC */}
+      {/* LISTE MOBILE (Visible uniquement sur mobile) */}
+      <div className="md:hidden space-y-4 mb-20">
+        {filteredSales.map((sale) => (
+          <div key={sale.id} className="bg-white p-6 rounded-[2rem] border-2 border-gray-100 shadow-sm space-y-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">
+                  {new Date(sale.created_at).toLocaleDateString('fr-FR')}
+                </p>
+                <h3 className="text-sm font-black uppercase mt-1">{sale.customer_name}</h3>
+                <p className="text-[10px] font-bold text-orange-600 italic">{sale.customer_phone}</p>
+              </div>
+              <button onClick={() => setSelectedOrder(sale)} className="p-3 bg-gray-50 rounded-xl text-gray-400">
+                <FileText size={18} />
+              </button>
+            </div>
+            
+            <div className="flex justify-between items-center pt-4 border-t border-gray-50">
+              <p className="text-lg font-black italic">
+                {sale.total_amount?.toLocaleString()} <span className="text-[10px] not-italic text-gray-300">CFA</span>
+              </p>
+              <select 
+                value={sale.status || 'nouveau'}
+                onChange={(e) => handleStatusChange(sale.id, e.target.value)}
+                className={`px-3 py-2 rounded-lg border-2 text-[9px] font-black uppercase outline-none ${getStatusStyle(sale.status)}`}
+              >
+                <option value="nouveau">Nouveau</option>
+                <option value="en cours">En cours</option>
+                <option value="livré">Livré</option>
+                <option value="annulé">Annulé</option>
+              </select>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* TABLEAU PC (Caché sur mobile) */}
       <div className="hidden md:block bg-white rounded-[2.5rem] border-2 border-gray-100 shadow-sm overflow-hidden">
         <table className="w-full text-left">
           <thead>
@@ -213,12 +248,12 @@ export default function Revenues() {
         </table>
       </div>
 
-      {/* --- MODAL EXPORT AVEC FILTRES DATES ET APERÇU --- */}
+      {/* --- MODAL EXPORT AVEC FILTRES --- */}
       {showExportModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
           <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             
-            <div className="p-8 border-b flex justify-between items-center bg-gray-50/50">
+            <div className="p-6 md:p-8 border-b flex justify-between items-center bg-gray-50/50">
               <div>
                 <h2 className="text-xl font-black uppercase italic tracking-tighter">Générer un <span className="text-orange-600">Rapport</span></h2>
                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">Sélectionnez vos dates pour l'aperçu</p>
@@ -228,21 +263,21 @@ export default function Revenues() {
               </button>
             </div>
 
-            <div className="grid md:grid-cols-2 divide-x divide-gray-100">
-              {/* SÉLECTION DES DATES */}
-              <div className="p-8 space-y-6">
+            <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-100 overflow-y-auto max-h-[80vh] md:max-h-none">
+              {/* SÉLECTION */}
+              <div className="p-6 md:p-8 space-y-6">
                 <div className="space-y-4">
                   <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
                     <Calendar size={12} /> Période personnalisée
                   </label>
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3 md:block md:space-y-3">
                     <div>
                       <span className="text-[9px] font-bold text-gray-400 uppercase ml-2">Du</span>
                       <input 
                         type="date" 
                         value={dateStart}
                         onChange={(e) => setDateStart(e.target.value)}
-                        className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-orange-500 rounded-2xl text-xs font-black outline-none transition-all uppercase"
+                        className="w-full p-3 md:p-4 bg-gray-50 border-2 border-transparent focus:border-orange-500 rounded-2xl text-[10px] md:text-xs font-black outline-none transition-all uppercase"
                       />
                     </div>
                     <div>
@@ -251,17 +286,14 @@ export default function Revenues() {
                         type="date" 
                         value={dateEnd}
                         onChange={(e) => setDateEnd(e.target.value)}
-                        className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-orange-500 rounded-2xl text-xs font-black outline-none transition-all uppercase"
+                        className="w-full p-3 md:p-4 bg-gray-50 border-2 border-transparent focus:border-orange-500 rounded-2xl text-[10px] md:text-xs font-black outline-none transition-all uppercase"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-4 space-y-3">
-                   <button 
-                    onClick={exportCSV}
-                    className="w-full group flex items-center justify-between p-4 rounded-2xl border-2 border-gray-100 hover:border-green-500 transition-all bg-white"
-                  >
+                <div className="pt-2 md:pt-4 space-y-3">
+                   <button onClick={exportCSV} className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-gray-100 hover:border-green-500 transition-all bg-white">
                     <div className="flex items-center gap-3">
                       <FileSpreadsheet size={18} className="text-green-600" />
                       <span className="text-[10px] font-black uppercase">Exporter CSV</span>
@@ -269,10 +301,7 @@ export default function Revenues() {
                     <ArrowDown size={14} className="text-gray-300" />
                   </button>
 
-                  <button 
-                    onClick={() => window.print()}
-                    className="w-full group flex items-center justify-between p-4 rounded-2xl border-2 border-gray-100 hover:border-blue-500 transition-all bg-white"
-                  >
+                  <button onClick={() => window.print()} className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-gray-100 hover:border-blue-500 transition-all bg-white">
                     <div className="flex items-center gap-3">
                       <FileDown size={18} className="text-blue-600" />
                       <span className="text-[10px] font-black uppercase">Rapport PDF</span>
@@ -282,49 +311,29 @@ export default function Revenues() {
                 </div>
               </div>
 
-              {/* APERÇU DYNAMIQUE */}
-              <div className="p-8 bg-gray-50/50">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-6">Aperçu en temps réel</label>
-                
-                <div className="space-y-6">
-                  <div className="bg-white p-6 rounded-3xl border-2 border-gray-100 shadow-sm">
+              {/* APERÇU */}
+              <div className="p-6 md:p-8 bg-gray-50/50">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-4 md:mb-6">Aperçu du contenu</label>
+                <div className="space-y-4 md:space-y-6">
+                  <div className="bg-white p-4 md:p-6 rounded-3xl border-2 border-gray-100 shadow-sm">
                     <p className="text-[9px] font-black text-gray-400 uppercase mb-2">Chiffre d'affaires</p>
-                    <p className="text-2xl font-black italic text-orange-600">
+                    <p className="text-xl md:text-2xl font-black italic text-orange-600">
                       {statsPreview.total.toLocaleString()} <span className="text-[10px] not-italic text-gray-300">CFA</span>
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-white p-4 rounded-2xl border-2 border-gray-100">
-                      <p className="text-[8px] font-black text-gray-400 uppercase">Commandes</p>
-                      <p className="text-sm font-black">{statsPreview.count}</p>
-                    </div>
-                    <div className="bg-white p-4 rounded-2xl border-2 border-gray-100">
-                      <p className="text-[8px] font-black text-gray-400 uppercase">Moyenne</p>
-                      <p className="text-sm font-black">
-                        {statsPreview.count > 0 ? Math.round(statsPreview.total / statsPreview.count).toLocaleString() : 0}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 overflow-y-auto max-h-[160px] pr-2">
+                  <div className="grid grid-cols-2 gap-3 overflow-y-auto max-h-[150px] md:max-h-none pr-1">
                     {previewData.length > 0 ? (
-                      previewData.slice(0, 5).map((s, i) => (
-                        <div key={i} className="flex justify-between items-center p-3 bg-white/80 rounded-xl border border-gray-100">
-                          <div className="text-left">
-                            <p className="text-[9px] font-black uppercase">{s.customer_name}</p>
-                            <p className="text-[8px] text-gray-400">{new Date(s.created_at).toLocaleDateString()}</p>
-                          </div>
-                          <p className="text-[10px] font-black text-gray-900">{s.total_amount?.toLocaleString()} F</p>
+                      previewData.slice(0, 4).map((s, i) => (
+                        <div key={i} className="bg-white p-3 rounded-xl border border-gray-100">
+                          <p className="text-[8px] font-black uppercase truncate">{s.customer_name}</p>
+                          <p className="text-[10px] font-black mt-1 text-gray-900">{s.total_amount?.toLocaleString()} F</p>
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-4 border-2 border-dashed border-gray-200 rounded-2xl">
+                      <div className="col-span-2 text-center py-4 border-2 border-dashed border-gray-200 rounded-2xl">
                         <p className="text-[9px] font-black text-gray-300 uppercase">Aucune donnée</p>
                       </div>
-                    )}
-                    {previewData.length > 5 && (
-                      <p className="text-center text-[8px] font-bold text-gray-300 uppercase italic">+{previewData.length - 5} autres commandes...</p>
                     )}
                   </div>
                 </div>
@@ -343,14 +352,14 @@ export default function Revenues() {
 
 function StatCard({ label, value, unit, icon, color }) {
   return (
-    <div className="bg-white p-6 rounded-[2rem] border-2 border-gray-100 shadow-sm group hover:-translate-y-1 transition-all duration-300">
-      <div className={`w-12 h-12 ${color} text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:rotate-6 transition-transform`}>
+    <div className="bg-white p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border-2 border-gray-100 shadow-sm group hover:-translate-y-1 transition-all">
+      <div className={`w-10 h-10 md:w-12 md:h-12 ${color} text-white rounded-xl md:rounded-2xl flex items-center justify-center mb-3 md:mb-4 shadow-lg`}>
         {icon}
       </div>
-      <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-1">{label}</p>
+      <p className="text-[8px] md:text-[10px] font-black text-gray-300 uppercase tracking-widest mb-1">{label}</p>
       <div className="flex items-baseline gap-1">
-        <span className="text-xl font-black text-gray-900 italic uppercase tracking-tighter group-hover:text-orange-600 transition-colors">{value}</span>
-        <span className="text-[9px] font-black text-gray-400 uppercase">{unit}</span>
+        <span className="text-lg md:text-xl font-black text-gray-900 italic uppercase tracking-tighter">{value}</span>
+        <span className="text-[8px] md:text-[9px] font-black text-gray-400 uppercase">{unit}</span>
       </div>
     </div>
   );
@@ -366,57 +375,51 @@ function ModalFacture({ order, onClose }) {
             <X size={20} />
           </button>
         </div>
-        <div className="p-8 bg-white" id="invoice-content">
-          <div className="flex justify-between items-start mb-8">
+        <div className="p-6 md:p-8 bg-white" id="invoice-content">
+          <div className="flex justify-between items-start mb-6 md:mb-8">
             <div>
               <h3 className="text-2xl font-black uppercase italic tracking-tighter text-orange-600 leading-none">FACTURE</h3>
               <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase">#{order.id.slice(0, 8)}</p>
             </div>
             <div className="text-right">
               <p className="text-[10px] font-black uppercase text-gray-900 italic">
-                {new Date(order.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                {new Date(order.created_at).toLocaleDateString('fr-FR')}
               </p>
             </div>
           </div>
-          <div className="mb-8 p-5 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100">
+          <div className="mb-6 p-4 md:p-5 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100">
             <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest mb-1 text-left">Client</p>
             <p className="text-xs font-black uppercase text-left">{order.customer_name}</p>
             <p className="text-[10px] font-bold text-gray-500 mt-1 text-left">{order.customer_phone}</p>
           </div>
-          <div className="space-y-3 mb-8">
+          <div className="space-y-3 mb-6 md:mb-8">
             <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest border-b pb-2 text-left">Articles</p>
             {order.items?.map((item, idx) => (
               <div key={idx} className="flex justify-between items-center text-[11px] font-black uppercase">
-                <span className="text-gray-600">{item.name} <span className="text-orange-600 italic">x{item.quantity}</span></span>
-                <span>{(item.sale_price * item.quantity).toLocaleString()} CFA</span>
+                <span className="text-gray-600 truncate mr-2">{item.name} <span className="text-orange-600 italic">x{item.quantity}</span></span>
+                <span className="whitespace-nowrap">{(item.sale_price * item.quantity).toLocaleString()} F</span>
               </div>
             ))}
           </div>
-          <div className="pt-6 border-t-2 border-gray-100 flex justify-between items-center">
+          <div className="pt-4 md:pt-6 border-t-2 border-gray-100 flex justify-between items-center">
             <span className="text-xs font-black uppercase tracking-widest">Total</span>
-            <span className="text-2xl font-black italic text-gray-900">{order.total_amount?.toLocaleString()} <span className="text-xs not-italic">CFA</span></span>
+            <span className="text-xl md:text-2xl font-black italic text-gray-900">{order.total_amount?.toLocaleString()} <span className="text-xs not-italic">CFA</span></span>
           </div>
         </div>
-        <div className="p-6 bg-gray-50 flex gap-3">
-          
-          {/* GENERATEUR PDF */}
+        <div className="p-4 md:p-6 bg-gray-50 flex gap-3">
           <PDFDownloadLink 
             document={<InvoicePDF order={order} />} 
-            fileName={`facture-${order.customer_name}-${order.id.slice(0,5)}.pdf`}
+            fileName={`facture-${order.customer_name}.pdf`}
             className="flex-1"
           >
             {({ loading }) => (
-              <button 
-                disabled={loading}
-                className="w-full py-4 bg-white border-2 border-black rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all shadow-sm"
-              >
-                {loading ? <Loader2 className="animate-spin" size={16} /> : <Printer size={16} />}
-                {loading ? 'Génération...' : 'Télécharger PDF'}
+              <button disabled={loading} className="w-full py-4 bg-white border-2 border-black rounded-2xl text-[9px] md:text-[10px] font-black uppercase flex items-center justify-center gap-2">
+                {loading ? <Loader2 className="animate-spin" size={14} /> : <Printer size={14} />}
+                {loading ? '...' : 'PDF'}
               </button>
             )}
           </PDFDownloadLink>
-
-          <button onClick={onClose} className="flex-1 py-4 bg-orange-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-600/20 active:scale-95 transition-all">Fermer</button>
+          <button onClick={onClose} className="flex-1 py-4 bg-orange-600 text-white rounded-2xl text-[9px] md:text-[10px] font-black uppercase">Fermer</button>
         </div>
       </div>
     </div>
