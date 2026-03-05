@@ -6,7 +6,7 @@ import { supabase } from './lib/supabaseClient';
 import { 
   LayoutDashboard, Package, LogOut, ExternalLink, ShieldCheck, Wallet, 
   Palette, Settings as SettingsIcon, Menu, X, PlusCircle, Zap, 
-  ChevronDown, Store, ChevronLeft, ChevronRight 
+  ChevronDown, Store, ChevronLeft, ChevronRight, BarChart3, Loader2
 } from 'lucide-react';
 
 // --- IMPORT DES PAGES ---
@@ -25,7 +25,9 @@ import Settings from './components/Settings';
 import Home from './pages/Home/Home';
 import Shop from './pages/Home/components/Shop'; 
 import RequestBoost from './pages/Vendor/RequestBoost';
+import Analytics from './pages/Vendor/Analytics';
 
+// --- COMPOSANT HEADER VENDEUR ---
 const VendorHeader = ({ user, storeSlug, onOpenMenu, onSignOut }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -47,14 +49,13 @@ const VendorHeader = ({ user, storeSlug, onOpenMenu, onSignOut }) => {
           <Menu size={22} strokeWidth={2.5} />
         </button>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] text-gray-400">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
             Studio <span className="text-orange-600">v2.0</span>
           </span>
         </div>
       </div>
 
       <div className="flex items-center gap-2 md:gap-4">
-        {/* LIEN VERS BOUTIQUE CORRIGÉ : On utilise l'URL courte pour le partage */}
         {storeSlug && (
           <Link 
             to={`/${storeSlug}`} 
@@ -103,6 +104,7 @@ const VendorHeader = ({ user, storeSlug, onOpenMenu, onSignOut }) => {
   );
 };
 
+// --- COMPOSANT APP PRINCIPAL ---
 function App() {
   const [user, setUser] = useState(null);
   const [storeSlug, setStoreSlug] = useState(""); 
@@ -119,10 +121,13 @@ function App() {
   }, [isCollapsed]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
       setLoading(false);
-    });
+    };
+    getInitialSession();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setIsMobileMenuOpen(false);
@@ -140,16 +145,21 @@ function App() {
     fetchStoreSlug();
   }, [user]);
 
-  if (loading) return null;
+  // --- CALCULS DE PROTECTION (SÉCURISÉS PAR OPTIONAL CHAINING) ---
+  const isUserAdmin = user?.id === adminUid;
+  const isVendorArea = ['/dashboard', '/products-manage', '/revenus', '/marketing', '/analytics', '/ma-boutique', '/settings', '/admin'].some(path => location.pathname.startsWith(path));
+  const showSidebar = !!(isVendorArea && user);
+
+  if (loading) return (
+    <div className="h-screen flex items-center justify-center bg-[#F8F9FB]">
+      <Loader2 className="animate-spin text-orange-600" size={32} />
+    </div>
+  );
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate('/');
   };
-
-  const isUserAdmin = user?.id?.trim() === adminUid;
-  const isVendorArea = ['/dashboard', '/products-manage', '/revenus', '/marketing', '/ma-boutique', '/settings', '/admin'].some(path => location.pathname.startsWith(path));
-  const showSidebar = isVendorArea && user;
 
   const SidebarLink = ({ to, icon: Icon, label, colorClass = "" }) => {
     const isActive = location.pathname === to;
@@ -173,6 +183,7 @@ function App() {
         <div className="space-y-1">
           <SidebarLink to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
           <SidebarLink to="/products-manage" icon={Package} label="Stock" />
+          <SidebarLink to="/analytics" icon={BarChart3} label="Analytiques" />
           <SidebarLink to="/revenus" icon={Wallet} label="Revenus" />
         </div>
         <div className="pt-4 border-t border-gray-100 space-y-1">
@@ -197,6 +208,7 @@ function App() {
   return (
     <div className="flex min-h-screen bg-[#F8F9FB] text-gray-900 antialiased font-sans">
       
+      {/* SIDEBAR DESKTOP */}
       {showSidebar && (
         <aside className={`bg-white hidden md:flex flex-col sticky top-0 h-screen border-r border-gray-100 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'} z-40`}>
           <div className={`p-8 flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
@@ -206,7 +218,7 @@ function App() {
           <button onClick={() => setIsCollapsed(!isCollapsed)} className="absolute -right-3 top-20 bg-white border border-gray-100 rounded-full p-1 shadow-md hover:text-orange-600 z-50 text-gray-400">
             {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </button>
-          <nav className="flex-1 px-4 overflow-y-auto scrollbar-hide">{SidebarContent(false)}</nav>
+          <nav className="flex-1 px-4 overflow-y-auto">{SidebarContent(false)}</nav>
         </aside>
       )}
 
@@ -229,31 +241,26 @@ function App() {
         
         <main className={`flex-1 ${!showSidebar ? '' : 'p-4 md:p-10 pb-32'}`}>
           <Routes>
-            {/* 1. ROUTES PUBLIQUES STATIQUES */}
             <Route path="/" element={<Home />} />
             <Route path="/products" element={<Shop />} /> 
             <Route path="/produit/:productId" element={<ProductDetails />} />
             <Route path="/panier" element={<Cart />} />
             <Route path="/confirmation" element={<OrderSuccess />} />
             
-            {/* 2. ROUTES AUTH */}
             <Route path="/auth" element={!user ? <Auth /> : (isUserAdmin ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />)} />
             <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" replace />} />
             
-            {/* 3. ROUTES PROTEGEES (DASHBOARD) */}
             <Route path="/dashboard" element={user ? (isUserAdmin ? <Navigate to="/admin" replace /> : <Dashboard />) : <Navigate to="/auth" />} />
             <Route path="/products-manage" element={user ? <ManageProducts /> : <Navigate to="/auth" />} />
+            <Route path="/analytics" element={user ? <Analytics /> : <Navigate to="/auth" />} />
             <Route path="/marketing" element={user ? <RequestBoost /> : <Navigate to="/auth" />} />
             <Route path="/revenus" element={user ? <Revenues /> : <Navigate to="/auth" />} />
             <Route path="/ma-boutique" element={user ? <StoreSettings /> : <Navigate to="/auth" />} />
             <Route path="/settings" element={user ? <Settings /> : <Navigate to="/auth" />} />
             <Route path="/admin" element={user && isUserAdmin ? <AdminDashboard /> : <Navigate to="/dashboard" />} />
 
-            {/* 4. ROUTES BOUTIQUES (URL COURTES & COMPATIBILITÉ) */}
             <Route path="/boutique/:storeSlug" element={<PublicStore />} />
             <Route path="/:storeSlug" element={<PublicStore />} />
-
-            {/* 5. FALLBACK */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
@@ -263,7 +270,7 @@ function App() {
           <nav className="md:hidden fixed bottom-6 left-6 right-6 h-16 bg-black shadow-2xl rounded-3xl flex items-center justify-around px-2 z-40 border border-white/10">
             {[
               { to: "/dashboard", icon: LayoutDashboard },
-              { to: "/products-manage", icon: Package },
+              { to: "/analytics", icon: BarChart3 },
               { to: "/products-manage", icon: PlusCircle, special: true },
               { to: "/marketing", icon: Zap },
               { to: "/revenus", icon: Wallet }

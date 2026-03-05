@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { 
-  Image as ImageIcon, 
   Upload, 
   Save, 
   Loader2, 
@@ -67,124 +66,109 @@ export default function StoreSettings() {
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       console.error("Erreur upload:", error);
-      alert("Erreur lors de l'envoi de l'image");
     } finally {
       setUpdating(false);
     }
   };
 
-  // --- LOGIQUE DE SAUVEGARDE AVEC MISE À JOUR DU SLUG ---
   const handleSave = async () => {
+    if (!storeData.id) return;
     setUpdating(true);
 
-    // Génération du slug propre (URL safe)
     const newSlug = storeData.name
       .toLowerCase()
       .trim()
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "") // Supprime les accents
-      .replace(/\s+/g, '-') // Espaces -> Tirets
-      .replace(/[^\w\-]+/g, '') // Supprime caractères spéciaux
-      .replace(/\-\-+/g, '-'); // Évite doubles tirets
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, '-')
+      .replace(/[^\w\-]+/g, '')
+      .replace(/\-\-+/g, '-');
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('stores')
         .update({
           name: storeData.name,
           description: storeData.description,
           logo_url: storeData.logo_url,
           banner_url: storeData.banner_url,
-          slug: newSlug // Mise à jour cruciale
+          slug: newSlug 
         })
-        .eq('id', storeData.id);
+        .eq('id', storeData.id)
+        .select();
 
       if (error) throw error;
+      if (data) setStoreData(data[0]);
 
-      setStoreData(prev => ({ ...prev, slug: newSlug }));
-      setMessage('Identité et lien mis à jour !');
+      setMessage('Modifications enregistrées !');
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
-      console.error("Erreur save:", error);
-      alert("Erreur lors de l'enregistrement");
+      console.error(error);
     } finally {
       setUpdating(false);
     }
   };
 
   const copyToClipboard = () => {
-    const shopSlug = storeData.slug || storeData.name?.toLowerCase().replace(/\s+/g, '-');
-    const url = `festisolde.com/${shopSlug}`;
+    const url = `festisolde.com/${storeData.slug}`;
     navigator.clipboard.writeText(url);
     setMessage('Lien copié !');
     setTimeout(() => setMessage(''), 2000);
   };
 
   if (loading) return (
-    <div className="h-screen flex items-center justify-center bg-white">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="animate-spin text-orange-600" size={40} strokeWidth={3} />
-        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 italic">Synchronisation...</p>
-      </div>
+    <div className="h-screen flex items-center justify-center bg-gray-50">
+      <Loader2 className="animate-spin text-orange-600" size={32} />
     </div>
   );
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 md:py-12 antialiased pb-24">
+    <div className="max-w-5xl mx-auto px-6 py-8 antialiased">
       
-      {/* --- HEADER --- */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 md:mb-12">
-        <div className="space-y-2">
-          <p className="text-[9px] font-black text-orange-600 uppercase tracking-[0.3em]">Paramètrage</p>
-          <h1 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tighter uppercase italic leading-none break-words">
-            Identité <span className="text-gray-300 italic-none">boutique</span>
-          </h1>
+      {/* HEADER PLUS DISCRET */}
+      <header className="flex items-center justify-between mb-10">
+        <div>
+          <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-1">Configuration</p>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Profil de la boutique</h1>
         </div>
         
         {message && (
-          <div className="fixed top-4 right-4 md:static z-50 flex items-center gap-2 text-green-600 text-[10px] font-black uppercase tracking-widest bg-green-50 px-5 py-3 rounded-2xl border border-green-100 shadow-xl animate-in fade-in slide-in-from-top-2 md:slide-in-from-bottom-2">
-            <CheckCircle2 size={14} strokeWidth={3} /> {message}
+          <div className="flex items-center gap-2 text-green-600 text-xs font-bold bg-green-50 px-4 py-2 rounded-full border border-green-100 animate-pulse">
+            <CheckCircle2 size={14} /> {message}
           </div>
         )}
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         
-        {/* --- COLONNE GAUCHE : VISUELS --- */}
-        <div className="lg:col-span-7 space-y-12 md:space-y-10">
-          
-          <div className="relative group">
-            <div className="flex justify-between items-center mb-4 px-1">
-                <p className="text-[8px] md:text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Aperçu Vitrine</p>
-                <span className="text-[8px] font-black text-white bg-black px-2 py-1 rounded-md uppercase">Public view</span>
-            </div>
-            
-            <div className="h-48 md:h-72 bg-gray-50 rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden border-2 border-gray-100 relative group/banner shadow-lg">
+        {/* COLONNE VISUELS */}
+        <div className="lg:col-span-7 space-y-8">
+          <div className="relative">
+            <div className="h-48 md:h-60 bg-gray-100 rounded-3xl overflow-hidden border border-gray-200 relative group shadow-sm">
               {storeData.banner_url ? (
-                <img src={storeData.banner_url} className="w-full h-full object-cover transition-transform duration-1000 group-hover/banner:scale-110" alt="Banner" />
+                <img src={storeData.banner_url} className="w-full h-full object-cover" alt="Banner" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-[10px] text-center px-4 uppercase tracking-widest text-gray-300 font-black italic">Aucune bannière définie</div>
+                <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs font-medium uppercase tracking-tighter">Aucune bannière</div>
               )}
-              <label className="absolute inset-0 bg-black/50 opacity-0 md:group-hover/banner:opacity-100 transition-all flex items-center justify-center cursor-pointer backdrop-blur-sm lg:opacity-0 opacity-100 bg-black/20 md:bg-black/50">
-                <div className="bg-white px-5 py-3 md:px-8 md:py-4 rounded-xl md:rounded-2xl flex items-center gap-2 text-[9px] md:text-[11px] font-black tracking-widest shadow-2xl text-black">
-                  <Camera size={16} strokeWidth={3} /> CHANGER LA BANNIÈRE
+              <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer backdrop-blur-[2px]">
+                <div className="bg-white/90 px-4 py-2 rounded-full flex items-center gap-2 text-[10px] font-bold text-black shadow-lg">
+                  <Camera size={14} /> CHANGER LA COUVERTURE
                 </div>
                 <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'banner_url')} />
               </label>
             </div>
 
-            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-12">
-              <div className="w-28 h-28 md:w-36 md:h-36 bg-white rounded-[1.5rem] md:rounded-[2.5rem] p-1.5 md:p-2 shadow-2xl relative group/logo border-2 border-gray-100">
-                <div className="w-full h-full rounded-[1.2rem] md:rounded-[2rem] overflow-hidden bg-gray-50 relative">
+            {/* LOGO AJUSTÉ */}
+            <div className="absolute -bottom-6 left-8">
+              <div className="w-24 h-24 bg-white rounded-2xl p-1 shadow-xl border border-gray-100 group/logo relative">
+                <div className="w-full h-full rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center">
                   {storeData.logo_url ? (
                     <img src={storeData.logo_url} className="w-full h-full object-cover" alt="Logo" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-3xl md:text-4xl font-black text-gray-200 uppercase italic">
-                      {storeData.name?.charAt(0) || 'S'}
-                    </div>
+                    <span className="text-2xl font-bold text-gray-300">{storeData.name?.charAt(0)}</span>
                   )}
-                  <label className="absolute inset-0 bg-orange-600/90 md:opacity-0 group-hover/logo:opacity-100 transition-all flex items-center justify-center cursor-pointer">
-                    <Upload size={24} className="text-white" strokeWidth={3} />
+                  <label className="absolute inset-0 bg-orange-600/80 opacity-0 group-hover/logo:opacity-100 transition-all flex items-center justify-center cursor-pointer">
+                    <Upload size={20} className="text-white" />
                     <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'logo_url')} />
                   </label>
                 </div>
@@ -192,67 +176,64 @@ export default function StoreSettings() {
             </div>
           </div>
 
-          <div className="pt-8 md:pt-14">
-             <div className="bg-gray-900 p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] flex flex-col sm:flex-row items-center justify-between gap-4 group shadow-2xl">
-                <div className="flex items-center gap-4 md:gap-6 w-full sm:w-auto">
-                   <div className="w-12 h-12 md:w-14 md:h-14 bg-white/10 rounded-xl md:rounded-2xl flex-shrink-0 flex items-center justify-center text-orange-500 shadow-inner">
-                      <Globe size={20} md:size={24} strokeWidth={2.5} />
+          {/* LIEN DE LA VITRINE - PLUS SOBRE */}
+          <div className="pt-6">
+             <div className="bg-white border border-gray-100 p-4 rounded-2xl flex items-center justify-between shadow-sm">
+                <div className="flex items-center gap-4">
+                   <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
+                      <Globe size={18} />
                    </div>
-                   <div className="min-w-0 flex-1">
-                      <p className="text-[8px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Lien de votre vitrine</p>
-                      <p className="text-sm md:text-base font-black text-white italic tracking-tight truncate break-all">
-                          festisolde.com/{storeData.slug || (storeData.name || 'ma-boutique').toLowerCase().replace(/\s+/g, '-')}
+                   <div className="min-w-0">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Lien public</p>
+                      <p className="text-sm font-semibold text-gray-700 truncate">
+                          festisolde.com/<span className="text-orange-600">{storeData.slug || '...'}</span>
                       </p>
                    </div>
                 </div>
-                <button 
-                  onClick={copyToClipboard}
-                  className="w-full sm:w-auto p-4 bg-white/5 text-white hover:bg-orange-600 hover:text-white rounded-xl md:rounded-2xl transition-all active:scale-90 flex items-center justify-center"
-                >
-                   <Copy size={20} />
+                <button onClick={copyToClipboard} className="p-2.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors">
+                   <Copy size={18} />
                 </button>
              </div>
           </div>
         </div>
 
-        {/* --- COLONNE DROITE : ÉDITION --- */}
-        <div className="lg:col-span-5 space-y-6 md:space-y-8">
-           <div className="bg-white p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border-2 border-gray-100 shadow-sm space-y-8 md:space-y-10">
-              <div className="space-y-3 border-l-4 border-gray-100 pl-4 md:pl-8 focus-within:border-orange-500 transition-all duration-300">
-                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Nom du Store</label>
+        {/* COLONNE ÉDITION */}
+        <div className="lg:col-span-5 flex flex-col gap-6">
+           <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Nom de l'enseigne</label>
                 <input 
                   value={storeData.name}
                   onChange={(e) => setStoreData({...storeData, name: e.target.value})}
-                  className="w-full text-xl md:text-3xl font-black italic outline-none bg-transparent text-gray-900 placeholder:text-gray-100 uppercase"
+                  className="w-full text-lg font-bold outline-none bg-gray-50 px-4 py-3 rounded-xl focus:ring-2 focus:ring-orange-100 transition-all border border-transparent focus:border-orange-200"
                   placeholder="EX: M&M FASHION"
                 />
               </div>
 
-              <div className="space-y-3 border-l-4 border-gray-100 pl-4 md:pl-8 focus-within:border-orange-500 transition-all duration-300">
-                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Description / Slogan</label>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Description courte</label>
                 <textarea 
                   rows={4}
                   value={storeData.description}
                   onChange={(e) => setStoreData({...storeData, description: e.target.value})}
-                  className="w-full text-xs md:text-sm font-bold outline-none bg-transparent text-gray-500 leading-relaxed resize-none placeholder:font-normal placeholder:italic"
-                  placeholder="Parlez de votre style, vos arrivages..."
+                  className="w-full text-sm font-medium outline-none bg-gray-50 px-4 py-3 rounded-xl focus:ring-2 focus:ring-orange-100 transition-all border border-transparent focus:border-orange-200 resize-none leading-relaxed text-gray-600"
+                  placeholder="Décrivez votre boutique en quelques mots..."
                 />
               </div>
            </div>
 
-           <div className="space-y-4">
-              <button 
-                onClick={handleSave}
-                disabled={updating}
-                className="w-full bg-black text-white font-black py-5 md:py-6 rounded-xl md:rounded-2xl text-[11px] md:text-[12px] tracking-[0.2em] md:tracking-[0.4em] shadow-2xl hover:bg-orange-600 transition-all flex items-center justify-center gap-3 disabled:bg-gray-100 active:scale-95"
-              >
-                {updating ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} strokeWidth={3} />}
-                {updating ? "SYNCHRONISATION..." : "ENREGISTRER LES MODIFICATIONS"}
-              </button>
-              <p className="text-center text-[8px] md:text-[9px] text-gray-400 font-black uppercase tracking-widest italic opacity-60 px-4">
-                Les changements seront visibles immédiatement par vos clients.
-              </p>
-           </div>
+           <button 
+             onClick={handleSave}
+             disabled={updating}
+             className="w-full bg-gray-900 text-white font-bold py-4 rounded-2xl text-xs tracking-widest shadow-lg hover:bg-orange-600 transition-all flex items-center justify-center gap-3 disabled:bg-gray-200 disabled:text-gray-400 group"
+           >
+             {updating ? (
+               <Loader2 className="animate-spin" size={16} />
+             ) : (
+               <Save size={16} className="group-hover:scale-110 transition-transform" />
+             )}
+             METTRE À JOUR LE PROFIL
+           </button>
         </div>
       </div>
     </div>
