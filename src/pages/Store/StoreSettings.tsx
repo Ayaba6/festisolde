@@ -22,7 +22,7 @@ export default function StoreSettings() {
     description: '',
     logo_url: '',
     banner_url: '',
-    slug: '', // Ajout du slug ici
+    slug: '',
   });
 
   useEffect(() => {
@@ -73,26 +73,45 @@ export default function StoreSettings() {
     }
   };
 
+  // --- LOGIQUE DE SAUVEGARDE AVEC MISE À JOUR DU SLUG ---
   const handleSave = async () => {
     setUpdating(true);
-    const { error } = await supabase
-      .from('stores')
-      .update({
-        name: storeData.name,
-        description: storeData.description,
-        logo_url: storeData.logo_url,
-        banner_url: storeData.banner_url
-      })
-      .eq('id', storeData.id);
 
-    if (!error) {
-      setMessage('Identité mise à jour');
+    // Génération du slug propre (URL safe)
+    const newSlug = storeData.name
+      .toLowerCase()
+      .trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // Supprime les accents
+      .replace(/\s+/g, '-') // Espaces -> Tirets
+      .replace(/[^\w\-]+/g, '') // Supprime caractères spéciaux
+      .replace(/\-\-+/g, '-'); // Évite doubles tirets
+
+    try {
+      const { error } = await supabase
+        .from('stores')
+        .update({
+          name: storeData.name,
+          description: storeData.description,
+          logo_url: storeData.logo_url,
+          banner_url: storeData.banner_url,
+          slug: newSlug // Mise à jour cruciale
+        })
+        .eq('id', storeData.id);
+
+      if (error) throw error;
+
+      setStoreData(prev => ({ ...prev, slug: newSlug }));
+      setMessage('Identité et lien mis à jour !');
       setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      console.error("Erreur save:", error);
+      alert("Erreur lors de l'enregistrement");
+    } finally {
+      setUpdating(false);
     }
-    setUpdating(false);
   };
 
-  // CORRECTION : Utilisation du slug réel pour le lien
   const copyToClipboard = () => {
     const shopSlug = storeData.slug || storeData.name?.toLowerCase().replace(/\s+/g, '-');
     const url = `festisolde.com/${shopSlug}`;
@@ -155,7 +174,7 @@ export default function StoreSettings() {
             </div>
 
             <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-12">
-              <div className="w-28 h-28 md:w-36 md:h-36 bg-white rounded-[1.5rem] md:rounded-[2.5rem] p-1.5 md:p-2 shadow-2xl relative group/logo border-2 border-gray-50">
+              <div className="w-28 h-28 md:w-36 md:h-36 bg-white rounded-[1.5rem] md:rounded-[2.5rem] p-1.5 md:p-2 shadow-2xl relative group/logo border-2 border-gray-100">
                 <div className="w-full h-full rounded-[1.2rem] md:rounded-[2rem] overflow-hidden bg-gray-50 relative">
                   {storeData.logo_url ? (
                     <img src={storeData.logo_url} className="w-full h-full object-cover" alt="Logo" />
@@ -173,7 +192,6 @@ export default function StoreSettings() {
             </div>
           </div>
 
-          {/* URL DE PARTAGE MISE À JOUR */}
           <div className="pt-8 md:pt-14">
              <div className="bg-gray-900 p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] flex flex-col sm:flex-row items-center justify-between gap-4 group shadow-2xl">
                 <div className="flex items-center gap-4 md:gap-6 w-full sm:w-auto">
