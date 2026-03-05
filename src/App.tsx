@@ -9,7 +9,7 @@ import {
   ChevronDown, Store, ChevronLeft, ChevronRight 
 } from 'lucide-react';
 
-// --- IMPORT DES PAGES (Assurez-vous que les chemins sont corrects) ---
+// --- IMPORT DES PAGES ---
 import Auth from './pages/Auth/Auth';
 import Register from './pages/Auth/Register';
 import Dashboard from './pages/Vendor/Dashboard';
@@ -26,7 +26,6 @@ import Home from './pages/Home/Home';
 import Shop from './pages/Home/components/Shop'; 
 import RequestBoost from './pages/Vendor/RequestBoost';
 
-// --- COMPOSANT HEADER ---
 const VendorHeader = ({ user, storeSlug, onOpenMenu, onSignOut }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -55,13 +54,14 @@ const VendorHeader = ({ user, storeSlug, onOpenMenu, onSignOut }) => {
       </div>
 
       <div className="flex items-center gap-2 md:gap-4">
+        {/* LIEN VERS BOUTIQUE CORRIGÉ : On utilise l'URL courte pour le partage */}
         {storeSlug && (
           <Link 
-            to={`/boutique/${storeSlug}`} 
+            to={`/${storeSlug}`} 
             className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-black text-white rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-bold uppercase transition-all active:scale-95"
           >
             <ExternalLink size={12} strokeWidth={2.5} />
-            <span className="hidden xs:inline">Boutique</span>
+            <span className="hidden xs:inline">Ma Boutique</span>
           </Link>
         )}
         
@@ -103,18 +103,12 @@ const VendorHeader = ({ user, storeSlug, onOpenMenu, onSignOut }) => {
   );
 };
 
-// --- COMPOSANT APP PRINCIPAL ---
 function App() {
   const [user, setUser] = useState(null);
   const [storeSlug, setStoreSlug] = useState(""); 
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
-  // --- ÉTAT SIDEBAR RÉTRACTABLE ---
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    const saved = localStorage.getItem('sidebar-collapsed');
-    return saved === 'true';
-  });
+  const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === 'true');
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -150,7 +144,6 @@ function App() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    setIsMobileMenuOpen(false);
     navigate('/');
   };
 
@@ -158,7 +151,6 @@ function App() {
   const isVendorArea = ['/dashboard', '/products-manage', '/revenus', '/marketing', '/ma-boutique', '/settings', '/admin'].some(path => location.pathname.startsWith(path));
   const showSidebar = isVendorArea && user;
 
-  // --- LOGIQUE SIDEBAR ---
   const SidebarLink = ({ to, icon: Icon, label, colorClass = "" }) => {
     const isActive = location.pathname === to;
     return (
@@ -168,7 +160,6 @@ function App() {
         className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-[11px] uppercase transition-all mb-1
         ${isActive ? 'bg-orange-600 text-white shadow-xl shadow-orange-200 scale-[1.02]' : 'text-gray-500 hover:bg-gray-50 hover:text-black'} 
         ${colorClass} ${isCollapsed ? 'justify-center px-0' : ''}`}
-        title={isCollapsed ? label : ""}
       >
         <Icon size={18} strokeWidth={isActive ? 3 : 2} className="shrink-0" /> 
         {!isCollapsed && <span className="truncate">{label}</span>}
@@ -185,18 +176,15 @@ function App() {
           <SidebarLink to="/revenus" icon={Wallet} label="Revenus" />
         </div>
         <div className="pt-4 border-t border-gray-100 space-y-1">
-          {(!isCollapsed || isMobile) && <p className="px-4 mb-2 text-[8px] font-black text-gray-300 uppercase tracking-widest">Expansion</p>}
           <SidebarLink to="/marketing" icon={Zap} label="Boost" colorClass="text-orange-600" />
           <SidebarLink to="/ma-boutique" icon={Palette} label="Design" />
           <SidebarLink to="/settings" icon={SettingsIcon} label="Réglages" />
         </div>
-        
-        {(isMobile) && (
-          <div className="pt-4 border-t border-gray-100 space-y-1">
-             <SidebarLink to={`/boutique/${storeSlug}`} icon={Store} label="Ma Boutique" colorClass="text-black" />
+        {isMobile && storeSlug && (
+          <div className="pt-4 border-t border-gray-100">
+             <SidebarLink to={`/${storeSlug}`} icon={Store} label="Voir Boutique" colorClass="text-black" />
           </div>
         )}
-
         {isUserAdmin && (
           <div className="pt-4 border-t border-gray-100">
             <SidebarLink to="/admin" icon={ShieldCheck} label="Admin" colorClass="text-red-500" />
@@ -209,35 +197,24 @@ function App() {
   return (
     <div className="flex min-h-screen bg-[#F8F9FB] text-gray-900 antialiased font-sans">
       
-      {/* --- SIDEBAR DESKTOP --- */}
       {showSidebar && (
-        <aside 
-          className={`bg-white hidden md:flex flex-col sticky top-0 h-screen border-r border-gray-100 transition-all duration-300 ease-in-out z-40
-          ${isCollapsed ? 'w-20' : 'w-64'}`}
-        >
-          <div className={`p-8 flex items-center gap-3 transition-all ${isCollapsed ? 'justify-center' : ''}`}>
+        <aside className={`bg-white hidden md:flex flex-col sticky top-0 h-screen border-r border-gray-100 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'} z-40`}>
+          <div className={`p-8 flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
             <div className="w-10 h-10 bg-black rounded-2xl flex-shrink-0 flex items-center justify-center text-white font-black italic shadow-xl">S</div>
             {!isCollapsed && <span className="font-black text-base uppercase tracking-tighter truncate">FESTISOLDE</span>}
           </div>
-
-          <button 
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="absolute -right-3 top-20 bg-white border border-gray-100 rounded-full p-1 shadow-md hover:text-orange-600 transition-all z-50 text-gray-400"
-          >
+          <button onClick={() => setIsCollapsed(!isCollapsed)} className="absolute -right-3 top-20 bg-white border border-gray-100 rounded-full p-1 shadow-md hover:text-orange-600 z-50 text-gray-400">
             {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </button>
-
-          <nav className="flex-1 px-4 overflow-y-auto scrollbar-hide">
-            {SidebarContent(false)}
-          </nav>
+          <nav className="flex-1 px-4 overflow-y-auto scrollbar-hide">{SidebarContent(false)}</nav>
         </aside>
       )}
 
-      {/* --- SIDEBAR MOBILE (PANEL) --- */}
-      {showSidebar && (
-        <div className={`fixed inset-0 z-[60] md:hidden transition-all duration-300 ${isMobileMenuOpen ? 'visible' : 'invisible'}`}>
+      {/* MOBILE NAV OVERLAY */}
+      {showSidebar && isMobileMenuOpen && (
+        <div className="fixed inset-0 z-[60] md:hidden flex">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
-          <aside className={`absolute top-0 left-0 h-full w-72 bg-white transition-transform duration-500 p-6 shadow-2xl flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <aside className="relative h-full w-72 bg-white p-6 shadow-2xl flex flex-col animate-in slide-in-from-left duration-300">
             <div className="flex justify-between items-center mb-10">
               <span className="font-black uppercase italic text-orange-600 text-xl">Studio</span>
               <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 bg-gray-100 rounded-full"><X size={20} /></button>
@@ -247,20 +224,23 @@ function App() {
         </div>
       )}
 
-      {/* --- CONTENU PRINCIPAL --- */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative">
         {showSidebar && <VendorHeader user={user} storeSlug={storeSlug} onOpenMenu={() => setIsMobileMenuOpen(true)} onSignOut={handleSignOut} />}
         
         <main className={`flex-1 ${!showSidebar ? '' : 'p-4 md:p-10 pb-32'}`}>
           <Routes>
+            {/* 1. ROUTES PUBLIQUES STATIQUES */}
             <Route path="/" element={<Home />} />
             <Route path="/products" element={<Shop />} /> 
-            <Route path="/boutique/:storeSlug" element={<PublicStore />} />
             <Route path="/produit/:productId" element={<ProductDetails />} />
             <Route path="/panier" element={<Cart />} />
             <Route path="/confirmation" element={<OrderSuccess />} />
+            
+            {/* 2. ROUTES AUTH */}
             <Route path="/auth" element={!user ? <Auth /> : (isUserAdmin ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />)} />
             <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" replace />} />
+            
+            {/* 3. ROUTES PROTEGEES (DASHBOARD) */}
             <Route path="/dashboard" element={user ? (isUserAdmin ? <Navigate to="/admin" replace /> : <Dashboard />) : <Navigate to="/auth" />} />
             <Route path="/products-manage" element={user ? <ManageProducts /> : <Navigate to="/auth" />} />
             <Route path="/marketing" element={user ? <RequestBoost /> : <Navigate to="/auth" />} />
@@ -268,10 +248,17 @@ function App() {
             <Route path="/ma-boutique" element={user ? <StoreSettings /> : <Navigate to="/auth" />} />
             <Route path="/settings" element={user ? <Settings /> : <Navigate to="/auth" />} />
             <Route path="/admin" element={user && isUserAdmin ? <AdminDashboard /> : <Navigate to="/dashboard" />} />
+
+            {/* 4. ROUTES BOUTIQUES (URL COURTES & COMPATIBILITÉ) */}
+            <Route path="/boutique/:storeSlug" element={<PublicStore />} />
+            <Route path="/:storeSlug" element={<PublicStore />} />
+
+            {/* 5. FALLBACK */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
 
-        {/* --- BARRE DE NAVIGATION MOBILE FIXE (Bas) --- */}
+        {/* BOTTOM NAV MOBILE */}
         {showSidebar && (
           <nav className="md:hidden fixed bottom-6 left-6 right-6 h-16 bg-black shadow-2xl rounded-3xl flex items-center justify-around px-2 z-40 border border-white/10">
             {[
@@ -281,11 +268,7 @@ function App() {
               { to: "/marketing", icon: Zap },
               { to: "/revenus", icon: Wallet }
             ].map((item, index) => (
-              <Link 
-                key={index} 
-                to={item.to} 
-                className={`p-2 transition-all active:scale-75 ${location.pathname === item.to ? 'text-orange-500 scale-110' : 'text-gray-400'}`}
-              >
+              <Link key={index} to={item.to} className={`p-2 transition-all ${location.pathname === item.to ? 'text-orange-500 scale-110' : 'text-gray-400'}`}>
                 <item.icon size={item.special ? 32 : 22} strokeWidth={2.5} className={item.special ? "text-orange-500 drop-shadow-[0_0_15px_rgba(249,115,22,0.8)]" : ""} />
               </Link>
             ))}

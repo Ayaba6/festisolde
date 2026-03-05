@@ -22,6 +22,7 @@ export default function StoreSettings() {
     description: '',
     logo_url: '',
     banner_url: '',
+    slug: '', // Ajout du slug ici
   });
 
   useEffect(() => {
@@ -91,8 +92,10 @@ export default function StoreSettings() {
     setUpdating(false);
   };
 
+  // CORRECTION : Utilisation du slug réel pour le lien
   const copyToClipboard = () => {
-    const url = `festisolde.com/${storeData.name?.toLowerCase().replace(/\s+/g, '-')}`;
+    const shopSlug = storeData.slug || storeData.name?.toLowerCase().replace(/\s+/g, '-');
+    const url = `festisolde.com/${shopSlug}`;
     navigator.clipboard.writeText(url);
     setMessage('Lien copié !');
     setTimeout(() => setMessage(''), 2000);
@@ -137,7 +140,6 @@ export default function StoreSettings() {
                 <span className="text-[8px] font-black text-white bg-black px-2 py-1 rounded-md uppercase">Public view</span>
             </div>
             
-            {/* Banner Container */}
             <div className="h-48 md:h-72 bg-gray-50 rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden border-2 border-gray-100 relative group/banner shadow-lg">
               {storeData.banner_url ? (
                 <img src={storeData.banner_url} className="w-full h-full object-cover transition-transform duration-1000 group-hover/banner:scale-110" alt="Banner" />
@@ -152,7 +154,6 @@ export default function StoreSettings() {
               </label>
             </div>
 
-            {/* Logo Overlay - Réajusté pour mobile */}
             <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-12">
               <div className="w-28 h-28 md:w-36 md:h-36 bg-white rounded-[1.5rem] md:rounded-[2.5rem] p-1.5 md:p-2 shadow-2xl relative group/logo border-2 border-gray-50">
                 <div className="w-full h-full rounded-[1.2rem] md:rounded-[2rem] overflow-hidden bg-gray-50 relative">
@@ -172,7 +173,7 @@ export default function StoreSettings() {
             </div>
           </div>
 
-          {/* URL DE PARTAGE - Adapté pour mobile */}
+          {/* URL DE PARTAGE MISE À JOUR */}
           <div className="pt-8 md:pt-14">
              <div className="bg-gray-900 p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] flex flex-col sm:flex-row items-center justify-between gap-4 group shadow-2xl">
                 <div className="flex items-center gap-4 md:gap-6 w-full sm:w-auto">
@@ -182,7 +183,7 @@ export default function StoreSettings() {
                    <div className="min-w-0 flex-1">
                       <p className="text-[8px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Lien de votre vitrine</p>
                       <p className="text-sm md:text-base font-black text-white italic tracking-tight truncate break-all">
-                         festisolde.com/{(storeData.name || 'ma-boutique').toLowerCase().replace(/\s+/g, '-')}
+                          festisolde.com/{storeData.slug || (storeData.name || 'ma-boutique').toLowerCase().replace(/\s+/g, '-')}
                       </p>
                    </div>
                 </div>
