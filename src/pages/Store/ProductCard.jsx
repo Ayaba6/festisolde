@@ -85,7 +85,7 @@ export const ProductCard = ({ product }) => {
         <div className="flex items-center gap-2 pt-0.5">
           <span className="text-sm font-black italic text-orange-600">
             {(product.sale_price || product.price).toLocaleString()} 
-            <span className="text-[10px] not-italic ml-1 font-bold tracking-tighter uppercase">CFA</span>
+            <span className="text-[10px] not-italic ml-1 font-bold tracking-tighter uppercase">FCFA</span>
           </span>
 
           {hasPromo && (

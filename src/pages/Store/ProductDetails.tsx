@@ -5,15 +5,12 @@ import { useCart } from '../../context/CartContext';
 import { 
   ChevronLeft, 
   ShoppingCart, 
-  ShieldCheck, 
-  Truck, 
-  MessageCircle, 
   Share2, 
   Plus, 
   Minus,
-  LayoutGrid,
   Eye,
-  Zap
+  Zap,
+  MessageCircle
 } from 'lucide-react';
 
 import { ProductCard } from './ProductCard';
@@ -30,8 +27,8 @@ export default function ProductDetails() {
   const [quantity, setQuantity] = useState(1);
   const [showToast, setShowToast] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [realtimeViews, setRealtimeViews] = useState(0); // État pour les vues en temps réel
 
-  // ÉTATS POUR LES VARIANTES
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
 
@@ -39,25 +36,48 @@ export default function ProductDetails() {
 
   useEffect(() => {
     fetchProductData();
+    setupRealtimeSubscription(); // Activer l'écouteur temps réel
+    
     setQuantity(1);
-    setSelectedColor(null); // Reset lors du changement de produit
+    setSelectedColor(null);
     setSelectedSize(null);
     window.scrollTo(0, 0);
+
+    // Nettoyage de la souscription à la fermeture du composant
+    return () => {
+      supabase.channel(`product_views_${productId}`).unsubscribe();
+    };
   }, [productId]);
 
-  const getImages = (prod) => {
-    if (!prod?.images) return [];
-    if (Array.isArray(prod.images)) return prod.images;
-    if (typeof prod.images === 'string' && prod.images.startsWith('{')) {
-      return prod.images.replace('{', '').replace('}', '').split(',').map(url => url.trim());
-    }
-    return [prod.image_url || prod.images];
-  };
+  // FONCTION : Écouter les changements sur la table produits
+  function setupRealtimeSubscription() {
+    const channel = supabase
+      .channel(`product_views_${productId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'products',
+          filter: `id=eq.${productId}`,
+        },
+        (payload) => {
+          // Mise à jour immédiate de l'état local quand la base de données change
+          if (payload.new && payload.new.views !== undefined) {
+            setRealtimeViews(payload.new.views);
+          }
+        }
+      )
+      .subscribe();
+  }
 
   async function fetchProductData() {
     setLoading(true);
+    
+    // 1. Incrémenter la vue via la fonction RPC
     await supabase.rpc('increment_product_views', { row_id: productId });
 
+    // 2. Récupérer les données initiales
     const { data: productData } = await supabase
       .from('products')
       .select('*')
@@ -66,6 +86,7 @@ export default function ProductDetails() {
 
     if (productData) {
       setProduct(productData);
+      setRealtimeViews(productData.views || 0); // Initier le compteur
       const imgs = getImages(productData);
       setSelectedImage(imgs[0]);
 
@@ -87,8 +108,16 @@ export default function ProductDetails() {
     setLoading(false);
   }
 
+  const getImages = (prod) => {
+    if (!prod?.images) return [];
+    if (Array.isArray(prod.images)) return prod.images;
+    if (typeof prod.images === 'string' && prod.images.startsWith('{')) {
+      return prod.images.replace('{', '').replace('}', '').split(',').map(url => url.trim());
+    }
+    return [prod.image_url || prod.images];
+  };
+
   const handleAddToCart = () => {
-    // Vérification si des variantes existent mais ne sont pas sélectionnées
     if (product.colors && !selectedColor) return alert("Veuillez choisir une couleur");
     if (product.sizes && !selectedSize) return alert("Veuillez choisir une taille");
 
@@ -104,7 +133,7 @@ export default function ProductDetails() {
   };
 
   const handleWhatsAppOrder = () => {
-    const phoneNumber = store?.phone || "22600000000";
+    const phoneNumber = store?.whatsapp_number || store?.phone || "22600000000";
     const variantInfo = `${selectedColor ? `Couleur: ${selectedColor}` : ''} ${selectedSize ? `Taille: ${selectedSize}` : ''}`;
     const message = `Bonjour, je souhaite commander ${quantity} exemplaire(s) de : ${product.name}. ${variantInfo} Prix: ${product.sale_price} FCFA.`;
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
@@ -124,7 +153,7 @@ export default function ProductDetails() {
   return (
     <div className="min-h-screen bg-white pb-32 antialiased text-gray-900 font-sans">
       
-      {/* --- HEADER STICKY --- */}
+      {/* HEADER */}
       <div className="bg-white/80 backdrop-blur-xl sticky top-0 z-50 border-b border-gray-50">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <button onClick={() => navigate(-1)} className="group flex items-center gap-3 text-[11px] font-black uppercase tracking-widest transition-all">
@@ -149,7 +178,7 @@ export default function ProductDetails() {
       <main className="max-w-7xl mx-auto mt-8 px-6">
         <div className="flex flex-col lg:flex-row gap-12 lg:gap-20">
           
-          {/* --- SECTION VISUELS --- */}
+          {/* VISUELS */}
           <div className="lg:w-[50%] flex flex-col-reverse lg:flex-row gap-6">
             {allImages.length > 1 && (
               <div className="flex lg:flex-col gap-4 overflow-x-auto lg:overflow-y-auto scrollbar-hide lg:w-[90px] shrink-0">
@@ -176,7 +205,7 @@ export default function ProductDetails() {
             </div>
           </div>
 
-          {/* --- SECTION INFOS --- */}
+          {/* INFOS */}
           <div className="lg:w-[50%] flex flex-col justify-center">
             <div className="flex items-center justify-between mb-6">
                {store && (
@@ -191,10 +220,11 @@ export default function ProductDetails() {
                 </div>
                )}
 
-               <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 rounded-full">
+               {/* COMPTEUR EN TEMPS RÉEL */}
+               <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 rounded-full animate-pulse">
                   <Eye size={14} className="text-orange-600" />
                   <span className="text-[10px] font-black text-orange-600 uppercase tracking-tighter">
-                    {product.views || 0} vues
+                    {realtimeViews} vues
                   </span>
                </div>
             </div>
@@ -212,9 +242,7 @@ export default function ProductDetails() {
               )}
             </div>
 
-            {/* --- SECTION VARIANTES (COULEURS & TAILLES) --- */}
             <div className="space-y-8 mb-10">
-              {/* Description */}
               <div className="space-y-3">
                 <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em] flex items-center gap-3">
                   <div className="h-[1px] w-8 bg-orange-600"></div> Description
@@ -224,7 +252,7 @@ export default function ProductDetails() {
                 </p>
               </div>
 
-              {/* Couleurs */}
+              {/* COULEURS */}
               {product.colors && (
                 <div className="space-y-4">
                   <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em]">Couleurs disponibles</h3>
@@ -246,7 +274,7 @@ export default function ProductDetails() {
                 </div>
               )}
 
-              {/* Tailles */}
+              {/* TAILLES */}
               {product.sizes && (
                 <div className="space-y-4">
                   <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em]">Tailles disponibles</h3>
@@ -269,7 +297,7 @@ export default function ProductDetails() {
               )}
             </div>
 
-            {/* --- ACTIONS --- */}
+            {/* ACTIONS */}
             <div className="flex flex-col gap-8">
               <div className="flex items-center gap-6">
                 <span className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Quantité :</span>
@@ -295,7 +323,7 @@ export default function ProductDetails() {
           </div>
         </div>
 
-        {/* --- SECTION PRODUITS SUGGÉRÉS --- */}
+        {/* SUGGESTIONS */}
         {suggestedProducts.length > 0 && (
           <section className="mt-32">
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
@@ -320,13 +348,13 @@ export default function ProductDetails() {
         )}
       </main>
 
-      {/* --- TOAST --- */}
+      {/* TOAST */}
       {showToast && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] w-full max-w-[400px] px-6">
           <div className="bg-black/90 backdrop-blur-xl text-white p-2 pl-6 rounded-full shadow-2xl flex items-center justify-between border border-white/10 animate-in slide-in-from-bottom-10">
             <div className="flex flex-col">
               <span className="text-[11px] font-black italic uppercase text-orange-600">Article ajouté !</span>
-              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Félicitations pour votre choix</span>
+              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Félicitations</span>
             </div>
             <button onClick={() => navigate('/panier')} className="bg-white text-black text-[10px] font-black uppercase tracking-widest px-8 py-4 rounded-full hover:bg-orange-600 hover:text-white transition-all">Panier</button>
           </div>
