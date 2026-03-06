@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { Link } from 'react-router-dom';
 import RequestBoost from './RequestBoost';
-import AddProductModal from './AddProductModal'; // <-- ASSURE-TOI QUE LE CHEMIN EST CORRECT
+import AddProductModal from './AddProductModal';
 import { 
   Plus, ShoppingBag, Users, Wallet, ArrowUpRight, Zap, X, TrendingUp, 
   Loader2, BarChart3, ChevronRight 
@@ -21,35 +21,61 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchDashboardData();
+
+    // Realtime: Mise à jour auto si les vues d'un produit changent
+    const channel = supabase
+      .channel('dashboard-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'products' },
+        () => fetchDashboardData()
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
   }, []);
 
   async function fetchDashboardData() {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data: storeData } = await supabase.from('stores').select('*').eq('owner_id', user.id).single();
+      const { data: storeData } = await supabase
+        .from('stores')
+        .select('*')
+        .eq('owner_id', user.id)
+        .single();
       
       if (storeData) {
         setStore(storeData);
 
-        // 1. Produits
-        const { data: pData } = await supabase.from('products').select('*').eq('store_id', storeData.id).order('created_at', { ascending: false });
-        setProducts(pData || []);
+        // 1. Produits + Somme des Vues
+        const { data: pData } = await supabase
+          .from('products')
+          .select('*')
+          .eq('store_id', storeData.id)
+          .order('created_at', { ascending: false });
         
-        // 2. Commandes & Stats Ventes
-        const { data: oData } = await supabase.from('orders').select('*').eq('store_id', storeData.id).order('created_at', { ascending: false });
+        if (pData) {
+          setProducts(pData);
+          const totalViews = pData.reduce((acc, curr) => acc + (curr.views || 0), 0);
+          setAnalytics({ views: totalViews });
+        }
+        
+        // 2. Commandes & Stats
+        const { data: oData } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('store_id', storeData.id)
+          .order('created_at', { ascending: false });
+
         if (oData) {
           setOrders(oData);
           const totalRevenue = oData.reduce((acc, order) => acc + (order.total_amount || 0), 0);
           const uniqueCustomers = new Set(oData.map(o => o.customer_phone)).size;
-          const recentSales = oData.filter(o => new Date(o.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length;
+          const recentSales = oData.filter(o => 
+            new Date(o.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+          ).length;
+          
           setStats({ totalRevenue, salesCount: recentSales, customersCount: uniqueCustomers });
-        }
-
-        // 3. Aperçu rapide des vues
-        const { data: viewsData } = await supabase.from('store_analytics').select('views_count').eq('store_id', storeData.id);
-        if (viewsData) {
-          const totalViews = viewsData.reduce((acc, curr) => acc + curr.views_count, 0);
-          setAnalytics({ views: totalViews });
         }
       }
     }
@@ -65,7 +91,7 @@ export default function Dashboard() {
   return (
     <div className="max-w-7xl mx-auto space-y-10 pb-20 p-4">
       
-      {/* --- MODAL AJOUT --- */}
+      {/* --- MODALS --- */}
       {isAddModalOpen && (
         <AddProductModal 
           storeId={store?.id} 
@@ -74,11 +100,10 @@ export default function Dashboard() {
         />
       )}
 
-      {/* --- MODAL BOOST --- */}
       {showBoostModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
           <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto border-2 border-gray-800 rounded-[2.5rem] bg-white">
-            <button onClick={() => setShowBoostModal(false)} className="absolute top-6 right-6 z-10 p-3 bg-black text-white rounded-full"><X size={20}/></button>
+            <button onClick={() => setShowBoostModal(false)} className="absolute top-6 right-6 z-10 p-3 bg-black text-white rounded-full transition-transform active:scale-90"><X size={20}/></button>
             <RequestBoost />
           </div>
         </div>
@@ -99,23 +124,27 @@ export default function Dashboard() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button onClick={() => setShowBoostModal(true)} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-orange-600 text-white px-6 py-4 rounded-2xl text-[10px] font-black tracking-widest shadow-xl shadow-orange-100 active:scale-95 transition-all">
+          <button onClick={() => setShowBoostModal(true)} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-orange-600 text-white px-6 py-4 rounded-2xl text-[10px] font-black tracking-widest shadow-xl shadow-orange-100 active:scale-95 transition-all hover:scale-105">
             <Zap size={16} fill="white" /> BOOSTER
           </button>
           
-          {/* BOUTON AJOUTER QUI OUVRE LA MODAL */}
           <button 
             onClick={() => setIsAddModalOpen(true)} 
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-black text-white px-6 py-4 rounded-2xl text-[10px] font-black tracking-widest shadow-xl active:scale-95 transition-all"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-black text-white px-6 py-4 rounded-2xl text-[10px] font-black tracking-widest shadow-xl active:scale-95 transition-all hover:bg-gray-900"
           >
             <Plus size={16} strokeWidth={3} /> AJOUTER
           </button>
         </div>
       </div>
 
-      {/* --- STATS CLÉS --- */}
+      {/* --- STATS CLÉS (CARTES MISES À JOUR) --- */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Revenus" value={stats.totalRevenue.toLocaleString()} unit="FCFA" icon={<Wallet size={18} />} />
+        <StatCard 
+          label="Revenus" 
+          value={stats.totalRevenue.toLocaleString()} 
+          unit="FCFA" 
+          icon={<Wallet size={18} />} 
+        />
         
         <Link to="/analytics" className="block group">
           <StatCard 
@@ -124,11 +153,23 @@ export default function Dashboard() {
             unit="VUES" 
             icon={<TrendingUp size={18} />} 
             isLink 
+            isLive 
           />
         </Link>
 
-        <StatCard label="Ventes (7j)" value={stats.salesCount} unit="COMMANDES" icon={<ShoppingBag size={18} />} />
-        <StatCard label="Clients" value={stats.customersCount} unit="UNIQUES" icon={<Users size={18} />} />
+        <StatCard 
+          label="Ventes (7j)" 
+          value={stats.salesCount} 
+          unit="COMMANDES" 
+          icon={<ShoppingBag size={18} />} 
+        />
+        
+        <StatCard 
+          label="Clients" 
+          value={stats.customersCount} 
+          unit="UNIQUES" 
+          icon={<Users size={18} />} 
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -139,7 +180,7 @@ export default function Dashboard() {
                <div className="w-1.5 h-5 bg-orange-600 rounded-full"></div> 
                Flux de ventes
              </h2>
-             <Link to="/revenus" className="text-[10px] font-black text-gray-400 hover:text-orange-600 flex items-center gap-1 uppercase tracking-widest">
+             <Link to="/revenus" className="text-[10px] font-black text-gray-400 hover:text-orange-600 flex items-center gap-1 uppercase tracking-widest transition-colors">
                Tout voir <ChevronRight size={14} />
              </Link>
           </div>
@@ -157,7 +198,7 @@ export default function Dashboard() {
                     </div>
                  </div>
                  <div className="text-right">
-                    <p className="text-sm font-black italic">{o.total_amount.toLocaleString()} <span className="text-[10px] text-orange-600">FCFA</span></p>
+                    <p className="text-sm font-black italic">{o.total_amount?.toLocaleString()} <span className="text-[10px] text-orange-600">FCFA</span></p>
                     <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Payé</p>
                  </div>
               </div>
@@ -172,7 +213,7 @@ export default function Dashboard() {
 
         {/* RACCOURCIS & TOP STOCK */}
         <div className="lg:col-span-4 space-y-8">
-          <Link to="/analytics" className="block bg-black p-8 rounded-[2.5rem] text-white shadow-2xl group relative overflow-hidden">
+          <Link to="/analytics" className="block bg-black p-8 rounded-[2.5rem] text-white shadow-2xl group relative overflow-hidden transition-transform hover:scale-[1.02] active:scale-95">
              <div className="relative z-10">
                <BarChart3 size={24} className="text-orange-600 mb-4" />
                <h3 className="text-lg font-black uppercase italic leading-tight">Voir les <br/>Analytiques</h3>
@@ -186,13 +227,13 @@ export default function Dashboard() {
             <div className="space-y-3">
               {products.slice(0, 3).map(p => (
                 <div key={p.id} className="bg-white p-3 rounded-2xl border-2 border-gray-100 flex items-center gap-4 hover:border-black transition-all">
-                  <img src={p.image_url} className="w-12 h-12 rounded-xl object-cover bg-gray-50" />
+                  <img src={p.image_url} className="w-12 h-12 rounded-xl object-cover bg-gray-50" alt={p.name} />
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] font-black uppercase truncate italic">{p.name}</p>
-                    <p className="text-[10px] font-black text-orange-600">{p.price.toLocaleString()} FCFA</p>
+                    <p className="text-[10px] font-black text-orange-600">{p.sale_price?.toLocaleString() || p.price?.toLocaleString()} FCFA</p>
                   </div>
                   <div className="bg-gray-50 px-3 py-1 rounded-lg text-center">
-                    <p className="text-xs font-black italic">{p.stock_quantity}</p>
+                    <p className="text-xs font-black italic">{p.stock_quantity || 0}</p>
                   </div>
                 </div>
               ))}
@@ -204,19 +245,38 @@ export default function Dashboard() {
   );
 }
 
-function StatCard({ label, value, unit, icon, isLink = false }) {
+// COMPOSANT STATCARD MIS À JOUR (Icône + Titre alignés, Chiffre en bas)
+function StatCard({ label, value, unit, icon, isLink = false, isLive = false }) {
   return (
-    <div className="bg-white p-6 rounded-[2rem] border-2 border-gray-100 shadow-xl hover:border-orange-600 transition-all group relative">
-      <div className="flex items-center justify-between mb-4">
-        <div className="p-3 bg-gray-50 rounded-xl text-gray-900 group-hover:bg-orange-600 group-hover:text-white transition-all">
+    <div className="bg-white p-5 rounded-[2rem] border-2 border-gray-100 shadow-xl hover:border-orange-600 transition-all group relative overflow-hidden">
+      {/* LIGNE DU HAUT : ICÔNE + TITRE */}
+      <div className="flex items-center gap-3 mb-5">
+        <div className={`p-2.5 rounded-xl bg-gray-50 text-gray-900 group-hover:bg-orange-600 group-hover:text-white transition-all ${isLive ? 'ring-4 ring-orange-50 animate-pulse' : ''}`}>
           {icon}
         </div>
-        {isLink && <ArrowUpRight size={14} className="text-gray-300 group-hover:text-orange-600 transition-colors" />}
+        <div className="flex-1 min-w-0">
+          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none truncate">
+            {label}
+          </p>
+        </div>
+        {isLink && (
+          <ArrowUpRight size={14} className="text-gray-300 group-hover:text-orange-600 transition-colors shrink-0" />
+        )}
       </div>
-      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">{label}</p>
-      <div className="flex items-baseline gap-1">
-        <span className="text-2xl font-black text-gray-900 italic uppercase tracking-tighter">{value}</span>
-        <span className="text-[9px] font-black text-orange-600 uppercase italic">{unit}</span>
+
+      {/* LIGNE DU BAS : CHIFFRE */}
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-3xl font-black text-gray-900 italic uppercase tracking-tighter leading-none">
+          {value}
+        </span>
+        <span className="text-[10px] font-black text-orange-600 uppercase italic">
+          {unit}
+        </span>
+      </div>
+
+      {/* EFFET DE FOND DISCRET */}
+      <div className="absolute -bottom-4 -right-4 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity rotate-12">
+        {icon}
       </div>
     </div>
   );

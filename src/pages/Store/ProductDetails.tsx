@@ -27,7 +27,7 @@ export default function ProductDetails() {
   const [quantity, setQuantity] = useState(1);
   const [showToast, setShowToast] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [realtimeViews, setRealtimeViews] = useState(0); // État pour les vues en temps réel
+  const [realtimeViews, setRealtimeViews] = useState(0);
 
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
@@ -36,20 +36,18 @@ export default function ProductDetails() {
 
   useEffect(() => {
     fetchProductData();
-    setupRealtimeSubscription(); // Activer l'écouteur temps réel
+    setupRealtimeSubscription();
     
     setQuantity(1);
     setSelectedColor(null);
     setSelectedSize(null);
     window.scrollTo(0, 0);
 
-    // Nettoyage de la souscription à la fermeture du composant
     return () => {
       supabase.channel(`product_views_${productId}`).unsubscribe();
     };
   }, [productId]);
 
-  // FONCTION : Écouter les changements sur la table produits
   function setupRealtimeSubscription() {
     const channel = supabase
       .channel(`product_views_${productId}`)
@@ -62,7 +60,6 @@ export default function ProductDetails() {
           filter: `id=eq.${productId}`,
         },
         (payload) => {
-          // Mise à jour immédiate de l'état local quand la base de données change
           if (payload.new && payload.new.views !== undefined) {
             setRealtimeViews(payload.new.views);
           }
@@ -74,10 +71,7 @@ export default function ProductDetails() {
   async function fetchProductData() {
     setLoading(true);
     
-    // 1. Incrémenter la vue via la fonction RPC
-    await supabase.rpc('increment_product_views', { row_id: productId });
-
-    // 2. Récupérer les données initiales
+    // 1. Récupérer d'abord les infos du produit pour avoir le store_id
     const { data: productData } = await supabase
       .from('products')
       .select('*')
@@ -85,11 +79,18 @@ export default function ProductDetails() {
       .single();
 
     if (productData) {
+      // 2. SOLUTION OPTIMISÉE : Appeler la fonction SQL qui gère TOUT (Produit + Store Analytics)
+      await supabase.rpc('track_store_visit', { 
+        p_product_id: productData.id, 
+        p_store_id: productData.store_id 
+      });
+
       setProduct(productData);
-      setRealtimeViews(productData.views || 0); // Initier le compteur
+      setRealtimeViews(productData.views || 0);
       const imgs = getImages(productData);
       setSelectedImage(imgs[0]);
 
+      // 3. Infos de la boutique
       const { data: storeData } = await supabase
         .from('stores')
         .select('*')
@@ -97,6 +98,7 @@ export default function ProductDetails() {
         .single();
       setStore(storeData);
 
+      // 4. Suggestions
       const { data: suggestions } = await supabase
         .from('products')
         .select('*, stores(name)')
@@ -220,7 +222,7 @@ export default function ProductDetails() {
                 </div>
                )}
 
-               {/* COMPTEUR EN TEMPS RÉEL */}
+               {/* COMPTEUR EN TEMPS RÉEL (Carte 3 du Dashboard) */}
                <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 rounded-full animate-pulse">
                   <Eye size={14} className="text-orange-600" />
                   <span className="text-[10px] font-black text-orange-600 uppercase tracking-tighter">
