@@ -145,10 +145,13 @@ function App() {
     fetchStoreSlug();
   }, [user]);
 
-  // --- CALCULS DE PROTECTION (SÉCURISÉS PAR OPTIONAL CHAINING) ---
-  const isUserAdmin = user?.id === adminUid;
-  const isVendorArea = ['/dashboard', '/products-manage', '/revenus', '/marketing', '/analytics', '/ma-boutique', '/settings', '/admin'].some(path => location.pathname.startsWith(path));
-  const showSidebar = !!(isVendorArea && user);
+  // --- LOGIQUE DE ROUTE ---
+  // On définit strictement ce qui est une zone "Vendeur"
+  const vendorPaths = ['/dashboard', '/products-manage', '/revenus', '/marketing', '/analytics', '/ma-boutique', '/settings', '/admin'];
+  const isVendorArea = vendorPaths.some(path => location.pathname.startsWith(path));
+  
+  // Sidebar et BottomNav s'affichent SEULEMENT en zone vendeur + utilisateur connecté
+  const showVendorUI = !!(isVendorArea && user);
 
   if (loading) return (
     <div className="h-screen flex items-center justify-center bg-[#F8F9FB]">
@@ -196,11 +199,6 @@ function App() {
              <SidebarLink to={`/${storeSlug}`} icon={Store} label="Voir Boutique" colorClass="text-black" />
           </div>
         )}
-        {isUserAdmin && (
-          <div className="pt-4 border-t border-gray-100">
-            <SidebarLink to="/admin" icon={ShieldCheck} label="Admin" colorClass="text-red-500" />
-          </div>
-        )}
       </div>
     </div>
   );
@@ -208,8 +206,8 @@ function App() {
   return (
     <div className="flex min-h-screen bg-[#F8F9FB] text-gray-900 antialiased font-sans">
       
-      {/* SIDEBAR DESKTOP */}
-      {showSidebar && (
+      {/* SIDEBAR DESKTOP (Uniquement Zone Vendeur) */}
+      {showVendorUI && (
         <aside className={`bg-white hidden md:flex flex-col sticky top-0 h-screen border-r border-gray-100 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'} z-40`}>
           <div className={`p-8 flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
             <div className="w-10 h-10 bg-black rounded-2xl flex-shrink-0 flex items-center justify-center text-white font-black italic shadow-xl">S</div>
@@ -222,8 +220,8 @@ function App() {
         </aside>
       )}
 
-      {/* MOBILE NAV OVERLAY */}
-      {showSidebar && isMobileMenuOpen && (
+      {/* MOBILE NAV OVERLAY (Uniquement Zone Vendeur) */}
+      {showVendorUI && isMobileMenuOpen && (
         <div className="fixed inset-0 z-[60] md:hidden flex">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
           <aside className="relative h-full w-72 bg-white p-6 shadow-2xl flex flex-col animate-in slide-in-from-left duration-300">
@@ -237,9 +235,11 @@ function App() {
       )}
 
       <div className="flex-1 flex flex-col min-w-0 relative">
-        {showSidebar && <VendorHeader user={user} storeSlug={storeSlug} onOpenMenu={() => setIsMobileMenuOpen(true)} onSignOut={handleSignOut} />}
+        {/* Header Vendeur : Visible uniquement si showVendorUI est vrai */}
+        {showVendorUI && <VendorHeader user={user} storeSlug={storeSlug} onOpenMenu={() => setIsMobileMenuOpen(true)} onSignOut={handleSignOut} />}
         
-        <main className={`flex-1 ${!showSidebar ? '' : 'p-4 md:p-10 pb-32'}`}>
+        {/* Le padding main s'applique SEULEMENT en zone vendeur */}
+        <main className={`flex-1 ${showVendorUI ? 'p-4 md:p-10 pb-32' : ''}`}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/products" element={<Shop />} /> 
@@ -247,17 +247,17 @@ function App() {
             <Route path="/panier" element={<Cart />} />
             <Route path="/confirmation" element={<OrderSuccess />} />
             
-            <Route path="/auth" element={!user ? <Auth /> : (isUserAdmin ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />)} />
+            <Route path="/auth" element={!user ? <Auth /> : (user.id === adminUid ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />)} />
             <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" replace />} />
             
-            <Route path="/dashboard" element={user ? (isUserAdmin ? <Navigate to="/admin" replace /> : <Dashboard />) : <Navigate to="/auth" />} />
+            <Route path="/dashboard" element={user ? (user.id === adminUid ? <Navigate to="/admin" replace /> : <Dashboard />) : <Navigate to="/auth" />} />
             <Route path="/products-manage" element={user ? <ManageProducts /> : <Navigate to="/auth" />} />
             <Route path="/analytics" element={user ? <Analytics /> : <Navigate to="/auth" />} />
             <Route path="/marketing" element={user ? <RequestBoost /> : <Navigate to="/auth" />} />
             <Route path="/revenus" element={user ? <Revenues /> : <Navigate to="/auth" />} />
             <Route path="/ma-boutique" element={user ? <StoreSettings /> : <Navigate to="/auth" />} />
             <Route path="/settings" element={user ? <Settings /> : <Navigate to="/auth" />} />
-            <Route path="/admin" element={user && isUserAdmin ? <AdminDashboard /> : <Navigate to="/dashboard" />} />
+            <Route path="/admin" element={user && user.id === adminUid ? <AdminDashboard /> : <Navigate to="/dashboard" />} />
 
             <Route path="/boutique/:storeSlug" element={<PublicStore />} />
             <Route path="/:storeSlug" element={<PublicStore />} />
@@ -265,8 +265,8 @@ function App() {
           </Routes>
         </main>
 
-        {/* BOTTOM NAV MOBILE */}
-        {showSidebar && (
+        {/* BOTTOM NAV MOBILE (Uniquement Zone Vendeur) */}
+        {showVendorUI && (
           <nav className="md:hidden fixed bottom-6 left-6 right-6 h-16 bg-black shadow-2xl rounded-3xl flex items-center justify-around px-2 z-40 border border-white/10">
             {[
               { to: "/dashboard", icon: LayoutDashboard },
