@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { Link } from 'react-router-dom';
 import RequestBoost from './RequestBoost';
+import AddProductModal from './AddProductModal'; // <-- ASSURE-TOI QUE LE CHEMIN EST CORRECT
 import { 
   Plus, ShoppingBag, Users, Wallet, ArrowUpRight, Zap, X, TrendingUp, 
-  Image as ImageIcon, Loader2, Save, BarChart3, ChevronRight 
+  Loader2, BarChart3, ChevronRight 
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -62,10 +63,16 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto space-y-10 pb-20">
+    <div className="max-w-7xl mx-auto space-y-10 pb-20 p-4">
       
       {/* --- MODAL AJOUT --- */}
-      {isAddModalOpen && <AddProductModal storeId={store?.id} onClose={() => setIsAddModalOpen(false)} onRefresh={fetchDashboardData} />}
+      {isAddModalOpen && (
+        <AddProductModal 
+          storeId={store?.id} 
+          onClose={() => setIsAddModalOpen(false)} 
+          onRefresh={fetchDashboardData} 
+        />
+      )}
 
       {/* --- MODAL BOOST --- */}
       {showBoostModal && (
@@ -95,7 +102,12 @@ export default function Dashboard() {
           <button onClick={() => setShowBoostModal(true)} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-orange-600 text-white px-6 py-4 rounded-2xl text-[10px] font-black tracking-widest shadow-xl shadow-orange-100 active:scale-95 transition-all">
             <Zap size={16} fill="white" /> BOOSTER
           </button>
-          <button onClick={() => setIsAddModalOpen(true)} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-black text-white px-6 py-4 rounded-2xl text-[10px] font-black tracking-widest shadow-xl active:scale-95 transition-all">
+          
+          {/* BOUTON AJOUTER QUI OUVRE LA MODAL */}
+          <button 
+            onClick={() => setIsAddModalOpen(true)} 
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-black text-white px-6 py-4 rounded-2xl text-[10px] font-black tracking-widest shadow-xl active:scale-95 transition-all"
+          >
             <Plus size={16} strokeWidth={3} /> AJOUTER
           </button>
         </div>
@@ -105,7 +117,6 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Revenus" value={stats.totalRevenue.toLocaleString()} unit="FCFA" icon={<Wallet size={18} />} />
         
-        {/* Carte Visiteurs cliquable vers la nouvelle section */}
         <Link to="/analytics" className="block group">
           <StatCard 
             label="Visiteurs" 
@@ -210,5 +221,3 @@ function StatCard({ label, value, unit, icon, isLink = false }) {
     </div>
   );
 }
-
-// ... (Garder le composant AddProductModal identique au précédent)
