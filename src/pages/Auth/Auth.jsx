@@ -26,7 +26,6 @@ export default function Auth() {
         const currentUserId = data.user.id.trim();
         const adminUid = import.meta.env.VITE_ADMIN_UID?.trim();
 
-        // Redirection intelligente
         if (adminUid && currentUserId === adminUid) {
           navigate('/admin');
         } else {
@@ -42,91 +41,98 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 antialiased">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 antialiased py-6">
       
-      {/* --- BACK LINK --- */}
+      {/* --- BACK LINK - Ultra compact --- */}
       <Link 
         to="/" 
-        className="absolute top-10 left-6 md:left-10 flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.4em] text-gray-300 hover:text-black transition-all group"
+        className="fixed top-6 left-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-all z-50"
       >
-        <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> 
-        Retour
+        <ArrowLeft size={14} strokeWidth={3} /> <span className="hidden sm:inline">Retour</span>
       </Link>
 
-      <div className="w-full max-w-[400px] space-y-12">
+      <div className="w-full max-w-[340px] space-y-6 md:space-y-8">
         
-        {/* --- LOGO & HEADER --- */}
-        <div className="text-center space-y-6">
-          <div className="flex justify-center">
-            <div className="w-14 h-14 bg-black text-white flex items-center justify-center font-black italic text-2xl shadow-[0_20px_40px_rgba(0,0,0,0.1)] rounded-xl">
+        {/* --- HEADER - Marges réduites --- */}
+        <div className="text-center space-y-2">
+          <div className="flex justify-center mb-2">
+            <div className="w-12 h-12 bg-black text-white flex items-center justify-center font-black italic text-xl shadow-xl rounded-xl transform -rotate-2">
               F
             </div>
           </div>
-          <div className="space-y-2">
-            <h1 className="text-2xl font-black uppercase tracking-[0.2em] text-gray-900 italic">
-              ESPACE <span className="text-orange-600 italic-none">PRO</span>
-            </h1>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em]">
-              Connectez-vous à votre terminal de vente
-            </p>
-          </div>
+          <h1 className="text-xl font-black uppercase tracking-tighter text-black italic leading-none">
+            ESPACE <span className="text-orange-600">PRO</span>
+          </h1>
+          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+            Terminal de gestion
+          </p>
         </div>
 
-        {/* --- FORMULAIRE --- */}
-        <form className="space-y-8" onSubmit={handleLogin}>
-          <div className="space-y-1">
+        {/* --- FORMULAIRE - Texte Noir & Marges Serrées --- */}
+        <form className="space-y-5" onSubmit={handleLogin}>
+          <div className="space-y-4">
             
             {/* EMAIL */}
-            <div className="group relative border-b-2 border-gray-100 focus-within:border-orange-600 transition-all duration-500">
-              <Mail className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-orange-600" size={16} />
-              <input 
-                type="email" 
-                placeholder="ADRESSE EMAIL" 
-                className="w-full pl-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] outline-none bg-transparent placeholder:text-gray-200"
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                required
-              />
+            <div className="group relative border-b-2 border-gray-100 focus-within:border-orange-600 transition-all">
+              <label className="text-[9px] font-black text-black uppercase tracking-widest block mb-0.5">
+                Identifiant Email
+              </label>
+              <div className="flex items-center">
+                <Mail className="text-black group-focus-within:text-orange-600 transition-colors" size={14} strokeWidth={2.5} />
+                <input 
+                  type="email" 
+                  placeholder="NOM@EMAIL.COM" 
+                  className="w-full pl-3 py-3 text-[11px] font-black uppercase tracking-widest outline-none bg-transparent placeholder:text-gray-200 text-black"
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)} 
+                  required
+                />
+              </div>
             </div>
 
             {/* PASSWORD */}
-            <div className="group relative border-b-2 border-gray-100 focus-within:border-orange-600 transition-all duration-500">
-              <Lock className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-orange-600" size={16} />
-              <input 
-                type={showPassword ? "text" : "password"} 
-                placeholder="MOT DE PASSE" 
-                className="w-full pl-8 pr-10 py-5 text-[11px] font-bold uppercase tracking-[0.2em] outline-none bg-transparent placeholder:text-gray-200"
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
-                required
-              />
-              <button 
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-600"
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+            <div className="group relative border-b-2 border-gray-100 focus-within:border-orange-600 transition-all">
+              <label className="text-[9px] font-black text-black uppercase tracking-widest block mb-0.5">
+                Mot de passe
+              </label>
+              <div className="flex items-center">
+                <Lock className="text-black group-focus-within:text-orange-600 transition-colors" size={14} strokeWidth={2.5} />
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="••••••••" 
+                  className="w-full pl-3 pr-10 py-3 text-[11px] font-black uppercase tracking-widest outline-none bg-transparent placeholder:text-gray-200 text-black"
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  required
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-0 text-gray-300 hover:text-black transition-colors"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-5 pt-4">
+          <div className="flex flex-col gap-3 pt-2">
             <button 
               type="submit"
               disabled={loading}
-              className="w-full bg-black text-white py-6 text-[11px] font-black uppercase tracking-[0.4em] flex items-center justify-center gap-3 hover:bg-orange-600 transition-all duration-500 shadow-2xl shadow-orange-100 disabled:bg-gray-100 disabled:text-gray-400 italic"
+              className="w-full bg-black text-white py-4 text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-orange-600 active:scale-95 transition-all duration-300 shadow-lg shadow-orange-50 disabled:bg-gray-100 italic"
             >
-              {loading ? <Loader2 className="animate-spin" size={18} /> : "Lancer la session"}
+              {loading ? <Loader2 className="animate-spin" size={16} /> : "Lancer la session"}
             </button>
 
-            <div className="relative py-4">
+            <div className="relative py-1">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-50"></div></div>
-              <div className="relative flex justify-center text-[9px] font-black uppercase tracking-widest text-gray-300 bg-white px-4">Ou</div>
+              <div className="relative flex justify-center text-[8px] font-black uppercase tracking-widest text-gray-200 bg-white px-2">Ou</div>
             </div>
 
             <Link 
               to="/register" 
-              className="w-full border-2 border-gray-900 py-5 text-[11px] font-black uppercase tracking-[0.4em] flex items-center justify-center gap-3 hover:bg-black hover:text-white transition-all duration-300 italic"
+              className="w-full border-2 border-black py-3.5 text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-black hover:text-white active:scale-95 transition-all duration-300 italic"
             >
               Devenir Partenaire
             </Link>
@@ -134,13 +140,13 @@ export default function Auth() {
         </form>
 
         {/* --- FOOTER --- */}
-        <div className="pt-8 flex flex-col items-center gap-6">
-          <div className="flex items-center gap-3 text-gray-200">
-            <ShieldCheck size={16} strokeWidth={2} />
-            <span className="text-[9px] font-black uppercase tracking-[0.3em]">Accès Crypté & Sécurisé</span>
+        <div className="pt-4 flex flex-col items-center gap-4">
+          <div className="flex items-center gap-2 text-black px-3 py-1.5 bg-gray-50 rounded-full border border-gray-100">
+            <ShieldCheck size={12} className="text-orange-600" />
+            <span className="text-[7px] font-black uppercase tracking-[0.2em]">SSL Secured Terminal</span>
           </div>
-          <p className="text-[10px] text-gray-300 font-medium italic">
-            Festisolde &copy; 2026 — Terminal Vendeur v2.0
+          <p className="text-[8px] text-gray-300 font-bold uppercase tracking-[0.2em] text-center italic">
+            Festisolde &copy; 2026 — v2.0
           </p>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2, Store, Sparkles } from 'lucide-react';
+import { ArrowLeft, Loader2, Store } from 'lucide-react';
 
 export default function Register() {
   const [loading, setLoading] = useState(false);
@@ -54,38 +54,40 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 antialiased">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4 sm:px-6 antialiased py-8">
       
-      {/* Bouton Retour */}
-      <Link to="/auth" className="absolute top-10 left-10 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 hover:text-black transition-colors">
-        <ArrowLeft size={14} /> Retour
+      {/* Bouton Retour - Ajusté pour mobile */}
+      <Link to="/auth" className="fixed top-6 left-6 md:top-10 md:left-10 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors z-50">
+        <ArrowLeft size={14} strokeWidth={3} /> <span className="hidden sm:inline">Retour</span>
       </Link>
 
-      <div className="w-full max-w-[380px] space-y-12">
+      <div className="w-full max-w-[360px] space-y-8 md:space-y-10">
         
-        {/* Header de la page */}
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
+        {/* Header - Plus compact */}
+        <div className="text-center space-y-3">
+          <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-2">
             <Store size={22} strokeWidth={1.5} />
           </div>
-          <h1 className="text-xl font-light uppercase tracking-[0.4em] text-gray-900">
-            Nouveau <span className="font-medium">Vendeur</span>
+          <h1 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-gray-900 italic">
+            Nouveau <span className="text-orange-600">Vendeur</span>
           </h1>
-          <p className="text-[9px] font-bold text-gray-300 uppercase tracking-[0.2em]">
-            Lancez votre boutique digitale aujourd'hui
+          <p className="text-[9px] font-bold text-gray-300 uppercase tracking-[0.2em] leading-tight">
+            Lancez votre boutique aujourd'hui
           </p>
         </div>
 
-        {/* Formulaire Register */}
-        <form className="space-y-8" onSubmit={handleRegister}>
-          <div className="space-y-6">
+        {/* Formulaire - Marges réduites */}
+        <form className="space-y-6" onSubmit={handleRegister}>
+          <div className="space-y-5">
             
             <div className="group relative">
-              <label className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1 block">Nom de l'enseigne</label>
+              <label className="text-[9px] font-black text-gray-900 uppercase tracking-widest mb-1 block group-focus-within:text-orange-600 transition-colors">
+                Nom de la boutique
+              </label>
               <input 
                 type="text" 
                 placeholder="EX: MAISON VINTAGE" 
-                className="w-full border-b border-gray-100 py-4 text-[11px] font-medium uppercase tracking-[0.2em] outline-none focus:border-orange-600 transition-colors bg-transparent placeholder:text-gray-200"
+                className="w-full border-b-2 border-gray-100 py-3 text-[11px] font-bold uppercase tracking-widest outline-none focus:border-orange-600 transition-all bg-transparent placeholder:text-gray-200 text-gray-900"
                 value={storeName} 
                 onChange={(e) => setStoreName(e.target.value)} 
                 required
@@ -93,11 +95,13 @@ export default function Register() {
             </div>
 
             <div className="group relative">
-              <label className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1 block">Email professionnel</label>
+              <label className="text-[9px] font-black text-gray-900 uppercase tracking-widest mb-1 block group-focus-within:text-orange-600 transition-colors">
+                Email 
+              </label>
               <input 
                 type="email" 
                 placeholder="PRO@EMAIL.COM" 
-                className="w-full border-b border-gray-100 py-4 text-[11px] font-medium uppercase tracking-[0.2em] outline-none focus:border-orange-600 transition-colors bg-transparent placeholder:text-gray-200"
+                className="w-full border-b-2 border-gray-100 py-3 text-[11px] font-bold uppercase tracking-widest outline-none focus:border-orange-600 transition-all bg-transparent placeholder:text-gray-200 text-gray-900"
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 required
@@ -105,11 +109,13 @@ export default function Register() {
             </div>
 
             <div className="group relative">
-              <label className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1 block">Sécurité (8 caractères)</label>
+              <label className="text-[9px] font-black text-gray-900 uppercase tracking-widest mb-1 block group-focus-within:text-orange-600 transition-colors">
+                Mot de passe (8+ car.)
+              </label>
               <input 
                 type="password" 
                 placeholder="••••••••" 
-                className="w-full border-b border-gray-100 py-4 text-[11px] font-medium uppercase tracking-[0.2em] outline-none focus:border-orange-600 transition-colors bg-transparent placeholder:text-gray-200"
+                className="w-full border-b-2 border-gray-100 py-3 text-[11px] font-bold uppercase tracking-widest outline-none focus:border-orange-600 transition-all bg-transparent placeholder:text-gray-200 text-gray-900"
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 required
@@ -118,11 +124,11 @@ export default function Register() {
             </div>
           </div>
 
-          <div className="pt-4">
+          <div className="pt-2">
             <button 
               type="submit"
               disabled={loading}
-              className="w-full bg-black text-white py-5 text-[10px] font-bold uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-orange-600 transition-all duration-300 disabled:bg-gray-100 disabled:text-gray-400"
+              className="w-full bg-black text-white py-4 md:py-5 text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-orange-600 active:scale-95 transition-all duration-300 disabled:bg-gray-100 disabled:text-gray-400"
             >
               {loading ? <Loader2 className="animate-spin" size={16} /> : "Créer ma boutique"}
             </button>
@@ -130,16 +136,16 @@ export default function Register() {
         </form>
 
         {/* Footer info & Connexion */}
-        <div className="text-center space-y-8">
-          <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest leading-relaxed">
+        <div className="text-center space-y-6">
+          <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest leading-relaxed">
             En cliquant sur créer, vous acceptez nos <br/>
-            <span className="text-gray-900 border-b border-gray-900 cursor-pointer">Conditions Partenaires</span>
+            <span className="text-black border-b border-black cursor-pointer">Conditions Partenaires</span>
           </p>
 
           <div className="pt-4 border-t border-gray-50">
-            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
               Déjà partenaire ?{' '}
-              <Link to="/auth" className="text-orange-600 font-black hover:underline ml-2 transition-all">
+              <Link to="/auth" className="text-orange-600 font-black hover:underline block mt-1 sm:inline sm:mt-0 transition-all">
                 Connectez-vous
               </Link>
             </p>
