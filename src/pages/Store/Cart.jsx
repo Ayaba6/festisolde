@@ -40,6 +40,7 @@ export default function Cart() {
       const sellerPhone = storeData?.whatsapp_number || "22600000000"; 
       const storeSlug = storeData?.slug;
 
+      // 1. Enregistrement en base de données
       const { error: orderError } = await supabase
         .from('orders')
         .insert([
@@ -56,6 +57,7 @@ export default function Cart() {
 
       if (orderError) throw orderError;
 
+      // 2. Mise à jour des ventes
       await Promise.all(cart.map(async (item) => {
         await supabase.rpc('increment_sales', { 
           row_id: item.id, 
@@ -63,20 +65,30 @@ export default function Cart() {
         });
       }));
 
-      // PRÉPARATION DU MESSAGE WHATSAPP AVEC VARIANTES
-      const productList = cart.map(item => 
-        `• ${item.name} ${item.selectedSize ? `(Taille: ${item.selectedSize})` : ''} ${item.selectedColor ? `(Couleur: ${item.selectedColor})` : ''} x${item.quantity} - ${(item.sale_price * item.quantity).toLocaleString()} FCFA`
-      ).join('\n');
+      // 3. PRÉPARATION DU MESSAGE WHATSAPP AMÉLIORÉ
+      // On inclut l'URL de l'image pour que WhatsApp puisse générer un aperçu
+      const productList = cart.map(item => {
+        const imageLink = item.image_url || item.images?.[0] || '';
+        return `• *${item.name}*\n` +
+               `${item.selectedSize ? `  Taille: ${item.selectedSize}\n` : ''}` +
+               `${item.selectedColor ? `  Couleur: ${item.selectedColor}\n` : ''}` +
+               `  Qté: ${item.quantity} x ${item.sale_price.toLocaleString()} CFA\n` +
+               `  📷 Photo: ${imageLink}\n`; // Le lien de l'image ici
+      }).join('\n');
 
       const message = `*NOUVELLE COMMANDE FESTISOLDE* 🛍️\n\n` +
         `👤 *Client :* ${customerInfo.name.toUpperCase()}\n` + 
         `📞 *WhatsApp :* ${customerInfo.phone}\n` +
         `📍 *Ville :* ${customerInfo.city || 'Non précisée'}\n\n` +
-        `🛒 *Articles :*\n${productList}\n\n` +
-        `💰 *TOTAL : ${total.toLocaleString()} FCFA*`;
+        `--------------------------\n` +
+        `🛒 *ARTICLES :*\n\n${productList}\n` +
+        `--------------------------\n` +
+        `💰 *TOTAL À PAYER : ${total.toLocaleString()} FCFA*\n\n` +
+        `🔗 *Lien boutique :* https://festisolde.com/${storeSlug}`;
 
       const whatsappUrl = `https://wa.me/${sellerPhone}?text=${encodeURIComponent(message)}`;
       
+      // 4. Finalisation
       clearCart();
       
       navigate('/confirmation', { 
@@ -110,13 +122,11 @@ export default function Cart() {
   return (
     <div className="min-h-screen bg-[#FBFBFB] pb-32 antialiased text-gray-900">
       <div className="max-w-5xl mx-auto p-4 md:p-10">
-        {/* Bouton Retour Mobile-Optimized */}
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6 bg-white px-5 py-3 rounded-full border border-gray-100 shadow-sm active:scale-95 transition-all">
           <ChevronLeft size={14} /> Retour
         </button>
 
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-          {/* LISTE DES PRODUITS */}
           <div className="flex-1 space-y-6">
             <h1 className="text-2xl font-black uppercase italic tracking-tighter flex items-baseline gap-3">
               Panier <span className="text-xs not-italic font-black text-orange-600 bg-orange-50 px-3 py-1 rounded-full">{cart.length}</span>
@@ -125,7 +135,6 @@ export default function Cart() {
             <div className="space-y-4">
               {cart.map((item, index) => (
                 <div key={`${item.id}-${index}`} className="bg-white p-4 rounded-[2rem] flex gap-4 items-center border border-gray-100 shadow-sm transition-all group">
-                  {/* Image */}
                   <div className="w-20 h-20 md:w-24 md:h-24 bg-[#F9F9F9] rounded-2xl overflow-hidden shrink-0 border border-gray-50">
                     <img 
                       src={item.image_url || item.images?.[0]} 
@@ -134,11 +143,9 @@ export default function Cart() {
                     />
                   </div>
 
-                  {/* Infos */}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[11px] md:text-sm font-black uppercase tracking-tight truncate text-gray-900 leading-tight">{item.name}</h3>
                     
-                    {/* AFFICHAGE DES VARIANTES SÉLECTIONNÉES */}
                     <div className="flex flex-wrap gap-2 mt-1">
                         {item.selectedSize && (
                             <span className="text-[8px] font-black bg-orange-50 text-orange-600 px-2 py-0.5 rounded-md uppercase">Taille: {item.selectedSize}</span>
@@ -152,7 +159,6 @@ export default function Cart() {
                       {item.sale_price.toLocaleString()} <span className="text-[9px] not-italic ml-0.5">CFA</span>
                     </p>
 
-                    {/* Quantité Mobile */}
                     <div className="flex items-center gap-4 mt-2">
                       <div className="flex items-center bg-gray-50 rounded-xl p-0.5 border border-gray-100">
                         <button onClick={() => item.quantity > 1 && addToCart(item, -1)} className="w-8 h-8 flex items-center justify-center hover:text-orange-600 transition-colors"><Minus size={12} /></button>
@@ -170,7 +176,6 @@ export default function Cart() {
             </div>
           </div>
 
-          {/* RÉSUMÉ DE COMMANDE STICKY */}
           <div className="lg:w-[380px]">
             <div className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-xl border border-gray-100 lg:sticky lg:top-24">
               <h2 className="text-[10px] font-black uppercase tracking-[0.3em] mb-6 text-gray-300">Mon Résumé</h2>
@@ -224,6 +229,7 @@ export default function Cart() {
                     className="w-full py-5 bg-orange-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-lg flex items-center justify-center gap-3 disabled:bg-gray-200"
                     onClick={handleConfirmOrder}
                   >
+                    <MessageCircle size={18} />
                     {loading ? "Traitement..." : "Confirmer sur WhatsApp"}
                   </button>
                   <button onClick={() => setIsOrdering(false)} className="w-full py-2 text-[9px] font-black text-gray-300 uppercase tracking-widest">

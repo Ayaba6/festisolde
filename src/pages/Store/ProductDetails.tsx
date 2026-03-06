@@ -205,7 +205,7 @@ export default function ProductDetails() {
 
             <div className="flex items-baseline gap-4 mb-10">
               <span className="text-4xl font-black text-orange-600 italic tracking-tighter">
-                {product.sale_price?.toLocaleString()} <span className="text-sm not-italic font-bold text-orange-600/50">CFA</span>
+                {product.sale_price?.toLocaleString()} <span className="text-sm not-italic font-bold text-orange-600/50">F CFA</span>
               </span>
               {product.price > product.sale_price && (
                 <span className="text-xl text-gray-200 line-through font-black italic">{product.price?.toLocaleString()}</span>
