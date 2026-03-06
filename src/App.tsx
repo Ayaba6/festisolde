@@ -27,6 +27,15 @@ import Shop from './pages/Home/components/Shop';
 import RequestBoost from './pages/Vendor/RequestBoost';
 import Analytics from './pages/Vendor/Analytics';
 
+// --- COMPOSANT SCROLL TO TOP (Gestion globale du scroll) ---
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
+
 // --- COMPOSANT HEADER VENDEUR ---
 const VendorHeader = ({ user, storeSlug, onOpenMenu, onSignOut }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -145,12 +154,8 @@ function App() {
     fetchStoreSlug();
   }, [user]);
 
-  // --- LOGIQUE DE ROUTE ---
-  // On définit strictement ce qui est une zone "Vendeur"
   const vendorPaths = ['/dashboard', '/products-manage', '/revenus', '/marketing', '/analytics', '/ma-boutique', '/settings', '/admin'];
   const isVendorArea = vendorPaths.some(path => location.pathname.startsWith(path));
-  
-  // Sidebar et BottomNav s'affichent SEULEMENT en zone vendeur + utilisateur connecté
   const showVendorUI = !!(isVendorArea && user);
 
   if (loading) return (
@@ -205,8 +210,8 @@ function App() {
 
   return (
     <div className="flex min-h-screen bg-[#F8F9FB] text-gray-900 antialiased font-sans">
+      <ScrollToTop /> {/* <--- Assure le retour en haut à chaque clic/route */}
       
-      {/* SIDEBAR DESKTOP (Uniquement Zone Vendeur) */}
       {showVendorUI && (
         <aside className={`bg-white hidden md:flex flex-col sticky top-0 h-screen border-r border-gray-100 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'} z-40`}>
           <div className={`p-8 flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
@@ -220,7 +225,6 @@ function App() {
         </aside>
       )}
 
-      {/* MOBILE NAV OVERLAY (Uniquement Zone Vendeur) */}
       {showVendorUI && isMobileMenuOpen && (
         <div className="fixed inset-0 z-[60] md:hidden flex">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
@@ -235,10 +239,8 @@ function App() {
       )}
 
       <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Header Vendeur : Visible uniquement si showVendorUI est vrai */}
         {showVendorUI && <VendorHeader user={user} storeSlug={storeSlug} onOpenMenu={() => setIsMobileMenuOpen(true)} onSignOut={handleSignOut} />}
         
-        {/* Le padding main s'applique SEULEMENT en zone vendeur */}
         <main className={`flex-1 ${showVendorUI ? 'p-4 md:p-10 pb-32' : ''}`}>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -265,7 +267,6 @@ function App() {
           </Routes>
         </main>
 
-        {/* BOTTOM NAV MOBILE (Uniquement Zone Vendeur) */}
         {showVendorUI && (
           <nav className="md:hidden fixed bottom-6 left-6 right-6 h-16 bg-black shadow-2xl rounded-3xl flex items-center justify-around px-2 z-40 border border-white/10">
             {[
