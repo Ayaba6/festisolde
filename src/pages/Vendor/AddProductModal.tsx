@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { 
   X, Save, Loader2, Image as ImageIcon, 
-  Camera, CheckCircle2 
+  CheckCircle2, Plus
 } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 
@@ -26,8 +26,6 @@ export default function AddProductModal({ storeId, productToEdit, onClose, onRef
   });
 
   const categories = ["Vêtements", "Chaussures", "Accessoires", "Beauté", "Électronique", "Maison", "Autre"];
-  
-  // Style Bordures Noires Épaisses
   const inputStyle = "w-full border-[3px] border-black rounded-2xl px-5 py-4 text-sm font-bold focus:border-orange-500 outline-none bg-white transition-all placeholder:text-gray-400";
 
   const handleImageChange = async (e) => {
@@ -62,31 +60,26 @@ export default function AddProductModal({ storeId, productToEdit, onClose, onRef
 
       let finalImages = previews.filter(p => p.startsWith('http'));
 
-      // Upload des nouvelles images
       for (const file of imageFiles) {
         const path = `${user.id}/${Date.now()}-${Math.random()}.jpg`;
         const { error: uploadError } = await supabase.storage.from('product-images').upload(path, file);
-        
         if (uploadError) throw uploadError;
-
         const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path);
         finalImages.push(urlData.publicUrl);
       }
 
-      // --- PRÉPARATION DES DONNÉES (CORRECTION ERREUR 400) ---
       const productData = {
         store_id: storeId,
         name: formData.name,
         description: formData.description || null,
         category: formData.category,
         price: parseFloat(formData.price) || 0,
-        // Correction : si vide, envoyer NULL (important pour le type numeric)
         sale_price: formData.sale_price && formData.sale_price !== '' ? parseFloat(formData.sale_price) : null,
         stock_quantity: parseInt(formData.stock_quantity) || 0,
         colors: formData.colors || null,
         sizes: formData.sizes || null,
         image_url: finalImages[0] || null,
-        images: finalImages, // Supabase accepte les tableaux JS pour jsonb
+        images: finalImages,
         product_type: productType,
       };
 
@@ -95,11 +88,9 @@ export default function AddProductModal({ storeId, productToEdit, onClose, onRef
         : await supabase.from('products').insert([{ ...productData, sold_count: 0 }]);
 
       if (error) throw error;
-
       onRefresh();
       onClose();
     } catch (err) {
-      console.error("Détails de l'erreur:", err);
       alert(`Erreur: ${err.message || "Impossible de publier l'article"}`);
     } finally {
       setProcessing(false);
@@ -110,7 +101,6 @@ export default function AddProductModal({ storeId, productToEdit, onClose, onRef
     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md text-gray-900">
       <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] border-[3px] border-black">
         
-        {/* HEADER */}
         <div className="p-6 border-b-[3px] border-black flex justify-between items-center bg-gray-50">
           <h2 className="text-xl font-black uppercase italic">{productToEdit ? 'Modifier' : 'Ajouter'} <span className="text-orange-600">Article</span></h2>
           <button onClick={onClose} type="button" className="p-3 border-2 border-black rounded-full hover:bg-red-50 text-red-500 transition-all"><X size={24} /></button>
@@ -118,32 +108,40 @@ export default function AddProductModal({ storeId, productToEdit, onClose, onRef
 
         <form onSubmit={handleSubmit} className="p-8 overflow-y-auto space-y-6">
           
-          {/* TYPE */}
           <div className="flex gap-4 p-1.5 bg-gray-100 rounded-2xl border-[3px] border-black">
             <button type="button" onClick={() => setProductType('simple')} className={`flex-1 py-3 rounded-xl font-black text-[10px] tracking-widest transition-all ${productType === 'simple' ? 'bg-black text-white' : 'text-gray-500'}`}>SIMPLE</button>
             <button type="button" onClick={() => setProductType('pack')} className={`flex-1 py-3 rounded-xl font-black text-[10px] tracking-widest transition-all ${productType === 'pack' ? 'bg-orange-600 text-white' : 'text-gray-500'}`}>PACK</button>
           </div>
 
-          {/* PHOTOS */}
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-            {previews.length < 5 && (
-              <button type="button" onClick={() => document.getElementById('camera-cap').click()} className="aspect-square border-[3px] border-dashed border-black rounded-[1.5rem] flex flex-col items-center justify-center gap-1 text-black bg-gray-50 active:scale-95">
-                <Camera size={24} />
-                <input id="camera-cap" type="file" accept="image/*" capture="environment" hidden onChange={handleImageChange} />
-              </button>
-            )}
-            {previews.map((src, i) => (
-              <div key={i} className="relative aspect-square">
-                <img src={src} className="w-full h-full object-cover rounded-[1.5rem] border-[3px] border-black shadow-sm" />
-                <button type="button" onClick={() => { setPreviews(p => p.filter((_, idx) => idx !== i)); setImageFiles(f => f.filter((_, idx) => idx !== i)); }} className="absolute -top-2 -right-2 bg-black text-white rounded-full p-1.5 border-2 border-white shadow-md hover:scale-110 transition-transform"><X size={10}/></button>
-              </div>
-            ))}
+          {/* SECTION SELECTION PHOTOS */}
+          <div className="space-y-2">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+              {previews.length < 5 && (
+                <button 
+                  type="button" 
+                  onClick={() => document.getElementById('file-upload').click()} 
+                  className="aspect-square border-[3px] border-dashed border-black rounded-[1.5rem] flex flex-col items-center justify-center gap-1 text-black bg-gray-50 hover:bg-orange-50 transition-colors"
+                >
+                  <ImageIcon size={24} />
+                  <span className="text-[8px] font-black uppercase">Choisir</span>
+                  {/* Suppression de capture="environment" pour mode SELECT classique */}
+                  <input id="file-upload" type="file" accept="image/*" multiple hidden onChange={handleImageChange} />
+                </button>
+              )}
+              {previews.map((src, i) => (
+                <div key={i} className="relative aspect-square">
+                  <img src={src} className="w-full h-full object-cover rounded-[1.5rem] border-[3px] border-black shadow-sm" />
+                  <button type="button" onClick={() => { setPreviews(p => p.filter((_, idx) => idx !== i)); setImageFiles(f => f.filter((_, idx) => idx !== i)); }} className="absolute -top-2 -right-2 bg-black text-white rounded-full p-1.5 border-2 border-white shadow-md transition-transform hover:scale-110"><X size={10}/></button>
+                </div>
+              ))}
+            </div>
+            <p className="text-[9px] font-bold text-gray-400 italic px-1 italic">
+              💡 Conseil : Utilisez des images avec un <span className="text-orange-600">fond blanc</span> pour plus de ventes.
+            </p>
           </div>
 
-          {/* CHAMPS FORMULAIRE */}
           <div className="space-y-4">
             <input required className={inputStyle} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="NOM DE L'ARTICLE *" />
-            
             <textarea className={`${inputStyle} h-24 resize-none`} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="DESCRIPTION (MATIÈRE, COUPE...)" />
 
             <div className="grid grid-cols-2 gap-4">
@@ -152,14 +150,8 @@ export default function AddProductModal({ storeId, productToEdit, onClose, onRef
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <input className={inputStyle} value={formData.colors} onChange={e => setFormData({...formData, colors: e.target.value})} placeholder="COULEURS" />
-                <p className="text-[8px] font-black text-gray-400 mt-1 uppercase px-2 italic">Ex: Noir, Blanc, Bleu</p>
-              </div>
-              <div>
-                <input className={inputStyle} value={formData.sizes} onChange={e => setFormData({...formData, sizes: e.target.value})} placeholder="TAILLES" />
-                <p className="text-[8px] font-black text-gray-400 mt-1 uppercase px-2 italic">Ex: S, M, L ou 40, 42</p>
-              </div>
+              <input className={inputStyle} value={formData.colors} onChange={e => setFormData({...formData, colors: e.target.value})} placeholder="COULEURS (EX: GRIS, NOIR)" />
+              <input className={inputStyle} value={formData.sizes} onChange={e => setFormData({...formData, sizes: e.target.value})} placeholder="TAILLES (EX: M, 42)" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -173,7 +165,7 @@ export default function AddProductModal({ storeId, productToEdit, onClose, onRef
 
           <button disabled={processing} type="submit" className="w-full bg-black hover:bg-orange-600 text-white py-6 rounded-2xl font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all disabled:bg-gray-400">
             {processing ? <Loader2 className="animate-spin" /> : <Save size={20} />}
-            {processing ? "TRAITEMENT EN COURS..." : "METTRE EN VENTE"}
+            {processing ? "PUBLICATION..." : "CONFIRMER LA VENTE"}
           </button>
         </form>
       </div>
