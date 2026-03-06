@@ -16,7 +16,6 @@ import {
   Zap
 } from 'lucide-react';
 
-// Import du composant pour la cohérence visuelle
 import { ProductCard } from './ProductCard';
 
 export default function ProductDetails() {
@@ -32,12 +31,17 @@ export default function ProductDetails() {
   const [showToast, setShowToast] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
+  // ÉTATS POUR LES VARIANTES
+  const [selectedColor, setSelectedColor] = useState(null);
+  const [selectedSize, setSelectedSize] = useState(null);
+
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   useEffect(() => {
     fetchProductData();
-    // Reset de la quantité et scroll en haut lors du changement de produit
     setQuantity(1);
+    setSelectedColor(null); // Reset lors du changement de produit
+    setSelectedSize(null);
     window.scrollTo(0, 0);
   }, [productId]);
 
@@ -65,7 +69,6 @@ export default function ProductDetails() {
       const imgs = getImages(productData);
       setSelectedImage(imgs[0]);
 
-      // 1. Récupérer la boutique
       const { data: storeData } = await supabase
         .from('stores')
         .select('*')
@@ -73,7 +76,6 @@ export default function ProductDetails() {
         .single();
       setStore(storeData);
 
-      // 2. Récupérer les produits suggérés (même catégorie, sauf lui-même)
       const { data: suggestions } = await supabase
         .from('products')
         .select('*, stores(name)')
@@ -86,14 +88,25 @@ export default function ProductDetails() {
   }
 
   const handleAddToCart = () => {
-    addToCart({ ...product, seller_phone: store?.phone }, quantity);
+    // Vérification si des variantes existent mais ne sont pas sélectionnées
+    if (product.colors && !selectedColor) return alert("Veuillez choisir une couleur");
+    if (product.sizes && !selectedSize) return alert("Veuillez choisir une taille");
+
+    addToCart({ 
+      ...product, 
+      seller_phone: store?.phone,
+      selectedColor,
+      selectedSize 
+    }, quantity);
+
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
   };
 
   const handleWhatsAppOrder = () => {
     const phoneNumber = store?.phone || "22600000000";
-    const message = `Bonjour, je souhaite commander ${quantity} exemplaire(s) de : ${product.name}. Prix: ${product.sale_price} FCFA.`;
+    const variantInfo = `${selectedColor ? `Couleur: ${selectedColor}` : ''} ${selectedSize ? `Taille: ${selectedSize}` : ''}`;
+    const message = `Bonjour, je souhaite commander ${quantity} exemplaire(s) de : ${product.name}. ${variantInfo} Prix: ${product.sale_price} FCFA.`;
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -199,15 +212,64 @@ export default function ProductDetails() {
               )}
             </div>
 
-            <div className="space-y-4 mb-10">
-              <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em] flex items-center gap-3">
-                <div className="h-[1px] w-8 bg-orange-600"></div> Description
-              </h3>
-              <p className="text-[15px] text-gray-500 leading-relaxed font-medium italic">
-                {product.description || "Édition limitée Festisolde sélectionnée pour son style unique."}
-              </p>
+            {/* --- SECTION VARIANTES (COULEURS & TAILLES) --- */}
+            <div className="space-y-8 mb-10">
+              {/* Description */}
+              <div className="space-y-3">
+                <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em] flex items-center gap-3">
+                  <div className="h-[1px] w-8 bg-orange-600"></div> Description
+                </h3>
+                <p className="text-[15px] text-gray-500 leading-relaxed font-medium italic">
+                  {product.description || "Édition limitée Festisolde sélectionnée pour son style unique."}
+                </p>
+              </div>
+
+              {/* Couleurs */}
+              {product.colors && (
+                <div className="space-y-4">
+                  <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em]">Couleurs disponibles</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {product.colors.split(',').map((color, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedColor(color.trim())}
+                        className={`px-6 py-3 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all ${
+                          selectedColor === color.trim() 
+                          ? 'border-black bg-black text-white shadow-lg scale-105' 
+                          : 'border-gray-100 bg-white text-gray-400 hover:border-gray-200'
+                        }`}
+                      >
+                        {color.trim()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tailles */}
+              {product.sizes && (
+                <div className="space-y-4">
+                  <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em]">Tailles disponibles</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {product.sizes.split(',').map((size, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedSize(size.trim())}
+                        className={`w-14 h-14 flex items-center justify-center rounded-xl border-2 text-xs font-black italic transition-all ${
+                          selectedSize === size.trim() 
+                          ? 'border-orange-600 bg-orange-600 text-white shadow-lg rotate-3' 
+                          : 'border-gray-100 bg-white text-gray-400 hover:border-gray-200'
+                        }`}
+                      >
+                        {size.trim()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
+            {/* --- ACTIONS --- */}
             <div className="flex flex-col gap-8">
               <div className="flex items-center gap-6">
                 <span className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Quantité :</span>

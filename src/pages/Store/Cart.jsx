@@ -29,7 +29,6 @@ export default function Cart() {
       const total = getCartTotal();
       const storeId = cart[0]?.store_id;
 
-      // 1. RÉCUPÉRATION DU NUMÉRO WHATSAPP ET DU SLUG DU VENDEUR
       const { data: storeData, error: storeError } = await supabase
         .from('stores')
         .select('whatsapp_number, slug')
@@ -41,7 +40,6 @@ export default function Cart() {
       const sellerPhone = storeData?.whatsapp_number || "22600000000"; 
       const storeSlug = storeData?.slug;
 
-      // 2. Enregistrement de la commande dans Supabase
       const { error: orderError } = await supabase
         .from('orders')
         .insert([
@@ -58,7 +56,6 @@ export default function Cart() {
 
       if (orderError) throw orderError;
 
-      // 3. Mise à jour synchronisée : Stock & Ventes
       await Promise.all(cart.map(async (item) => {
         await supabase.rpc('increment_sales', { 
           row_id: item.id, 
@@ -66,13 +63,13 @@ export default function Cart() {
         });
       }));
 
-      // 4. Préparation du lien WhatsApp
+      // PRÉPARATION DU MESSAGE WHATSAPP AVEC VARIANTES
       const productList = cart.map(item => 
-        `• ${item.name} (x${item.quantity}) - ${(item.sale_price * item.quantity).toLocaleString()} FCFA`
+        `• ${item.name} ${item.selectedSize ? `(Taille: ${item.selectedSize})` : ''} ${item.selectedColor ? `(Couleur: ${item.selectedColor})` : ''} x${item.quantity} - ${(item.sale_price * item.quantity).toLocaleString()} FCFA`
       ).join('\n');
 
       const message = `*NOUVELLE COMMANDE FESTISOLDE* 🛍️\n\n` +
-        `👤 *Client :* ${customerInfo.name.toUpperCase()}\n` +
+        `👤 *Client :* ${customerInfo.name.toUpperCase()}\n` + 
         `📞 *WhatsApp :* ${customerInfo.phone}\n` +
         `📍 *Ville :* ${customerInfo.city || 'Non précisée'}\n\n` +
         `🛒 *Articles :*\n${productList}\n\n` +
@@ -80,14 +77,13 @@ export default function Cart() {
 
       const whatsappUrl = `https://wa.me/${sellerPhone}?text=${encodeURIComponent(message)}`;
       
-      // 5. Finalisation et Redirection
       clearCart();
       
       navigate('/confirmation', { 
         state: { 
           customerName: customerInfo.name,
           whatsappUrl: whatsappUrl,
-          storeSlug: storeSlug // On passe le slug pour le retour boutique
+          storeSlug: storeSlug
         } 
       });
 
@@ -100,52 +96,64 @@ export default function Cart() {
   };
 
   if (cart.length === 0) return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center antialiased">
+    <div className="min-h-[80vh] bg-white flex flex-col items-center justify-center p-6 text-center antialiased">
       <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
         <ShoppingBag size={32} className="text-gray-300" />
       </div>
       <h2 className="text-xl font-black uppercase italic tracking-tighter text-gray-900">Ton panier est vide</h2>
-      <p className="text-gray-400 mt-2 text-[10px] font-black uppercase tracking-[0.2em] max-w-[200px] leading-relaxed">
-        Il est temps de dénicher tes pépites !
-      </p>
-      <button 
-        onClick={() => navigate('/')} 
-        className="mt-10 px-10 py-4 bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-orange-600 transition-all active:scale-95"
-      >
+      <button onClick={() => navigate('/')} className="mt-10 px-10 py-4 bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl">
         Découvrir
       </button>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#FBFBFB] pb-24 antialiased text-gray-900">
+    <div className="min-h-screen bg-[#FBFBFB] pb-32 antialiased text-gray-900">
       <div className="max-w-5xl mx-auto p-4 md:p-10">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-8 bg-white px-4 py-2 rounded-full border border-gray-100 shadow-sm">
+        {/* Bouton Retour Mobile-Optimized */}
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6 bg-white px-5 py-3 rounded-full border border-gray-100 shadow-sm active:scale-95 transition-all">
           <ChevronLeft size={14} /> Retour
         </button>
 
-        <div className="flex flex-col lg:flex-row gap-12">
-          <div className="flex-1">
-            <h1 className="text-2xl font-black uppercase italic tracking-tighter mb-8 flex items-baseline gap-3">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+          {/* LISTE DES PRODUITS */}
+          <div className="flex-1 space-y-6">
+            <h1 className="text-2xl font-black uppercase italic tracking-tighter flex items-baseline gap-3">
               Panier <span className="text-xs not-italic font-black text-orange-600 bg-orange-50 px-3 py-1 rounded-full">{cart.length}</span>
             </h1>
 
             <div className="space-y-4">
-              {cart.map((item) => (
-                <div key={item.id} className="bg-white p-4 rounded-[1.8rem] flex gap-5 items-center border border-gray-100/60 shadow-sm transition-all hover:shadow-md group">
-                  <div className="w-20 h-20 md:w-24 md:h-24 bg-[#F9F9F9] rounded-2xl overflow-hidden flex items-center justify-center shrink-0">
+              {cart.map((item, index) => (
+                <div key={`${item.id}-${index}`} className="bg-white p-4 rounded-[2rem] flex gap-4 items-center border border-gray-100 shadow-sm transition-all group">
+                  {/* Image */}
+                  <div className="w-20 h-20 md:w-24 md:h-24 bg-[#F9F9F9] rounded-2xl overflow-hidden shrink-0 border border-gray-50">
                     <img 
                       src={item.image_url || item.images?.[0]} 
-                      className="max-w-full max-h-full object-contain p-2" 
+                      className="w-full h-full object-cover" 
                       alt={item.name} 
                     />
                   </div>
+
+                  {/* Infos */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-xs md:text-sm font-black uppercase tracking-tight truncate text-gray-900">{item.name}</h3>
-                    <p className="font-black text-orange-600 mt-1 text-sm italic tracking-tight">
-                      {item.sale_price.toLocaleString()} <span className="text-[10px] not-italic ml-0.5">CFA</span>
+                    <h3 className="text-[11px] md:text-sm font-black uppercase tracking-tight truncate text-gray-900 leading-tight">{item.name}</h3>
+                    
+                    {/* AFFICHAGE DES VARIANTES SÉLECTIONNÉES */}
+                    <div className="flex flex-wrap gap-2 mt-1">
+                        {item.selectedSize && (
+                            <span className="text-[8px] font-black bg-orange-50 text-orange-600 px-2 py-0.5 rounded-md uppercase">Taille: {item.selectedSize}</span>
+                        )}
+                        {item.selectedColor && (
+                            <span className="text-[8px] font-black bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md uppercase">Couleur: {item.selectedColor}</span>
+                        )}
+                    </div>
+
+                    <p className="font-black text-orange-600 mt-1.5 text-sm italic">
+                      {item.sale_price.toLocaleString()} <span className="text-[9px] not-italic ml-0.5">CFA</span>
                     </p>
-                    <div className="flex items-center gap-4 mt-3">
+
+                    {/* Quantité Mobile */}
+                    <div className="flex items-center gap-4 mt-2">
                       <div className="flex items-center bg-gray-50 rounded-xl p-0.5 border border-gray-100">
                         <button onClick={() => item.quantity > 1 && addToCart(item, -1)} className="w-8 h-8 flex items-center justify-center hover:text-orange-600 transition-colors"><Minus size={12} /></button>
                         <span className="text-xs font-black w-6 text-center italic">{item.quantity}</span>
@@ -153,7 +161,8 @@ export default function Cart() {
                       </div>
                     </div>
                   </div>
-                  <button onClick={() => removeFromCart(item.id)} className="p-3 text-gray-200 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all mr-2">
+
+                  <button onClick={() => removeFromCart(item.id)} className="p-3 text-gray-200 hover:text-red-500 transition-all">
                     <Trash2 size={18} />
                   </button>
                 </div>
@@ -161,22 +170,20 @@ export default function Cart() {
             </div>
           </div>
 
+          {/* RÉSUMÉ DE COMMANDE STICKY */}
           <div className="lg:w-[380px]">
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl shadow-black/[0.03] border border-gray-100 sticky top-24">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.3em] mb-8 text-gray-300">Mon Résumé</h2>
-              <div className="space-y-4 mb-10 pb-10 border-b border-gray-50">
+            <div className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-xl border border-gray-100 lg:sticky lg:top-24">
+              <h2 className="text-[10px] font-black uppercase tracking-[0.3em] mb-6 text-gray-300">Mon Résumé</h2>
+              
+              <div className="space-y-3 mb-8 pb-8 border-b border-gray-50">
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-400">
-                  <span>Sous-total</span>
+                  <span>Articles ({cart.length})</span>
                   <span className="text-gray-900">{getCartTotal().toLocaleString()} CFA</span>
                 </div>
-                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-green-500 italic">
-                  <span>Livraison</span>
-                  <span className="bg-green-50 px-2 py-0.5 rounded-md">À régler au livreur</span>
-                </div>
-                <div className="flex justify-between items-end pt-4">
-                  <span className="text-[11px] font-black uppercase tracking-widest mb-1 italic">Total à payer</span>
+                <div className="flex justify-between items-end pt-2">
+                  <span className="text-[11px] font-black uppercase tracking-widest mb-1 italic">Total</span>
                   <span className="text-3xl font-black italic tracking-tighter text-orange-600 leading-none">
-                    {getCartTotal().toLocaleString()} <span className="text-[10px] not-italic ml-1 text-gray-400">CFA</span>
+                    {getCartTotal().toLocaleString()} <span className="text-[10px] not-italic text-gray-400">CFA</span>
                   </span>
                 </div>
               </div>
@@ -184,50 +191,46 @@ export default function Cart() {
               {!isOrdering ? (
                 <button 
                   onClick={() => setIsOrdering(true)}
-                  className="w-full py-5 bg-orange-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-black transition-all shadow-xl shadow-orange-600/20 active:scale-95 flex items-center justify-center gap-3 group"
+                  className="w-full py-5 bg-black text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-orange-600 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 group"
                 >
-                  Valider ma commande <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  Passer à la caisse <ArrowRight size={14} />
                 </button>
               ) : (
-                <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
+                <div className="space-y-4">
                   <div className="space-y-3">
                     <input 
+                      required
                       type="text" 
-                      placeholder="VOTRE NOM" 
-                      className="w-full p-4 bg-[#FBFBFB] border border-gray-100 rounded-2xl text-[11px] font-black uppercase tracking-widest outline-none focus:border-orange-600 transition-all placeholder:text-gray-300"
+                      placeholder="TON NOM COMPLET" 
+                      className="w-full p-4 bg-[#FBFBFB] border border-gray-100 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-orange-600 transition-all"
                       onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
                     />
                     <input 
+                      required
                       type="tel" 
-                      placeholder="WHATSAPP (EX: 70000000)" 
-                      className="w-full p-4 bg-[#FBFBFB] border border-gray-100 rounded-2xl text-[11px] font-black uppercase tracking-widest outline-none focus:border-orange-600 transition-all placeholder:text-gray-300"
+                      placeholder="NUMÉRO WHATSAPP" 
+                      className="w-full p-4 bg-[#FBFBFB] border border-gray-100 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-orange-600 transition-all"
                       onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
                     />
                     <input 
                       type="text" 
                       placeholder="VILLE & QUARTIER" 
-                      className="w-full p-4 bg-[#FBFBFB] border border-gray-100 rounded-2xl text-[11px] font-black uppercase tracking-widest outline-none focus:border-orange-600 transition-all placeholder:text-gray-300"
+                      className="w-full p-4 bg-[#FBFBFB] border border-gray-100 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-orange-600 transition-all"
                       onChange={(e) => setCustomerInfo({...customerInfo, city: e.target.value})}
                     />
                   </div>
                   <button 
                     disabled={loading}
-                    className="w-full py-5 bg-orange-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-black transition-all shadow-lg shadow-orange-600/20 flex items-center justify-center gap-3 disabled:opacity-50 active:scale-95"
+                    className="w-full py-5 bg-orange-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-lg flex items-center justify-center gap-3 disabled:bg-gray-200"
                     onClick={handleConfirmOrder}
                   >
-                    <MessageCircle size={16} />
-                    {loading ? "Chargement..." : "Suivant"}
+                    {loading ? "Traitement..." : "Confirmer sur WhatsApp"}
                   </button>
-                  <button onClick={() => setIsOrdering(false)} className="w-full py-2 text-[9px] font-black uppercase tracking-widest text-gray-300 hover:text-orange-600 transition-colors">
-                    ← Revenir au panier
+                  <button onClick={() => setIsOrdering(false)} className="w-full py-2 text-[9px] font-black text-gray-300 uppercase tracking-widest">
+                    ← Retour au panier
                   </button>
                 </div>
               )}
-
-              <div className="mt-8 flex items-center justify-center gap-4 opacity-20">
-                <ShieldCheck size={14} />
-                <span className="text-[8px] font-black uppercase tracking-[0.4em]">FESTISOLDE SECURED</span>
-              </div>
             </div>
           </div>
         </div>
