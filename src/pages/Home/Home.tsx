@@ -7,7 +7,8 @@ import { ArrowRight, Zap } from 'lucide-react';
 import Header from './components/Header';
 import FeaturedSection from './components/FeaturedSection';
 import Footer from './components/Footer';
-import { ProductCard } from '../Store/ProductCard'; // Utilisation du composant commun
+import PartnersMarquee from './components/PartnersMarquee'; 
+import { ProductCard } from '../Store/ProductCard';
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -20,7 +21,6 @@ export default function Home() {
 
   async function fetchLatestProducts() {
     setLoading(true);
-    // On récupère aussi le nom de la boutique pour le badge si besoin
     const { data } = await supabase
       .from('products')
       .select('*, stores(name)')
@@ -39,7 +39,7 @@ export default function Home() {
       {/* 2. Featured (Slider & Impact) */}
       <FeaturedSection />
 
-      {/* 3. Section Boutique - Style Harmonisé */}
+      {/* 3. Section Boutique */}
       <main className="max-w-7xl mx-auto px-6 md:px-8 py-16 md:py-24">
         
         {/* En-tête de section "Power" */}
@@ -66,7 +66,7 @@ export default function Home() {
           </Link>
         </div>
 
-        {/* Grille de produits utilisant le ProductCard harmonisé */}
+        {/* Grille de produits */}
         {loading ? (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12">
             {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
@@ -85,19 +85,22 @@ export default function Home() {
           </div>
         )}
 
-        {/* BOUTON REDIRECTION GÉANT */}
-        <div className="mt-32 flex justify-center">
+        {/* BOUTON REDIRECTION AFFINÉ (Version Mobile-friendly) */}
+        <div className="mt-16 md:mt-24 flex justify-center">
           <Link 
             to="/products"
-            className="group relative overflow-hidden px-16 py-6 bg-black text-white rounded-full text-[12px] font-black uppercase tracking-[0.5em] transition-all duration-500 hover:scale-105 active:scale-95 shadow-2xl"
+            className="group relative overflow-hidden px-8 py-4 md:px-12 md:py-5 bg-black text-white rounded-full text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] transition-all duration-500 hover:scale-105 active:scale-95 shadow-xl"
           >
-            <span className="relative z-10">Afficher plus d'offres</span>
+            <span className="relative z-10">Voir toutes les offres</span>
             <div className="absolute inset-0 bg-orange-600 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
           </Link>
         </div>
       </main>
 
-      {/* 4. Footer */}
+      {/* 4. Section Partenaires (Marquee) */}
+      <PartnersMarquee />
+
+      {/* 5. Footer */}
       <Footer />
 
     </div>
