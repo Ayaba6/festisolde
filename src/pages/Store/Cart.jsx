@@ -1,5 +1,5 @@
 import { useCart } from '../../context/CartContext';
-import { Trash2, ShoppingBag, ArrowRight, ChevronLeft, Plus, Minus, MessageCircle, ShieldCheck } from 'lucide-react';
+import { Trash2, ShoppingBag, ArrowRight, ChevronLeft, Plus, Minus, MessageCircle, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
@@ -10,12 +10,33 @@ export default function Cart() {
   
   const [isOrdering, setIsOrdering] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [locationLink, setLocationLink] = useState(null); // Stocke le lien Maps
 
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
     phone: '',
     city: ''
   });
+
+  // Fonction pour récupérer la position GPS
+  const handleGetLocation = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+          setLocationLink(mapsUrl);
+        },
+        (error) => {
+          console.error("Erreur GPS:", error);
+          alert("Impossible d'accéder à votre position. Vérifiez vos réglages GPS.");
+        }
+      );
+    } else {
+      alert("La géolocalisation n'est pas supportée par votre navigateur.");
+    }
+  };
 
   const handleConfirmOrder = async () => {
     if (!customerInfo.name || !customerInfo.phone) {
@@ -49,6 +70,7 @@ export default function Cart() {
             customer_name: customerInfo.name,
             customer_phone: customerInfo.phone,
             customer_city: customerInfo.city,
+            customer_location: locationLink, // On sauve aussi le lien GPS en base
             items: cart,
             total_amount: total,
             status: 'nouveau'
@@ -65,21 +87,21 @@ export default function Cart() {
         });
       }));
 
-      // 3. PRÉPARATION DU MESSAGE WHATSAPP AMÉLIORÉ
-      // On inclut l'URL de l'image pour que WhatsApp puisse générer un aperçu
+      // 3. PRÉPARATION DU MESSAGE WHATSAPP
       const productList = cart.map(item => {
         const imageLink = item.image_url || item.images?.[0] || '';
         return `• *${item.name}*\n` +
                `${item.selectedSize ? `  Taille: ${item.selectedSize}\n` : ''}` +
                `${item.selectedColor ? `  Couleur: ${item.selectedColor}\n` : ''}` +
                `  Qté: ${item.quantity} x ${item.sale_price.toLocaleString()} CFA\n` +
-               `  📷 Photo: ${imageLink}\n`; // Le lien de l'image ici
+               `  📷 Photo: ${imageLink}\n`;
       }).join('\n');
 
       const message = `*NOUVELLE COMMANDE FESTISOLDE* 🛍️\n\n` +
         `👤 *Client :* ${customerInfo.name.toUpperCase()}\n` + 
         `📞 *WhatsApp :* ${customerInfo.phone}\n` +
-        `📍 *Ville :* ${customerInfo.city || 'Non précisée'}\n\n` +
+        `📍 *Ville :* ${customerInfo.city || 'Non précisée'}\n` +
+        `${locationLink ? `🗺️ *Position GPS :* ${locationLink}\n` : ''}\n` + 
         `--------------------------\n` +
         `🛒 *ARTICLES :*\n\n${productList}\n` +
         `--------------------------\n` +
@@ -88,7 +110,6 @@ export default function Cart() {
 
       const whatsappUrl = `https://wa.me/${sellerPhone}?text=${encodeURIComponent(message)}`;
       
-      // 4. Finalisation
       clearCart();
       
       navigate('/confirmation', { 
@@ -136,29 +157,15 @@ export default function Cart() {
               {cart.map((item, index) => (
                 <div key={`${item.id}-${index}`} className="bg-white p-4 rounded-[2rem] flex gap-4 items-center border border-gray-100 shadow-sm transition-all group">
                   <div className="w-20 h-20 md:w-24 md:h-24 bg-[#F9F9F9] rounded-2xl overflow-hidden shrink-0 border border-gray-50">
-                    <img 
-                      src={item.image_url || item.images?.[0]} 
-                      className="w-full h-full object-cover" 
-                      alt={item.name} 
-                    />
+                    <img src={item.image_url || item.images?.[0]} className="w-full h-full object-cover" alt={item.name} />
                   </div>
-
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[11px] md:text-sm font-black uppercase tracking-tight truncate text-gray-900 leading-tight">{item.name}</h3>
-                    
                     <div className="flex flex-wrap gap-2 mt-1">
-                        {item.selectedSize && (
-                            <span className="text-[8px] font-black bg-orange-50 text-orange-600 px-2 py-0.5 rounded-md uppercase">Taille: {item.selectedSize}</span>
-                        )}
-                        {item.selectedColor && (
-                            <span className="text-[8px] font-black bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md uppercase">Couleur: {item.selectedColor}</span>
-                        )}
+                        {item.selectedSize && <span className="text-[8px] font-black bg-orange-50 text-orange-600 px-2 py-0.5 rounded-md uppercase">Taille: {item.selectedSize}</span>}
+                        {item.selectedColor && <span className="text-[8px] font-black bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md uppercase">Couleur: {item.selectedColor}</span>}
                     </div>
-
-                    <p className="font-black text-orange-600 mt-1.5 text-sm italic">
-                      {item.sale_price.toLocaleString()} <span className="text-[9px] not-italic ml-0.5">CFA</span>
-                    </p>
-
+                    <p className="font-black text-orange-600 mt-1.5 text-sm italic">{item.sale_price.toLocaleString()} <span className="text-[9px] not-italic ml-0.5">CFA</span></p>
                     <div className="flex items-center gap-4 mt-2">
                       <div className="flex items-center bg-gray-50 rounded-xl p-0.5 border border-gray-100">
                         <button onClick={() => item.quantity > 1 && addToCart(item, -1)} className="w-8 h-8 flex items-center justify-center hover:text-orange-600 transition-colors"><Minus size={12} /></button>
@@ -167,7 +174,6 @@ export default function Cart() {
                       </div>
                     </div>
                   </div>
-
                   <button onClick={() => removeFromCart(item.id)} className="p-3 text-gray-200 hover:text-red-500 transition-all">
                     <Trash2 size={18} />
                   </button>
@@ -194,36 +200,27 @@ export default function Cart() {
               </div>
 
               {!isOrdering ? (
-                <button 
-                  onClick={() => setIsOrdering(true)}
-                  className="w-full py-5 bg-black text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-orange-600 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 group"
-                >
+                <button onClick={() => setIsOrdering(true)} className="w-full py-5 bg-black text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-orange-600 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 group">
                   Passer à la caisse <ArrowRight size={14} />
                 </button>
               ) : (
                 <div className="space-y-4">
                   <div className="space-y-3">
-                    <input 
-                      required
-                      type="text" 
-                      placeholder="TON NOM COMPLET" 
-                      className="w-full p-4 bg-[#FBFBFB] border border-gray-100 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-orange-600 transition-all"
-                      onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
-                    />
-                    <input 
-                      required
-                      type="tel" 
-                      placeholder="NUMÉRO WHATSAPP" 
-                      className="w-full p-4 bg-[#FBFBFB] border border-gray-100 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-orange-600 transition-all"
-                      onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
-                    />
-                    <input 
-                      type="text" 
-                      placeholder="VILLE & QUARTIER" 
-                      className="w-full p-4 bg-[#FBFBFB] border border-gray-100 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-orange-600 transition-all"
-                      onChange={(e) => setCustomerInfo({...customerInfo, city: e.target.value})}
-                    />
+                    <input required type="text" placeholder="TON NOM COMPLET" className="w-full p-4 bg-[#FBFBFB] border border-gray-100 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-orange-600 transition-all" onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})} />
+                    <input required type="tel" placeholder="NUMÉRO WHATSAPP" className="w-full p-4 bg-[#FBFBFB] border border-gray-100 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-orange-600 transition-all" onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})} />
+                    <input type="text" placeholder="VILLE & QUARTIER" className="w-full p-4 bg-[#FBFBFB] border border-gray-100 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-orange-600 transition-all" onChange={(e) => setCustomerInfo({...customerInfo, city: e.target.value})} />
                   </div>
+
+                  {/* BOUTON GPS */}
+                  <button 
+                    type="button"
+                    onClick={handleGetLocation}
+                    className={`w-full py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest border-2 transition-all flex items-center justify-center gap-2 ${locationLink ? 'bg-green-50 border-green-500 text-green-600' : 'bg-white border-gray-100 text-gray-400 hover:border-orange-600 hover:text-orange-600'}`}
+                  >
+                    <MapPin size={14} />
+                    {locationLink ? "Position enregistrée ✓" : "Ajouter ma position GPS"}
+                  </button>
+
                   <button 
                     disabled={loading}
                     className="w-full py-5 bg-orange-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-lg flex items-center justify-center gap-3 disabled:bg-gray-200"
