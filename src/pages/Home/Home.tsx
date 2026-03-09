@@ -21,12 +21,17 @@ export default function Home() {
 
   async function fetchLatestProducts() {
     setLoading(true);
+    // ✅ MODIFIÉ : On récupère status pour filtrer les boutiques cachées
     const { data } = await supabase
       .from('products')
-      .select('*, stores(name, slug)') // ✅ CORRIGÉ : Ajout de slug ici
+      .select('*, stores(name, slug, status)') 
       .order('created_at', { ascending: false })
-      .limit(8); 
-    setProducts(data || []);
+      .limit(20); // On en prend un peu plus pour compenser les éventuels produits cachés
+    
+    // On ne garde que les produits dont la boutique est 'active' (ou non 'hidden')
+    const visibleProducts = (data || []).filter(p => p.stores?.status !== 'hidden').slice(0, 8);
+    
+    setProducts(visibleProducts);
     setLoading(false);
   }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, ArrowLeft, LayoutGrid } from 'lucide-react';
+import { Search, ArrowLeft } from 'lucide-react';
 
 import Header from './Header';
 import Footer from './Footer';
@@ -22,10 +22,10 @@ export default function Shop() {
 
   async function fetchData() {
     setLoading(true);
-    // --- CORRECTION ICI : Ajout de 'slug' dans la jointure stores ---
+    // On récupère name, slug ET status de la boutique parente
     const { data: prodData, error: prodError } = await supabase
       .from('products')
-      .select('*, stores(name, slug)') // On récupère name ET slug
+      .select('*, stores(name, slug, status)') 
       .order('created_at', { ascending: false });
     
     if (!prodError) {
@@ -42,10 +42,19 @@ export default function Shop() {
     setSearchParams({ category: cat });
   };
 
+  // --- LOGIQUE DE FILTRAGE MISE À JOUR ---
   const filteredProducts = products.filter(product => {
+    // 1. Recherche par nom
     const matchesSearch = product.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // 2. Filtrage par catégorie
     const matchesCategory = categoryFromUrl === "Tous" || product.category === categoryFromUrl;
-    return matchesSearch && matchesCategory;
+    
+    // 3. SÉCURITÉ : On vérifie si la boutique n'est pas masquée par l'admin
+    // Si store.status est 'hidden', on ne garde pas le produit
+    const isStoreVisible = product.stores?.status !== 'hidden';
+
+    return matchesSearch && matchesCategory && isStoreVisible;
   });
 
   return (
@@ -97,12 +106,14 @@ export default function Shop() {
           </div>
         </div>
 
-        {/* --- GRILLE --- */}
+        {/* --- GRILLE DE PRODUITS --- */}
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map(n => (
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
               <div key={n} className="animate-pulse space-y-4">
                 <div className="aspect-[3/4] bg-gray-50 rounded-[1.5rem]" />
+                <div className="h-4 bg-gray-50 rounded w-2/3" />
+                <div className="h-4 bg-gray-50 rounded w-1/3" />
               </div>
             ))}
           </div>
@@ -114,7 +125,8 @@ export default function Shop() {
           </div>
         ) : (
           <div className="py-20 text-center">
-            <h3 className="text-lg font-black uppercase italic text-gray-200">Aucun résultat</h3>
+            <h3 className="text-lg font-black uppercase italic text-gray-200">Aucun produit trouvé</h3>
+            <p className="text-[10px] font-bold text-gray-300 uppercase mt-2 tracking-widest">Essayez un autre filtre ou une autre recherche</p>
           </div>
         )}
       </main>
