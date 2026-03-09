@@ -6,7 +6,7 @@ import { supabase } from './lib/supabaseClient';
 import { 
   LayoutDashboard, Package, LogOut, ExternalLink, ShieldCheck, Wallet, 
   Palette, Settings as SettingsIcon, Menu, X, PlusCircle, Zap, 
-  ChevronDown, Store, ChevronLeft, ChevronRight, BarChart3, Loader2
+  ChevronDown, Store, ChevronLeft, ChevronRight, BarChart3, Loader2, Clock
 } from 'lucide-react';
 
 // --- IMPORT DES PAGES ---
@@ -15,6 +15,7 @@ import Register from './pages/Auth/Register';
 import Dashboard from './pages/Vendor/Dashboard';
 import ManageProducts from './pages/Vendor/ManageProducts';
 import Revenues from './pages/Vendor/Revenues';
+import WithdrawalHistory from './pages/Vendor/WithdrawalHistory'; // <--- Nouvelle page
 import StoreSettings from './pages/Store/StoreSettings';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import PublicStore from './pages/Store/PublicStore';
@@ -27,7 +28,7 @@ import Shop from './pages/Home/components/Shop';
 import RequestBoost from './pages/Vendor/RequestBoost';
 import Analytics from './pages/Vendor/Analytics';
 
-// --- COMPOSANT SCROLL TO TOP (Gestion globale du scroll) ---
+// --- COMPOSANT SCROLL TO TOP ---
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -113,7 +114,6 @@ const VendorHeader = ({ user, storeSlug, onOpenMenu, onSignOut }) => {
   );
 };
 
-// --- COMPOSANT APP PRINCIPAL ---
 function App() {
   const [user, setUser] = useState(null);
   const [storeSlug, setStoreSlug] = useState(""); 
@@ -154,7 +154,8 @@ function App() {
     fetchStoreSlug();
   }, [user]);
 
-  const vendorPaths = ['/dashboard', '/products-manage', '/revenus', '/marketing', '/analytics', '/ma-boutique', '/settings', '/admin'];
+  // Ajout de la nouvelle route dans les paths autorisés
+  const vendorPaths = ['/dashboard', '/products-manage', '/revenus', '/withdrawal-history', '/marketing', '/analytics', '/ma-boutique', '/settings', '/admin'];
   const isVendorArea = vendorPaths.some(path => location.pathname.startsWith(path));
   const showVendorUI = !!(isVendorArea && user);
 
@@ -210,7 +211,7 @@ function App() {
 
   return (
     <div className="flex min-h-screen bg-[#F8F9FB] text-gray-900 antialiased font-sans">
-      <ScrollToTop /> {/* <--- Assure le retour en haut à chaque clic/route */}
+      <ScrollToTop />
       
       {showVendorUI && (
         <aside className={`bg-white hidden md:flex flex-col sticky top-0 h-screen border-r border-gray-100 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'} z-40`}>
@@ -256,7 +257,11 @@ function App() {
             <Route path="/products-manage" element={user ? <ManageProducts /> : <Navigate to="/auth" />} />
             <Route path="/analytics" element={user ? <Analytics /> : <Navigate to="/auth" />} />
             <Route path="/marketing" element={user ? <RequestBoost /> : <Navigate to="/auth" />} />
+            
+            {/* ROUTES REVENUS & HISTORIQUE */}
             <Route path="/revenus" element={user ? <Revenues /> : <Navigate to="/auth" />} />
+            <Route path="/withdrawal-history" element={user ? <WithdrawalHistory /> : <Navigate to="/auth" />} />
+
             <Route path="/ma-boutique" element={user ? <StoreSettings /> : <Navigate to="/auth" />} />
             <Route path="/settings" element={user ? <Settings /> : <Navigate to="/auth" />} />
             <Route path="/admin" element={user && user.id === adminUid ? <AdminDashboard /> : <Navigate to="/dashboard" />} />
@@ -276,7 +281,7 @@ function App() {
               { to: "/marketing", icon: Zap },
               { to: "/revenus", icon: Wallet }
             ].map((item, index) => (
-              <Link key={index} to={item.to} className={`p-2 transition-all ${location.pathname === item.to ? 'text-orange-500 scale-110' : 'text-gray-400'}`}>
+              <Link key={index} to={item.to} className={`p-2 transition-all ${location.pathname === item.to || (item.to === "/revenus" && location.pathname === "/withdrawal-history") ? 'text-orange-500 scale-110' : 'text-gray-400'}`}>
                 <item.icon size={item.special ? 32 : 22} strokeWidth={2.5} className={item.special ? "text-orange-500 drop-shadow-[0_0_15px_rgba(249,115,22,0.8)]" : ""} />
               </Link>
             ))}
