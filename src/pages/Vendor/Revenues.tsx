@@ -16,8 +16,9 @@ export default function Revenues() {
   const [searchTerm, setSearchTerm] = useState('');
   const [updatingId, setUpdatingId] = useState(null);
   
-  // Nouveaux états pour le Retrait
+  // États pour le Retrait
   const [balance, setBalance] = useState(0);
+  const [storeId, setStoreId] = useState(null); // Stockage de l'ID réel de la boutique
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Orange Money');
@@ -51,10 +52,12 @@ export default function Revenues() {
   }, [dateStart, dateEnd, sales]);
 
   async function fetchSalesData() {
+    setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
+    
     if (user) {
-      // 1. Récupérer les infos du store (incluant le solde)
-      const { data: store } = await supabase
+      // 1. Récupérer les infos du store via owner_id
+      const { data: store, error: storeError } = await supabase
         .from('stores')
         .select('id, balance')
         .eq('owner_id', user.id)
@@ -62,8 +65,9 @@ export default function Revenues() {
 
       if (store) {
         setBalance(store.balance || 0);
+        setStoreId(store.id); // On stocke l'ID pour les retraits
 
-        // 2. Récupérer les ventes
+        // 2. Récupérer les ventes de cette boutique
         const { data: salesData } = await supabase
           .from('orders')
           .select('*')
@@ -87,6 +91,7 @@ export default function Revenues() {
     setStats({ total, count: validSales.length, customers: uniqueCustomers, average: averageOrder });
   };
 
+  // --- FONCTION DE RETRAIT MISE À JOUR (AVEC STORE_ID) ---
   const handleWithdrawRequest = async () => {
     const amount = parseFloat(withdrawAmount);
     
@@ -102,16 +107,21 @@ export default function Revenues() {
       alert("⚠️ Veuillez saisir le numéro de réception.");
       return;
     }
+    if (!storeId) {
+      alert("⚠️ Erreur : Boutique non identifiée.");
+      return;
+    }
 
     setIsWithdrawing(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      // 1. Créer la demande
+      // 1. Créer la demande dans la table withdrawal_requests
       const { error: requestError } = await supabase
         .from('withdrawal_requests')
         .insert([{
           vendor_id: user.id,
+          store_id: storeId, // <--- Liaison cruciale avec la boutique
           amount: amount,
           payment_method: paymentMethod,
           payment_details: paymentPhone,
@@ -120,19 +130,31 @@ export default function Revenues() {
 
       if (requestError) throw requestError;
 
-      // 2. Mise à jour locale (On verra le SQL pour automatiser ça après)
-      alert("✅ Demande envoyée ! Votre retrait sera traité sous 24h.");
+      // 2. Déduire le solde via le RPC sécurisé
+      const { error: rpcError } = await supabase.rpc('deduct_balance', {
+        vendor_id: user.id,
+        amount_to_deduct: amount
+      });
+
+      if (rpcError) throw rpcError;
+
+      alert("✅ Demande envoyée ! L'administrateur traitera votre retrait sous peu.");
       setShowWithdrawModal(false);
       setWithdrawAmount('');
       setPaymentPhone('');
-      fetchSalesData(); 
+      
+      // Rafraîchir les données pour voir le nouveau solde
+      fetchSalesData();
+      
     } catch (error) {
-      alert("Erreur: " + error.message);
+      console.error(error);
+      alert("Erreur lors du retrait : " + error.message);
     } finally {
       setIsWithdrawing(false);
     }
   };
 
+  // Fonctions utilitaires (Export, Status Change)
   const exportCSV = () => {
     const data = previewData;
     const headers = ["Date", "Client", "Telephone", "Total (CFA)", "Statut"];
@@ -148,7 +170,7 @@ export default function Revenues() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `export-ventes.csv`;
+    link.download = `rapport-ventes-${new Date().toLocaleDateString()}.csv`;
     link.click();
     setShowExportModal(false);
   };
@@ -158,9 +180,7 @@ export default function Revenues() {
     try {
       const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
       if (error) throw error;
-      const updatedSales = sales.map(sale => sale.id === orderId ? { ...sale, status: newStatus } : sale);
-      setSales(updatedSales);
-      updateStats(updatedSales);
+      fetchSalesData(); 
     } catch (error) {
       alert("Erreur lors de la mise à jour.");
     } finally {
@@ -243,44 +263,9 @@ export default function Revenues() {
         />
       </div>
 
-      {/* LISTE MOBILE */}
-      <div className="md:hidden space-y-4 mb-20">
-        {filteredSales.map((sale) => (
-          <div key={sale.id} className="bg-white p-6 rounded-[2rem] border-2 border-gray-100 shadow-sm space-y-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">
-                  {new Date(sale.created_at).toLocaleDateString('fr-FR')}
-                </p>
-                <h3 className="text-sm font-black uppercase mt-1">{sale.customer_name}</h3>
-                <p className="text-[10px] font-bold text-orange-600 italic">{sale.customer_phone}</p>
-              </div>
-              <button onClick={() => setSelectedOrder(sale)} className="p-3 bg-gray-50 rounded-xl text-gray-400">
-                <FileText size={18} />
-              </button>
-            </div>
-            <div className="flex justify-between items-center pt-4 border-t border-gray-50">
-              <p className="text-lg font-black italic">
-                {sale.total_amount?.toLocaleString()} <span className="text-[10px] not-italic text-gray-300">CFA</span>
-              </p>
-              <select 
-                value={sale.status || 'nouveau'}
-                onChange={(e) => handleStatusChange(sale.id, e.target.value)}
-                className={`px-3 py-2 rounded-lg border-2 text-[9px] font-black uppercase outline-none ${getStatusStyle(sale.status)}`}
-              >
-                <option value="nouveau">Nouveau</option>
-                <option value="en cours">En cours</option>
-                <option value="livré">Livré</option>
-                <option value="annulé">Annulé</option>
-              </select>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* TABLEAU PC */}
-      <div className="hidden md:block bg-white rounded-[2.5rem] border-2 border-gray-100 shadow-sm overflow-hidden">
-        <table className="w-full text-left">
+      {/* LISTE DES VENTES (TABLEAU) */}
+      <div className="bg-white rounded-[2.5rem] border-2 border-gray-100 shadow-sm overflow-hidden overflow-x-auto">
+        <table className="w-full text-left min-w-[600px]">
           <thead>
             <tr className="bg-gray-50/50 border-b-2 border-gray-100">
               <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Commande</th>
@@ -325,9 +310,12 @@ export default function Revenues() {
             ))}
           </tbody>
         </table>
+        {filteredSales.length === 0 && (
+          <div className="p-20 text-center italic text-gray-300 text-[10px] font-bold uppercase tracking-widest">Aucune vente enregistrée</div>
+        )}
       </div>
 
-      {/* --- MODAL DE RETRAIT --- */}
+      {/* MODAL DE RETRAIT */}
       {showWithdrawModal && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 animate-in zoom-in-95 shadow-2xl relative">
@@ -392,16 +380,16 @@ export default function Revenues() {
         </div>
       )}
 
-      {/* --- MODAL EXPORT --- */}
+      {/* MODAL EXPORT */}
       {showExportModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
           <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 md:p-8 border-b flex justify-between items-center bg-gray-50/50">
               <div>
                 <h2 className="text-xl font-black uppercase italic tracking-tighter">Générer un <span className="text-orange-600">Rapport</span></h2>
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">Sélectionnez vos dates pour l'aperçu</p>
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">Exportez vos données de vente</p>
               </div>
-              <button onClick={() => setShowExportModal(false)} className="p-2 hover:bg-white rounded-full shadow-sm text-gray-400 hover:text-black transition-all">
+              <button onClick={() => setShowExportModal(false)} className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-black transition-all">
                 <X size={20} />
               </button>
             </div>
@@ -412,27 +400,23 @@ export default function Revenues() {
                     <Calendar size={12} /> Période
                   </label>
                   <div className="grid grid-cols-2 gap-3 md:block md:space-y-3">
-                    <input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} className="w-full p-3 bg-gray-50 border-2 border-transparent focus:border-orange-500 rounded-2xl text-[10px] font-black outline-none transition-all uppercase" />
-                    <input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} className="w-full p-3 bg-gray-50 border-2 border-transparent focus:border-orange-500 rounded-2xl text-[10px] font-black outline-none transition-all uppercase" />
+                    <input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} className="w-full p-3 bg-gray-50 border-2 border-transparent rounded-2xl text-[10px] font-black outline-none" />
+                    <input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} className="w-full p-3 bg-gray-50 border-2 border-transparent rounded-2xl text-[10px] font-black outline-none" />
                   </div>
                 </div>
-                <div className="pt-2 md:pt-4 space-y-3">
-                   <button onClick={exportCSV} className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-gray-100 hover:border-green-500 transition-all bg-white">
-                    <div className="flex items-center gap-3">
-                      <FileSpreadsheet size={18} className="text-green-600" />
-                      <span className="text-[10px] font-black uppercase">Exporter CSV</span>
-                    </div>
-                  </button>
-                </div>
+                <button onClick={exportCSV} className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-gray-100 hover:border-green-500 transition-all bg-white">
+                  <div className="flex items-center gap-3">
+                    <FileSpreadsheet size={18} className="text-green-600" />
+                    <span className="text-[10px] font-black uppercase">Exporter CSV</span>
+                  </div>
+                </button>
               </div>
-              <div className="p-6 md:p-8 bg-gray-50/50">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-4">Aperçu</label>
-                <div className="bg-white p-6 rounded-3xl border-2 border-gray-100 shadow-sm">
-                  <p className="text-[9px] font-black text-gray-400 uppercase mb-2">Chiffre d'affaires</p>
-                  <p className="text-2xl font-black italic text-orange-600">
-                    {statsPreview.total.toLocaleString()} <span className="text-[10px] not-italic text-gray-300">CFA</span>
-                  </p>
-                </div>
+              <div className="p-6 md:p-8 bg-gray-50/50 flex flex-col justify-center items-center text-center">
+                <p className="text-[9px] font-black text-gray-400 uppercase mb-2">Chiffre d'affaires sur la période</p>
+                <p className="text-3xl font-black italic text-orange-600">
+                  {statsPreview.total.toLocaleString()} <span className="text-[10px] not-italic text-gray-300">CFA</span>
+                </p>
+                <p className="text-[10px] font-bold text-gray-400 mt-2 uppercase">{statsPreview.count} Commandes</p>
               </div>
             </div>
           </div>
@@ -446,6 +430,7 @@ export default function Revenues() {
   );
 }
 
+// Sous-composants
 function StatCard({ label, value, unit, icon, color }) {
   return (
     <div className="bg-white p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border-2 border-gray-100 shadow-sm group hover:-translate-y-1 transition-all">
@@ -483,10 +468,10 @@ function ModalFacture({ order, onClose }) {
               </p>
             </div>
           </div>
-          <div className="mb-6 p-5 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100">
-            <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest mb-1 text-left">Client</p>
-            <p className="text-xs font-black uppercase text-left">{order.customer_name}</p>
-            <p className="text-[10px] font-bold text-gray-500 mt-1 text-left">{order.customer_phone}</p>
+          <div className="mb-6 p-5 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100 text-left">
+            <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest mb-1">Client</p>
+            <p className="text-xs font-black uppercase">{order.customer_name}</p>
+            <p className="text-[10px] font-bold text-gray-500 mt-1">{order.customer_phone}</p>
           </div>
           <div className="space-y-3 mb-8">
             <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest border-b pb-2 text-left">Articles</p>
