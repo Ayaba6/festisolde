@@ -5,7 +5,7 @@ import {
   Wallet, TrendingUp, Users, Download, Search, Calendar, 
   ArrowUpRight, Phone, Loader2, ArrowDown, Package, CheckCircle2,
   RefreshCcw, Clock, Truck, XCircle, FileText, X, Printer, MapPin,
-  FileSpreadsheet, FileDown 
+  FileSpreadsheet, FileDown, Info 
 } from 'lucide-react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { InvoicePDF } from './InvoicePDF';
@@ -32,6 +32,11 @@ export default function Revenues() {
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
   const [previewData, setPreviewData] = useState([]);
+
+  // --- CALCULS DE COMMISSION POUR L'AFFICHAGE ---
+  const requestedAmount = parseFloat(withdrawAmount) || 0;
+  const commission = requestedAmount * 0.10;
+  const netAmount = requestedAmount - commission;
 
   useEffect(() => {
     fetchSalesData();
@@ -91,7 +96,7 @@ export default function Revenues() {
   const handleWithdrawRequest = async () => {
     const amount = parseFloat(withdrawAmount);
     if (!amount || amount < 500) {
-      alert("⚠️ Le montant minimum de retrait est de 500 CFA.");
+      alert("⚠️ Le montant minimum de retrait est de 500 FCFA.");
       return;
     }
     if (amount > balance) {
@@ -153,7 +158,7 @@ export default function Revenues() {
   };
 
   const exportCSV = () => {
-    const headers = ["Date", "Client", "Telephone", "Total (CFA)", "Statut"];
+    const headers = ["Date", "Client", "Telephone", "Total (FCFA)", "Statut"];
     const rows = previewData.map(s => [
       new Date(s.created_at).toLocaleDateString('fr-FR'),
       s.customer_name,
@@ -221,7 +226,7 @@ export default function Revenues() {
         <div className="relative z-10 text-center md:text-left">
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-2">Solde Retirable</p>
           <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter">
-            {balance.toLocaleString()} <span className="text-sm not-italic text-orange-600 uppercase ml-1">CFA</span>
+            {balance.toLocaleString()} <span className="text-sm not-italic text-orange-600 uppercase ml-1">FCFA</span>
           </h2>
         </div>
         <button 
@@ -232,11 +237,11 @@ export default function Revenues() {
         </button>
       </div>
 
-      {/* STATS - ALIGNEMENT ICONE/TITRE MODIFIÉ ICI */}
+      {/* STATS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-12">
-        <StatCard label="CA Global" value={stats.total.toLocaleString()} unit="CFA" icon={<Wallet size={18}/>} color="bg-orange-500" />
+        <StatCard label="CA Global" value={stats.total.toLocaleString()} unit="FCFA" icon={<Wallet size={18}/>} color="bg-orange-500" />
         <StatCard label="Ventes" value={stats.count} unit="Cmds" icon={<TrendingUp size={18}/>} color="bg-green-500" />
-        <StatCard label="Panier" value={Math.round(stats.average).toLocaleString()} unit="CFA" icon={<ArrowUpRight size={18}/>} color="bg-blue-500" />
+        <StatCard label="Panier" value={Math.round(stats.average).toLocaleString()} unit="FCFA" icon={<ArrowUpRight size={18}/>} color="bg-blue-500" />
         <StatCard label="Clients" value={stats.customers} unit="Unique" icon={<Users size={18}/>} color="bg-purple-500" />
       </div>
 
@@ -251,7 +256,7 @@ export default function Revenues() {
         />
       </div>
 
-      {/* --- VUE LISTE (MOBILE CARDS) --- */}
+      {/* VUE LISTE (MOBILE) */}
       <div className="md:hidden space-y-4">
         {filteredSales.map((sale) => (
           <div key={sale.id} className="bg-white p-6 rounded-[2rem] border-2 border-gray-100 shadow-sm relative overflow-hidden">
@@ -267,11 +272,10 @@ export default function Revenues() {
               <div className="text-right">
                 <p className="text-lg font-black italic tracking-tighter">
                   {sale.total_amount?.toLocaleString()} 
-                  <span className="text-[9px] not-italic text-gray-400 ml-1 uppercase">CFA</span>
+                  <span className="text-[9px] not-italic text-gray-400 ml-1 uppercase">FCFA</span>
                 </p>
               </div>
             </div>
-
             <div className="flex items-center gap-3">
               <div className="flex-1">
                 <select 
@@ -285,10 +289,7 @@ export default function Revenues() {
                   <option value="annulé">Annulé ❌</option>
                 </select>
               </div>
-              <button 
-                onClick={() => setSelectedOrder(sale)} 
-                className="p-3 bg-black text-white rounded-xl hover:bg-orange-600 transition-all"
-              >
+              <button onClick={() => setSelectedOrder(sale)} className="p-3 bg-black text-white rounded-xl hover:bg-orange-600 transition-all">
                 <FileText size={20} />
               </button>
             </div>
@@ -296,7 +297,7 @@ export default function Revenues() {
         ))}
       </div>
 
-      {/* --- VUE TABLEAU (DESKTOP) --- */}
+      {/* VUE TABLEAU (DESKTOP) */}
       <div className="hidden md:block bg-white rounded-[2.5rem] border-2 border-gray-100 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-left min-w-[600px]">
           <thead>
@@ -320,7 +321,7 @@ export default function Revenues() {
                   <p className="text-[10px] font-bold text-orange-600 italic">{sale.customer_phone}</p>
                 </td>
                 <td className="px-8 py-6 font-black text-sm italic">
-                  {sale.total_amount?.toLocaleString()} <span className="text-[9px] not-italic text-gray-300">CFA</span>
+                  {sale.total_amount?.toLocaleString()} <span className="text-[9px] not-italic text-gray-300">FCFA</span>
                 </td>
                 <td className="px-8 py-6">
                   <select 
@@ -345,7 +346,7 @@ export default function Revenues() {
         </table>
       </div>
 
-      {/* MODALS */}
+      {/* MODAL RETRAIT (MIS À JOUR AVEC COMMISSION) */}
       {showWithdrawModal && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 animate-in zoom-in-95 shadow-2xl relative">
@@ -357,7 +358,15 @@ export default function Revenues() {
             <div className="space-y-4">
               <div className="bg-gray-50 p-5 rounded-[1.8rem] border border-gray-100 mb-2 text-center">
                 <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Montant Disponible</p>
-                <p className="text-3xl font-black italic text-gray-900">{balance.toLocaleString()} CFA</p>
+                <p className="text-3xl font-black italic text-gray-900">{balance.toLocaleString()} FCFA</p>
+              </div>
+
+              {/* BANDEAU INFO COMMISSION */}
+              <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl flex items-start gap-3">
+                <Info size={16} className="text-blue-600 shrink-0 mt-0.5" />
+                <p className="text-[10px] font-bold text-blue-800 leading-tight uppercase">
+                  Des frais de maintenance de <span className="font-black">10%</span> seront déduits lors de la validation.
+                </p>
               </div>
 
               <div>
@@ -366,8 +375,17 @@ export default function Revenues() {
                   type="number" 
                   className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-orange-500 rounded-2xl text-sm font-black outline-none transition-all shadow-inner"
                   value={withdrawAmount}
+                  placeholder="Ex: 10000"
                   onChange={(e) => setWithdrawAmount(e.target.value)}
                 />
+                
+                {/* CALCULATEUR EN DIRECT */}
+                {requestedAmount > 0 && (
+                  <div className="mt-2 px-2 flex justify-between items-center animate-in fade-in slide-in-from-top-1">
+                    <span className="text-[9px] font-black text-gray-400 uppercase">Net à recevoir :</span>
+                    <span className="text-sm font-black text-green-600 italic">{netAmount.toLocaleString()} FCFA</span>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -379,6 +397,7 @@ export default function Revenues() {
                 >
                   <option>Orange Money</option>
                   <option>Moov Money</option>
+                  <option>Wave</option>
                   <option>CASH (Sur place)</option>
                 </select>
               </div>
@@ -389,13 +408,14 @@ export default function Revenues() {
                   type="tel" 
                   className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-orange-500 rounded-2xl text-sm font-black outline-none transition-all shadow-inner"
                   value={paymentPhone}
+                  placeholder="07 00 00 00 00"
                   onChange={(e) => setPaymentPhone(e.target.value)}
                 />
               </div>
 
               <div className="pt-4">
                 <button 
-                  disabled={isWithdrawing}
+                  disabled={isWithdrawing || !withdrawAmount || requestedAmount < 500}
                   onClick={handleWithdrawRequest}
                   className="w-full py-5 bg-black text-white rounded-2xl text-[10px] font-black uppercase hover:bg-orange-600 transition-all disabled:bg-gray-200 flex items-center justify-center gap-2"
                 >
@@ -408,6 +428,7 @@ export default function Revenues() {
         </div>
       )}
 
+      {/* EXPORT MODAL */}
       {showExportModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
            <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
@@ -445,11 +466,10 @@ export default function Revenues() {
   );
 }
 
-// COMPOSANT STATCARD MIS À JOUR (ALIGNE TITRE ET ICONE)
+// COMPOSANT STATCARD
 function StatCard({ label, value, unit, icon, color }) {
   return (
     <div className="bg-white p-4 md:p-6 rounded-[2rem] border-2 border-gray-100 shadow-sm group hover:-translate-y-1 transition-all">
-      {/* Conteneur Flex pour aligner icône et titre */}
       <div className="flex items-center gap-3 mb-4">
         <div className={`w-8 h-8 md:w-10 md:h-10 ${color} text-white rounded-xl flex items-center justify-center shadow-lg shrink-0`}>
           {icon}
@@ -458,8 +478,6 @@ function StatCard({ label, value, unit, icon, color }) {
           {label}
         </p>
       </div>
-      
-      {/* Valeur numérique en dessous */}
       <div className="flex items-baseline gap-1">
         <span className="text-lg md:text-xl font-black text-gray-900 italic uppercase tracking-tighter">
           {value}
@@ -472,6 +490,7 @@ function StatCard({ label, value, unit, icon, color }) {
   );
 }
 
+// MODAL FACTURE
 function ModalFacture({ order, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -504,7 +523,7 @@ function ModalFacture({ order, onClose }) {
           </div>
           <div className="pt-6 border-t-2 border-gray-100 flex justify-between items-center">
             <span className="text-xs font-black uppercase tracking-widest">Total Payé</span>
-            <span className="text-2xl font-black italic text-gray-900">{order.total_amount?.toLocaleString()} <span className="text-xs not-italic text-gray-400 ml-1">CFA</span></span>
+            <span className="text-2xl font-black italic text-gray-900">{order.total_amount?.toLocaleString()} <span className="text-xs not-italic text-gray-400 ml-1">FCFA</span></span>
           </div>
         </div>
         <div className="p-6 bg-gray-50 flex flex-col xs:flex-row gap-3">

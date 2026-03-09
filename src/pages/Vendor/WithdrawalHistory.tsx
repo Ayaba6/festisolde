@@ -86,7 +86,7 @@ export default function WithdrawalHistory() {
                   <div>
                     <div className="flex items-baseline gap-2">
                       <p className="text-2xl font-black italic text-gray-900">{w.amount?.toLocaleString()}</p>
-                      <p className="text-[10px] font-black text-orange-600 uppercase">CFA</p>
+                      <p className="text-[10px] font-black text-orange-600 uppercase">FCFA</p>
                     </div>
                     <p className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-2 mt-1">
                       <Calendar size={12} /> {new Date(w.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
