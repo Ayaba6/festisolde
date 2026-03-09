@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { 
   ArrowLeft, Clock, CheckCircle2, XCircle, 
-  Wallet, Calendar, CreditCard, Loader2 
+  Wallet, Calendar, CreditCard, Loader2, MessageSquareWarning, Info
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,7 +20,6 @@ export default function WithdrawalHistory() {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
-      // Récupérer d'abord le store_id
       const { data: store } = await supabase
         .from('stores')
         .select('id')
@@ -39,6 +38,14 @@ export default function WithdrawalHistory() {
     }
     setLoading(false);
   }
+
+  // FONCTION DE RÉCLAMATION (WhatsApp)
+  const handleClaim = (w) => {
+    const date = new Date(w.created_at).toLocaleDateString('fr-FR');
+    const message = `Bonjour, je souhaite faire une réclamation pour mon retrait du ${date}. \nMontant: ${w.amount} CFA \nID: #${w.id.slice(0, 8)} \nStatut: ${w.status}`;
+    const whatsappUrl = `https://wa.me/225XXXXXXXX?text=${encodeURIComponent(message)}`; // Remplace par ton numéro
+    window.open(whatsappUrl, '_blank');
+  };
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -59,6 +66,7 @@ export default function WithdrawalHistory() {
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-8 font-sans antialiased text-gray-900 pb-20">
+      
       {/* HEADER NAVIGATION */}
       <div className="flex items-center gap-4 mb-10">
         <button 
@@ -68,53 +76,74 @@ export default function WithdrawalHistory() {
           <ArrowLeft size={20} />
         </button>
         <div>
-          <h1 className="text-2xl font-black text-gray-900 uppercase italic tracking-tighter leading-none">Historique des <span className="text-orange-600">Retraits</span></h1>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Suivi de vos transactions</p>
+          <h1 className="text-2xl font-black text-gray-900 uppercase italic tracking-tighter leading-none">Suivi des <span className="text-orange-600">Retraits</span></h1>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Transparence totale sur vos fonds</p>
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         {withdrawals.length > 0 ? (
-          withdrawals.map((w) => (
-            <div key={w.id} className="bg-white border-2 border-gray-100 rounded-[2rem] p-6 shadow-sm hover:border-orange-500/20 transition-all group">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          withdrawals.map((w) => {
+            const commission = w.amount * 0.10;
+            const netAmount = w.amount - commission;
+
+            return (
+              <div key={w.id} className="bg-white border-2 border-gray-100 rounded-[2.5rem] p-6 md:p-8 shadow-sm hover:shadow-xl hover:border-orange-500/10 transition-all group">
                 
-                <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 bg-gray-900 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                    <Wallet className="text-white" size={24} />
+                {/* Ligne 1: Montant et Statut */}
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-600/20 text-white">
+                      <Wallet size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter italic">Demande du {new Date(w.created_at).toLocaleDateString('fr-FR')}</p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-black italic tracking-tighter">{w.amount?.toLocaleString()}</span>
+                        <span className="text-[10px] font-black text-gray-400">CFA</span>
+                      </div>
+                    </div>
+                  </div>
+                  {getStatusBadge(w.status)}
+                </div>
+
+                {/* Ligne 2: Détails financiers (Transparence) */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-gray-50 rounded-[1.8rem] mb-6 border border-gray-100">
+                  <div>
+                    <p className="text-[8px] font-black text-gray-400 uppercase mb-1">Brut demandé</p>
+                    <p className="text-[11px] font-bold">{w.amount?.toLocaleString()} F</p>
                   </div>
                   <div>
-                    <div className="flex items-baseline gap-2">
-                      <p className="text-2xl font-black italic text-gray-900">{w.amount?.toLocaleString()}</p>
-                      <p className="text-[10px] font-black text-orange-600 uppercase">FCFA</p>
-                    </div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-2 mt-1">
-                      <Calendar size={12} /> {new Date(w.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </p>
+                    <p className="text-[8px] font-black text-gray-400 uppercase mb-1">Frais plateforme (10%)</p>
+                    <p className="text-[11px] font-bold text-red-500">-{commission.toLocaleString()} F</p>
+                  </div>
+                  <div>
+                    <p className="text-[8px] font-black text-gray-400 uppercase mb-1">Net à percevoir</p>
+                    <p className="text-[11px] font-extrabold text-green-600 underline decoration-2">{netAmount.toLocaleString()} F</p>
+                  </div>
+                  <div>
+                    <p className="text-[8px] font-black text-gray-400 uppercase mb-1">Méthode</p>
+                    <p className="text-[11px] font-bold uppercase truncate">{w.payment_method}</p>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4 border-t md:border-t-0 pt-4 md:pt-0">
-                  <div className="bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 text-center min-w-[120px]">
-                    <p className="text-[8px] font-black text-gray-400 uppercase mb-1">Méthode</p>
-                    <p className="text-[10px] font-black uppercase flex items-center justify-center gap-2">
-                      <CreditCard size={12} className="text-orange-600" /> {w.payment_method}
-                    </p>
+                {/* Ligne 3: Actions et Réclamation */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <Info size={14} />
+                    <p className="text-[9px] font-bold uppercase tracking-tight">Envoyé vers : <span className="text-gray-900">{w.payment_details}</span></p>
                   </div>
                   
-                  <div className="bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 text-center min-w-[120px]">
-                    <p className="text-[8px] font-black text-gray-400 uppercase mb-1">Réception</p>
-                    <p className="text-[10px] font-black">{w.payment_details}</p>
-                  </div>
-
-                  <div className="ml-auto md:ml-0">
-                    {getStatusBadge(w.status)}
-                  </div>
+                  <button 
+                    onClick={() => handleClaim(w)}
+                    className="w-full sm:w-auto px-6 py-3 bg-white border-2 border-gray-100 text-gray-400 hover:text-red-600 hover:border-red-100 hover:bg-red-50 rounded-xl text-[9px] font-black uppercase flex items-center justify-center gap-2 transition-all"
+                  >
+                    <MessageSquareWarning size={14} /> Un problème ? Réclamer
+                  </button>
                 </div>
-
               </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           <div className="bg-gray-50 border-2 border-dashed border-gray-100 py-20 rounded-[3rem] text-center">
             <p className="text-[11px] font-black uppercase text-gray-300 italic tracking-[0.2em]">Aucun retrait enregistré pour le moment</p>
