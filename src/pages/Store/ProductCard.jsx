@@ -57,7 +57,8 @@ export const ProductCard = ({ product }) => {
         {renderMedia()}
         
         {/* --- BADGE BOUTIQUE INTELLIGENT --- */}
-        <div className="absolute bottom-3 left-3 z-[100]">
+        {/* z-20 pour passer SOUS le Header (z-50) au scroll */}
+        <div className="absolute bottom-3 left-3 z-20">
           {storeSlug ? (
             !isAlreadyInStore && (
               <Link 
@@ -78,7 +79,7 @@ export const ProductCard = ({ product }) => {
           )}
         </div>
 
-        {/* Badge Promo */}
+        {/* Badge Promo - z-30 pour rester au dessus du badge boutique mais sous le header */}
         {hasPromo && (
           <div className="absolute top-3 left-3 bg-orange-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg italic z-30">
             -{Math.round((discount / product.price) * 100)}%
@@ -104,12 +105,10 @@ export const ProductCard = ({ product }) => {
         
         {/* --- SECTION PRIX --- */}
         <div className="flex items-center flex-wrap gap-2 pt-1">
-          {/* Prix de vente (Promo ou Normal) */}
           <span className="text-sm font-black italic text-orange-600">
             {(product.sale_price || product.price).toLocaleString()} <span className="text-[10px] not-italic">CFA</span>
           </span>
 
-          {/* Prix barré (uniquement si promo) */}
           {hasPromo && (
             <span className="text-[10px] font-bold text-gray-300 line-through decoration-gray-400">
               {product.price.toLocaleString()} CFA
