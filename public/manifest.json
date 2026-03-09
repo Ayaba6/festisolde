@@ -23,8 +23,8 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#e11d48",
-  "background_color": "#ffffff",
+  "theme_color": "#0F1115", 
+  "background_color": "#0F1115",
   "orientation": "portrait",
   "scope": "/",
   "categories": ["shopping", "business"]
