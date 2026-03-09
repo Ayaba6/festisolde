@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabaseClient';
 
+// --- IMPORT DU SPLASHSCREEN ---
+import SplashScreen from './SplashScreen'; 
+
 // --- IMPORT DES ICÔNES ---
 import { 
   LayoutDashboard, Package, LogOut, ExternalLink, ShieldCheck, Wallet, 
@@ -29,7 +32,7 @@ import RequestBoost from './pages/Vendor/RequestBoost';
 import Analytics from './pages/Vendor/Analytics';
 
 // --- NOUVELLES PAGES ---
-import Grossistes from './pages/Home/components/Grossistes'; // Assure-toi que le chemin est correct
+import Grossistes from './pages/Home/components/Grossistes';
 import Liquidation from './pages/Home/components/Liquidation'; 
 import Aide from './pages/Home/components/Aide';
 
@@ -161,9 +164,10 @@ function App() {
   const isVendorArea = vendorPaths.some(path => location.pathname.startsWith(path));
   const showVendorUI = !!(isVendorArea && user);
 
+  // Loader de session discret (le SplashScreen prendra le dessus au premier chargement)
   if (loading) return (
-    <div className="h-screen flex items-center justify-center bg-[#F8F9FB]">
-      <Loader2 className="animate-spin text-orange-600" size={32} />
+    <div className="h-screen flex items-center justify-center bg-black">
+      <Loader2 className="animate-spin text-brand-primary" size={24} />
     </div>
   );
 
@@ -215,6 +219,9 @@ function App() {
     <div className="flex min-h-screen bg-[#F8F9FB] text-gray-900 antialiased font-sans">
       <ScrollToTop />
       
+      {/* --- SPLASHSCREEN ACTIVÉ --- */}
+      <SplashScreen />
+
       {showVendorUI && (
         <aside className={`bg-white hidden md:flex flex-col sticky top-0 h-screen border-r border-gray-100 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'} z-40`}>
           <div className={`p-8 flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
@@ -246,7 +253,6 @@ function App() {
         
         <main className={`flex-1 ${showVendorUI ? 'p-4 md:p-10 pb-32' : ''}`}>
           <Routes>
-            {/* ROUTES PUBLIQUES PRIORITAIRES */}
             <Route path="/" element={<Home />} />
             <Route path="/products" element={<Shop />} /> 
             <Route path="/grossistes" element={<Grossistes />} />
@@ -256,11 +262,9 @@ function App() {
             <Route path="/panier" element={<Cart />} />
             <Route path="/confirmation" element={<OrderSuccess />} />
             
-            {/* AUTH */}
             <Route path="/auth" element={!user ? <Auth /> : (user.id === adminUid ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />)} />
             <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" replace />} />
             
-            {/* VENDOR DASHBOARD */}
             <Route path="/dashboard" element={user ? (user.id === adminUid ? <Navigate to="/admin" replace /> : <Dashboard />) : <Navigate to="/auth" />} />
             <Route path="/products-manage" element={user ? <ManageProducts /> : <Navigate to="/auth" />} />
             <Route path="/analytics" element={user ? <Analytics /> : <Navigate to="/auth" />} />
@@ -271,7 +275,6 @@ function App() {
             <Route path="/settings" element={user ? <Settings /> : <Navigate to="/auth" />} />
             <Route path="/admin" element={user && user.id === adminUid ? <AdminDashboard /> : <Navigate to="/dashboard" />} />
 
-            {/* ROUTES BOUTIQUES */}
             <Route path="/boutique/:storeSlug" element={<PublicStore />} />
             <Route path="/:storeSlug" element={<PublicStore />} />
             
