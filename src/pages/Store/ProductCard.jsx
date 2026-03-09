@@ -4,17 +4,14 @@ import { Plus, Store } from 'lucide-react';
 
 export const ProductCard = ({ product }) => {
   const navigate = useNavigate();
-  const location = useLocation(); // Pour savoir sur quelle page on est
+  const location = useLocation();
 
   const discount = (product.price || 0) - (product.sale_price || 0);
   const hasPromo = product.sale_price < product.price && discount > 0;
 
-  // Récupération des données boutique
   const storeName = product.stores?.name || "Boutique Officielle";
   const storeSlug = product.stores?.slug || ""; 
 
-  // Vérifie si on est déjà sur la page de cette boutique
-  // On compare le chemin actuel (/ma-boutique) avec le slug (ma-boutique)
   const isAlreadyInStore = location.pathname.includes(storeSlug) && storeSlug !== "";
 
   const getImages = () => {
@@ -62,7 +59,6 @@ export const ProductCard = ({ product }) => {
         {/* --- BADGE BOUTIQUE INTELLIGENT --- */}
         <div className="absolute bottom-3 left-3 z-[100]">
           {storeSlug ? (
-            // On ne l'affiche QUE si on n'est pas déjà dans la boutique
             !isAlreadyInStore && (
               <Link 
                 to={`/${storeSlug}`}
@@ -76,7 +72,6 @@ export const ProductCard = ({ product }) => {
               </Link>
             )
           ) : (
-            /* Alerte débug si les données sont absentes (Home/Shop) */
             <div className="bg-red-500 text-white text-[7px] px-2 py-1 rounded-full uppercase font-black animate-pulse">
                Lien Store Manquant
             </div>
@@ -90,7 +85,7 @@ export const ProductCard = ({ product }) => {
           </div>
         )}
 
-        {/* Overlay Noir (ignore les clics pour laisser passer au badge) */}
+        {/* Overlay Noir */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-500 flex items-center justify-center z-10 pointer-events-none">
           <div className="bg-white text-orange-600 p-2.5 rounded-full shadow-2xl scale-0 group-hover:scale-100 transition-transform duration-300 border border-gray-100">
             <Plus size={20} strokeWidth={3} />
@@ -106,10 +101,20 @@ export const ProductCard = ({ product }) => {
         <p className="text-[10px] text-gray-400 italic line-clamp-1 font-medium">
           {product.description || "Édition limitée"}
         </p>
-        <div className="flex items-center gap-2 pt-1">
+        
+        {/* --- SECTION PRIX --- */}
+        <div className="flex items-center flex-wrap gap-2 pt-1">
+          {/* Prix de vente (Promo ou Normal) */}
           <span className="text-sm font-black italic text-orange-600">
             {(product.sale_price || product.price).toLocaleString()} <span className="text-[10px] not-italic">CFA</span>
           </span>
+
+          {/* Prix barré (uniquement si promo) */}
+          {hasPromo && (
+            <span className="text-[10px] font-bold text-gray-300 line-through decoration-gray-400">
+              {product.price.toLocaleString()} CFA
+            </span>
+          )}
         </div>
       </div>
     </div>
