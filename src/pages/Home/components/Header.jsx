@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { 
   Search, 
@@ -14,14 +14,15 @@ import {
   ChevronDown,
   X,
   Tag,
-  Users // Icône pour les visiteurs
+  Users 
 } from 'lucide-react';
 
 export default function Header({ searchQuery, setSearchQuery }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [dbCategories, setDbCategories] = useState([]);
-  const [globalViews, setGlobalViews] = useState(0); // État pour les vues
+  const [globalViews, setGlobalViews] = useState(0);
   const navigate = useNavigate();
+  const location = useLocation(); // Pour détecter la page active
 
   useEffect(() => {
     // 1. Récupérer les catégories
@@ -37,20 +38,19 @@ export default function Header({ searchQuery, setSearchQuery }) {
       }
     }
 
-    // 2. Récupérer le total des vues (Visiteurs)
+    // 2. Récupérer le total des vues
     async function fetchGlobalViews() {
       const { data } = await supabase.from('products').select('views');
       if (data) {
         const total = data.reduce((acc, curr) => acc + (curr.views || 0), 0);
-        // On peut ajouter un petit bonus de base (ex: +1200) pour le lancement
-        setGlobalViews(total); 
+        // Petit bonus pour le compteur visuel
+        setGlobalViews(total + 1250); 
       }
     }
 
     fetchCategories();
     fetchGlobalViews();
 
-    // Optionnel: rafraîchir le compteur toutes les minutes
     const interval = setInterval(fetchGlobalViews, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -71,6 +71,13 @@ export default function Header({ searchQuery, setSearchQuery }) {
     setIsMenuOpen(false);
     navigate(`/products?category=${encodeURIComponent(categoryName)}`);
   };
+
+  // Liste des liens de navigation
+  const navLinks = [
+    { name: 'Grossistes', path: '/grossistes' },
+    { name: 'Liquidation', path: '/liquidation' },
+    { name: 'Aide', path: '/aide' },
+  ];
 
   return (
     <header className="bg-white sticky top-0 z-50 shadow-sm font-sans">
@@ -97,10 +104,18 @@ export default function Header({ searchQuery, setSearchQuery }) {
             </span>
           </div>
 
-          {['Grossistes', 'Déstockage', 'Aide'].map((item) => (
-            <span key={item} className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] hover:text-orange-500 cursor-pointer transition-colors">
-              {item}
-            </span>
+          {navLinks.map((link) => (
+            <Link 
+              key={link.name} 
+              to={link.path}
+              className={`text-[10px] font-bold uppercase tracking-[0.2em] transition-colors ${
+                location.pathname === link.path 
+                ? 'text-orange-600' 
+                : 'text-gray-400 hover:text-orange-500'
+              }`}
+            >
+              {link.name}
+            </Link>
           ))}
         </nav>
 
@@ -156,7 +171,10 @@ export default function Header({ searchQuery, setSearchQuery }) {
             )}
           </div>
 
-          <div className="flex-1 flex w-full bg-white relative">
+          <form 
+            className="flex-1 flex w-full bg-white relative"
+            onSubmit={(e) => { e.preventDefault(); navigate(`/products?search=${searchQuery}`); }}
+          >
             <input 
               type="text" 
               placeholder="Chercher un arrivage..."
@@ -164,17 +182,17 @@ export default function Header({ searchQuery, setSearchQuery }) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <button className="bg-[#FF9F00] hover:bg-black text-white px-8 py-3.5 flex items-center gap-3 transition-all duration-300">
+            <button type="submit" className="bg-[#FF9F00] hover:bg-black text-white px-8 py-3.5 flex items-center gap-3 transition-all duration-300">
               <Search size={16} />
               <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-[0.2em]">Rechercher</span>
             </button>
-          </div>
+          </form>
         </div>
       </div>
 
       {/* --- QUICK LINKS : Catégories du bas --- */}
       <div className="bg-white border-b border-gray-50 hidden md:block overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center gap-8 overflow-x-auto">
+        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center gap-8 overflow-x-auto no-scrollbar">
           {dbCategories.slice(0, 10).map((catName, index) => {
             const style = getCategoryStyle(catName);
             return (

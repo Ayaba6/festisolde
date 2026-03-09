@@ -28,6 +28,11 @@ import Shop from './pages/Home/components/Shop';
 import RequestBoost from './pages/Vendor/RequestBoost';
 import Analytics from './pages/Vendor/Analytics';
 
+// --- NOUVELLES PAGES ---
+import Grossistes from './pages/Home/components/Grossistes'; // Assure-toi que le chemin est correct
+import Liquidation from './pages/Home/components/Liquidation'; 
+import Aide from './pages/Home/components/Aide';
+
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -244,6 +249,9 @@ function App() {
             {/* ROUTES PUBLIQUES PRIORITAIRES */}
             <Route path="/" element={<Home />} />
             <Route path="/products" element={<Shop />} /> 
+            <Route path="/grossistes" element={<Grossistes />} />
+            <Route path="/liquidation" element={<Liquidation />} />
+            <Route path="/aide" element={<Aide />} />
             <Route path="/produit/:productId" element={<ProductDetails />} />
             <Route path="/panier" element={<Cart />} />
             <Route path="/confirmation" element={<OrderSuccess />} />
@@ -263,7 +271,7 @@ function App() {
             <Route path="/settings" element={user ? <Settings /> : <Navigate to="/auth" />} />
             <Route path="/admin" element={user && user.id === adminUid ? <AdminDashboard /> : <Navigate to="/dashboard" />} />
 
-            {/* ROUTES BOUTIQUES (En bas pour ne pas bloquer les autres) */}
+            {/* ROUTES BOUTIQUES */}
             <Route path="/boutique/:storeSlug" element={<PublicStore />} />
             <Route path="/:storeSlug" element={<PublicStore />} />
             
