@@ -22,15 +22,18 @@ export default function Shop() {
 
   async function fetchData() {
     setLoading(true);
+    // --- CORRECTION ICI : Ajout de 'slug' dans la jointure stores ---
     const { data: prodData, error: prodError } = await supabase
       .from('products')
-      .select('*, stores(name)')
+      .select('*, stores(name, slug)') // On récupère name ET slug
       .order('created_at', { ascending: false });
     
     if (!prodError) {
       setProducts(prodData);
       const uniqueCats = ["Tous", ...new Set(prodData.map(p => p.category).filter(Boolean))];
       setCategories(uniqueCats);
+    } else {
+      console.error("Erreur de chargement:", prodError);
     }
     setLoading(false);
   }
@@ -40,7 +43,7 @@ export default function Shop() {
   };
 
   const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = product.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = categoryFromUrl === "Tous" || product.category === categoryFromUrl;
     return matchesSearch && matchesCategory;
   });
@@ -51,7 +54,7 @@ export default function Shop() {
 
       <main className="max-w-7xl mx-auto px-6 md:px-8 py-10">
         
-        {/* --- EN-TÊTE RÉDUIT --- */}
+        {/* --- EN-TÊTE --- */}
         <div className="mb-8">
           <Link to="/" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-orange-600 mb-4 transition-colors group">
             <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform"/> Accueil
@@ -64,9 +67,8 @@ export default function Shop() {
           </p>
         </div>
 
-        {/* --- BARRE DE FILTRES PLUS COMPACTE --- */}
+        {/* --- FILTRES --- */}
         <div className="flex flex-col lg:flex-row gap-6 mb-10 items-start lg:items-center justify-between border-y border-gray-50 py-6">
-          
           <div className="flex flex-wrap gap-2">
             {categories.map((cat) => (
               <button
@@ -95,7 +97,7 @@ export default function Shop() {
           </div>
         </div>
 
-        {/* --- GRILLE DE PRODUITS --- */}
+        {/* --- GRILLE --- */}
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map(n => (

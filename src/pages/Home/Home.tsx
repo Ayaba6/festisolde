@@ -23,7 +23,7 @@ export default function Home() {
     setLoading(true);
     const { data } = await supabase
       .from('products')
-      .select('*, stores(name)')
+      .select('*, stores(name, slug)') // ✅ CORRIGÉ : Ajout de slug ici
       .order('created_at', { ascending: false })
       .limit(8); 
     setProducts(data || []);
@@ -85,7 +85,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* BOUTON REDIRECTION AFFINÉ (Version Mobile-friendly) */}
+        {/* BOUTON REDIRECTION */}
         <div className="mt-16 md:mt-24 flex justify-center">
           <Link 
             to="/products"
@@ -97,7 +97,7 @@ export default function Home() {
         </div>
       </main>
 
-      {/* 4. Section Partenaires (Marquee) */}
+      {/* 4. Section Partenaires */}
       <PartnersMarquee />
 
       {/* 5. Footer */}

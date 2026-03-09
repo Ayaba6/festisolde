@@ -15,7 +15,7 @@ import Register from './pages/Auth/Register';
 import Dashboard from './pages/Vendor/Dashboard';
 import ManageProducts from './pages/Vendor/ManageProducts';
 import Revenues from './pages/Vendor/Revenues';
-import WithdrawalHistory from './pages/Vendor/WithdrawalHistory'; // <--- Nouvelle page
+import WithdrawalHistory from './pages/Vendor/WithdrawalHistory';
 import StoreSettings from './pages/Store/StoreSettings';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import PublicStore from './pages/Store/PublicStore';
@@ -28,7 +28,6 @@ import Shop from './pages/Home/components/Shop';
 import RequestBoost from './pages/Vendor/RequestBoost';
 import Analytics from './pages/Vendor/Analytics';
 
-// --- COMPOSANT SCROLL TO TOP ---
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -37,7 +36,6 @@ const ScrollToTop = () => {
   return null;
 };
 
-// --- COMPOSANT HEADER VENDEUR ---
 const VendorHeader = ({ user, storeSlug, onOpenMenu, onSignOut }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -88,21 +86,21 @@ const VendorHeader = ({ user, storeSlug, onOpenMenu, onSignOut }) => {
           </button>
 
           {isProfileOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 animate-in fade-in zoom-in duration-200 z-50">
+            <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in duration-200">
               <div className="px-4 py-3 border-b border-gray-50 mb-1">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Compte</p>
                 <p className="text-xs font-bold truncate text-gray-700">{user?.email}</p>
               </div>
-              <Link to="/settings" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-gray-600 hover:bg-orange-50 hover:text-orange-600">
+              <Link to="/settings" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
                 <SettingsIcon size={16} /> RÉGLAGES
               </Link>
-              <Link to="/ma-boutique" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-gray-600 hover:bg-orange-50 hover:text-orange-600">
+              <Link to="/ma-boutique" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
                 <Palette size={16} /> DESIGN BOUTIQUE
               </Link>
               <div className="h-px bg-gray-50 my-1" />
               <button 
                 onClick={() => { setIsProfileOpen(false); onSignOut(); }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-red-500 hover:bg-red-50"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-red-500 hover:bg-red-50 transition-colors"
               >
                 <LogOut size={16} /> DÉCONNEXION
               </button>
@@ -154,7 +152,6 @@ function App() {
     fetchStoreSlug();
   }, [user]);
 
-  // Ajout de la nouvelle route dans les paths autorisés
   const vendorPaths = ['/dashboard', '/products-manage', '/revenus', '/withdrawal-history', '/marketing', '/analytics', '/ma-boutique', '/settings', '/admin'];
   const isVendorArea = vendorPaths.some(path => location.pathname.startsWith(path));
   const showVendorUI = !!(isVendorArea && user);
@@ -244,30 +241,32 @@ function App() {
         
         <main className={`flex-1 ${showVendorUI ? 'p-4 md:p-10 pb-32' : ''}`}>
           <Routes>
+            {/* ROUTES PUBLIQUES PRIORITAIRES */}
             <Route path="/" element={<Home />} />
             <Route path="/products" element={<Shop />} /> 
             <Route path="/produit/:productId" element={<ProductDetails />} />
             <Route path="/panier" element={<Cart />} />
             <Route path="/confirmation" element={<OrderSuccess />} />
             
+            {/* AUTH */}
             <Route path="/auth" element={!user ? <Auth /> : (user.id === adminUid ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />)} />
             <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" replace />} />
             
+            {/* VENDOR DASHBOARD */}
             <Route path="/dashboard" element={user ? (user.id === adminUid ? <Navigate to="/admin" replace /> : <Dashboard />) : <Navigate to="/auth" />} />
             <Route path="/products-manage" element={user ? <ManageProducts /> : <Navigate to="/auth" />} />
             <Route path="/analytics" element={user ? <Analytics /> : <Navigate to="/auth" />} />
             <Route path="/marketing" element={user ? <RequestBoost /> : <Navigate to="/auth" />} />
-            
-            {/* ROUTES REVENUS & HISTORIQUE */}
             <Route path="/revenus" element={user ? <Revenues /> : <Navigate to="/auth" />} />
             <Route path="/withdrawal-history" element={user ? <WithdrawalHistory /> : <Navigate to="/auth" />} />
-
             <Route path="/ma-boutique" element={user ? <StoreSettings /> : <Navigate to="/auth" />} />
             <Route path="/settings" element={user ? <Settings /> : <Navigate to="/auth" />} />
             <Route path="/admin" element={user && user.id === adminUid ? <AdminDashboard /> : <Navigate to="/dashboard" />} />
 
+            {/* ROUTES BOUTIQUES (En bas pour ne pas bloquer les autres) */}
             <Route path="/boutique/:storeSlug" element={<PublicStore />} />
             <Route path="/:storeSlug" element={<PublicStore />} />
+            
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

@@ -35,7 +35,7 @@ export default function PublicStore() {
   async function fetchStoreData() {
     setLoading(true);
     try {
-      // 1. Essayer de trouver par SLUG exact
+      // 1. Essayer de trouver la boutique par SLUG exact
       let { data: storeData } = await supabase
         .from('stores')
         .select('*')
@@ -55,9 +55,12 @@ export default function PublicStore() {
 
       if (storeData) {
         setStore(storeData);
+        
+        // --- CORRECTION MAJEURE ICI ---
+        // On demande à Supabase d'inclure les infos de la boutique pour chaque produit
         const { data: productsData } = await supabase
           .from('products')
-          .select('*')
+          .select('*, stores(name, slug)') 
           .eq('store_id', storeData.id)
           .order('created_at', { ascending: false });
         
