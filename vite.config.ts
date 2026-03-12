@@ -8,32 +8,16 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
-      manifest: {
-        name: 'FestiSolde',
-        short_name: 'FestiSolde',
-        description: 'La meilleure boutique de deals premium',
-        theme_color: '#FF5A5A',
-        background_color: '#ffffff',
-        display: 'standalone',
-        icons: [
-          {
-            src: 'pwa-192x192.png', 
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
-        ]
+      /* Désactivation du manifest généré par le plugin 
+         pour laisser place à notre logique dynamique dans index.html 
+      */
+      manifest: false, 
+      injectRegister: 'auto',
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // Empêche les erreurs de cache si tu as beaucoup de fichiers
+        maximumFileSizeToCacheInBytes: 3000000, 
       }
     })
   ],
@@ -42,12 +26,16 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  /* --- AJOUT DE LA SECTION BUILD POUR FIXER L'ERREUR VERCEL --- */
+  /* --- AJOUT DE LA CONFIGURATION SERVER POUR LES TESTS SOUS-DOMAINE --- */
+  server: {
+    host: true,
+    allowedHosts: ['.festisolde.com', '.vercel.app']
+  },
+  /* --- CONFIGURATION BUILD (Optimisée pour Vercel) --- */
   build: {
-    chunkSizeWarningLimit: 1000, // Augmente la limite à 1000ko
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        // Cette fonction sépare les grosses bibliothèques (vendor) du code de ton app
         manualChunks(id) {
           if (id.includes('node_modules')) {
             if (id.includes('framer-motion')) return 'animations';
