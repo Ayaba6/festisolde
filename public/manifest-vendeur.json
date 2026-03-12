@@ -1,7 +1,7 @@
 {
-  "short_name": "FestiSolde",
-  "name": "FestiSolde - Déstockage & Liquidation",
-  "description": "La première plateforme de déstockage certifiée au Burkina Faso.",
+  "short_name": "Festi Studio",
+  "name": "FestiSolde Studio - Gestion Vendeur",
+  "description": "Gérez votre boutique et vos stocks sur FestiSolde.",
   "icons": [
     {
       "src": "favicon.ico",
@@ -9,7 +9,7 @@
       "type": "image/x-icon"
     },
     {
-      "src": "pwa-192x192.png",
+      "src": "pwa-192x192.png", 
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
@@ -21,11 +21,11 @@
       "purpose": "any"
     }
   ],
-  "start_url": "/",
+  "start_url": "/dashboard",
   "display": "standalone",
-  "theme_color": "#0F1115", 
-  "background_color": "#0F1115",
+  "theme_color": "#000000", 
+  "background_color": "#000000",
   "orientation": "portrait",
   "scope": "/",
-  "categories": ["shopping"]
+  "categories": ["business"]
 }

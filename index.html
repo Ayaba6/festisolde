@@ -9,7 +9,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Festisolde | Mode & Accessoires</title>
 
-    <link rel="manifest" href="/manifest.json" />
+    <script>
+      (function() {
+        const hostname = window.location.hostname;
+        const isVendor = hostname.startsWith('vendeur.');
+        
+        // Sélection du manifest
+        const manifestPath = isVendor ? '/manifest-vendeur.json' : '/manifest.json';
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = manifestPath;
+        document.head.appendChild(link);
+        
+        // Adaptation du titre et de la couleur de thème pour le Studio
+        if (isVendor) {
+          document.title = "FestiSolde Studio | Dashboard";
+          // On peut aussi changer la meta theme-color dynamiquement
+          const metaTheme = document.querySelector('meta[name="theme-color"]');
+          if (metaTheme) metaTheme.setAttribute('content', '#000000');
+        }
+      })();
+    </script>
 
     <meta name="theme-color" content="#e11d48" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

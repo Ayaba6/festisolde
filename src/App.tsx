@@ -30,8 +30,6 @@ import Home from './pages/Home/Home';
 import Shop from './pages/Home/components/Shop'; 
 import RequestBoost from './pages/Vendor/RequestBoost';
 import Analytics from './pages/Vendor/Analytics';
-
-// --- NOUVELLES PAGES ---
 import Grossistes from './pages/Home/components/Grossistes';
 import Liquidation from './pages/Home/components/Liquidation'; 
 import Aide from './pages/Home/components/Aide';
@@ -42,6 +40,12 @@ const ScrollToTop = () => {
     window.scrollTo(0, 0);
   }, [pathname]);
   return null;
+};
+
+// --- LOGIQUE DE DÉTECTION DU SOUS-DOMAINE ---
+const getSubdomain = () => {
+  const hostname = window.location.hostname;
+  return hostname.split('.')[0]; // Retourne "vendeur" si l'url est vendeur.festisolde.com
 };
 
 const VendorHeader = ({ user, storeSlug, onOpenMenu, onSignOut }) => {
@@ -130,6 +134,9 @@ function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const adminUid = import.meta.env.VITE_ADMIN_UID?.trim();
+  
+  // Détection du mode vendeur via sous-domaine
+  const isVendorSubdomain = getSubdomain() === 'vendeur';
 
   useEffect(() => {
     localStorage.setItem('sidebar-collapsed', isCollapsed);
@@ -162,18 +169,20 @@ function App() {
 
   const vendorPaths = ['/dashboard', '/products-manage', '/revenus', '/withdrawal-history', '/marketing', '/analytics', '/ma-boutique', '/settings', '/admin'];
   const isVendorArea = vendorPaths.some(path => location.pathname.startsWith(path));
-  const showVendorUI = !!(isVendorArea && user);
+  
+  // Affiche l'UI du Studio si on est dans une zone vendeur OU sur le sous-domaine vendeur
+  const showVendorUI = !!((isVendorArea || isVendorSubdomain) && user);
 
-  // Loader de session discret (le SplashScreen prendra le dessus au premier chargement)
   if (loading) return (
     <div className="h-screen flex items-center justify-center bg-black">
-      <Loader2 className="animate-spin text-brand-primary" size={24} />
+      <Loader2 className="animate-spin text-orange-600" size={24} />
     </div>
   );
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate('/');
+    // Si on est sur le sous-domaine vendeur, on reste sur l'auth du sous-domaine
+    navigate(isVendorSubdomain ? '/auth' : '/');
   };
 
   const SidebarLink = ({ to, icon: Icon, label, colorClass = "" }) => {
@@ -206,11 +215,6 @@ function App() {
           <SidebarLink to="/ma-boutique" icon={Palette} label="Design" />
           <SidebarLink to="/settings" icon={SettingsIcon} label="Réglages" />
         </div>
-        {isMobile && storeSlug && (
-          <div className="pt-4 border-t border-gray-100">
-             <SidebarLink to={`/${storeSlug}`} icon={Store} label="Voir Boutique" colorClass="text-black" />
-          </div>
-        )}
       </div>
     </div>
   );
@@ -218,15 +222,13 @@ function App() {
   return (
     <div className="flex min-h-screen bg-[#F8F9FB] text-gray-900 antialiased font-sans">
       <ScrollToTop />
-      
-      {/* --- SPLASHSCREEN ACTIVÉ --- */}
       <SplashScreen />
 
       {showVendorUI && (
         <aside className={`bg-white hidden md:flex flex-col sticky top-0 h-screen border-r border-gray-100 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'} z-40`}>
           <div className={`p-8 flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
             <div className="w-10 h-10 bg-black rounded-2xl flex-shrink-0 flex items-center justify-center text-white font-black italic shadow-xl">S</div>
-            {!isCollapsed && <span className="font-black text-base uppercase tracking-tighter truncate">FESTISOLDE</span>}
+            {!isCollapsed && <span className="font-black text-base uppercase tracking-tighter truncate">STUDIO</span>}
           </div>
           <button onClick={() => setIsCollapsed(!isCollapsed)} className="absolute -right-3 top-20 bg-white border border-gray-100 rounded-full p-1 shadow-md hover:text-orange-600 z-50 text-gray-400">
             {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
@@ -253,7 +255,14 @@ function App() {
         
         <main className={`flex-1 ${showVendorUI ? 'p-4 md:p-10 pb-32' : ''}`}>
           <Routes>
-            <Route path="/" element={<Home />} />
+            {/* --- ROUTE INITIALE INTELLIGENTE --- */}
+            <Route path="/" element={
+              isVendorSubdomain 
+                ? (user ? <Navigate to="/dashboard" replace /> : <Navigate to="/auth" replace />)
+                : <Home />
+            } />
+
+            {/* --- PAGES PUBLIQUES --- */}
             <Route path="/products" element={<Shop />} /> 
             <Route path="/grossistes" element={<Grossistes />} />
             <Route path="/liquidation" element={<Liquidation />} />
@@ -265,6 +274,7 @@ function App() {
             <Route path="/auth" element={!user ? <Auth /> : (user.id === adminUid ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />)} />
             <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" replace />} />
             
+            {/* --- PAGES STUDIO (Protégées) --- */}
             <Route path="/dashboard" element={user ? (user.id === adminUid ? <Navigate to="/admin" replace /> : <Dashboard />) : <Navigate to="/auth" />} />
             <Route path="/products-manage" element={user ? <ManageProducts /> : <Navigate to="/auth" />} />
             <Route path="/analytics" element={user ? <Analytics /> : <Navigate to="/auth" />} />
@@ -277,7 +287,6 @@ function App() {
 
             <Route path="/boutique/:storeSlug" element={<PublicStore />} />
             <Route path="/:storeSlug" element={<PublicStore />} />
-            
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
@@ -291,7 +300,7 @@ function App() {
               { to: "/marketing", icon: Zap },
               { to: "/revenus", icon: Wallet }
             ].map((item, index) => (
-              <Link key={index} to={item.to} className={`p-2 transition-all ${location.pathname === item.to || (item.to === "/revenus" && location.pathname === "/withdrawal-history") ? 'text-orange-500 scale-110' : 'text-gray-400'}`}>
+              <Link key={index} to={item.to} className={`p-2 transition-all ${location.pathname === item.to ? 'text-orange-500 scale-110' : 'text-gray-400'}`}>
                 <item.icon size={item.special ? 32 : 22} strokeWidth={2.5} className={item.special ? "text-orange-500 drop-shadow-[0_0_15px_rgba(249,115,22,0.8)]" : ""} />
               </Link>
             ))}
