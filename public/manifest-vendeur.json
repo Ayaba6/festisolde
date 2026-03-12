@@ -4,26 +4,26 @@
   "description": "Gérez votre boutique et vos stocks sur FestiSolde.",
   "icons": [
     {
-      "src": "favicon.ico",
+      "src": "studio-favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/x-icon"
     },
     {
-      "src": "pwa-192x192.png", 
+      "src": "studio-pwa-192x192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "pwa-512x512.png",
+      "src": "studio-pwa-512x512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any"
+      "purpose": "maskable"
     }
   ],
   "start_url": "/dashboard",
   "display": "standalone",
-  "theme_color": "#000000", 
+  "theme_color": "#000000",
   "background_color": "#000000",
   "orientation": "portrait",
   "scope": "/",
