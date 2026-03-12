@@ -1,153 +1,142 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2, ShieldCheck, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Loader2, ArrowRight, Store, BarChart3, Fingerprint } from 'lucide-react';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+
+  // Orange Vibrant & Élégant
+  const brandOrange = "#F97316"; 
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email: email.trim(), 
         password: password 
       });
-
       if (error) throw error;
-
       if (data?.user) {
-        const currentUserId = data.user.id.trim();
         const adminUid = import.meta.env.VITE_ADMIN_UID?.trim();
-
-        if (adminUid && currentUserId === adminUid) {
-          navigate('/admin');
-        } else {
-          navigate('/dashboard');
-        }
+        navigate(adminUid && data.user.id === adminUid ? '/admin' : '/dashboard');
       }
     } catch (error) {
-      console.error("Erreur:", error.message);
-      alert("Identifiants incorrects ou compte inexistant.");
+      alert("Accès refusé. Vérifiez vos identifiants.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 antialiased py-6">
+    <div className="min-h-screen bg-[#F8F9FA] flex flex-col font-sans antialiased text-slate-900">
       
-      {/* --- BACK LINK - Ultra compact --- */}
-      <Link 
-        to="/" 
-        className="fixed top-6 left-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-all z-50"
-      >
-        <ArrowLeft size={14} strokeWidth={3} /> <span className="hidden sm:inline">Retour</span>
-      </Link>
-
-      <div className="w-full max-w-[340px] space-y-6 md:space-y-8">
+      {/* --- SECTION HAUTE : Valeurs & Élégance (Fond clair) --- */}
+      <div className="flex-[1.1] flex flex-col justify-center px-10 relative overflow-hidden">
+        {/* Grain de texture léger ou halo pour le luxe */}
+        <div className="absolute top-[-10%] right-[-10%] w-80 h-80 bg-orange-100 rounded-full blur-[100px] opacity-40"></div>
         
-        {/* --- HEADER - Marges réduites --- */}
-        <div className="text-center space-y-2">
-          <div className="flex justify-center mb-2">
-            <div className="w-12 h-12 bg-black text-white flex items-center justify-center font-black italic text-xl shadow-xl rounded-xl transform -rotate-2">
-              F
+        <div className="relative z-10 max-w-sm space-y-12">
+          <div className="space-y-4">
+            <span className="inline-block px-3 py-1 bg-orange-50 text-orange-600 text-[10px] font-black uppercase tracking-[0.2em] rounded-full">
+              Studio v2.0
+            </span>
+            <h1 className="text-4xl font-light tracking-tight leading-[1.1] text-slate-900">
+              Transformez votre passion en un <span className="font-serif italic text-orange-600">empire</span>.
+            </h1>
+          </div>
+
+          <div className="grid grid-cols-1 gap-8">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-2xl bg-white shadow-sm flex items-center justify-center text-orange-600">
+                <Store size={18} strokeWidth={2.5} />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold">Gestion Intuitive</h4>
+                <p className="text-xs text-slate-400 font-medium">Contrôlez vos stocks avec précision.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-2xl bg-white shadow-sm flex items-center justify-center text-slate-300 hover:text-orange-600 transition-colors">
+                <BarChart3 size={18} strokeWidth={2.5} />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-400">Performances</h4>
+                <p className="text-xs text-slate-300 font-medium">Suivez vos revenus en temps réel.</p>
+              </div>
             </div>
           </div>
-          <h1 className="text-xl font-black uppercase tracking-tighter text-black italic leading-none">
-            ESPACE <span className="text-orange-600">PRO</span>
-          </h1>
-          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-            Terminal de gestion
+        </div>
+      </div>
+
+      {/* --- SECTION BASSE : Le Terminal (Orange Vibrant) --- */}
+      <div className="relative bg-[#F97316] pt-16 pb-8 px-8 rounded-t-[4rem] shadow-[0_-20px_60px_rgba(249,115,22,0.25)]">
+        
+        {/* Logo Badge Flottant */}
+        <div className="absolute -top-10 left-12">
+            <div className="w-20 h-20 bg-black rounded-[2.5rem] flex items-center justify-center shadow-2xl border-[6px] border-[#F97316] transform -rotate-3 hover:rotate-0 transition-transform duration-500">
+                <span className="text-white text-3xl font-black italic">F</span>
+            </div>
+        </div>
+
+        <div className="mb-10 pl-2">
+          <h2 className="text-black text-3xl font-black tracking-tighter uppercase italic leading-none mb-1">
+            Connexion
+          </h2>
+          <p className="text-black/50 text-[10px] font-black uppercase tracking-[0.3em]">
+            Accès sécurisé réservé aux partenaires
           </p>
         </div>
 
-        {/* --- FORMULAIRE - Texte Noir & Marges Serrées --- */}
-        <form className="space-y-5" onSubmit={handleLogin}>
-          <div className="space-y-4">
-            
-            {/* EMAIL */}
-            <div className="group relative border-b-2 border-gray-100 focus-within:border-orange-600 transition-all">
-              <label className="text-[9px] font-black text-black uppercase tracking-widest block mb-0.5">
-                Identifiant Email
-              </label>
-              <div className="flex items-center">
-                <Mail className="text-black group-focus-within:text-orange-600 transition-colors" size={14} strokeWidth={2.5} />
-                <input 
-                  type="email" 
-                  placeholder="NOM@EMAIL.COM" 
-                  className="w-full pl-3 py-3 text-[11px] font-black uppercase tracking-widest outline-none bg-transparent placeholder:text-gray-200 text-black"
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  required
-                />
-              </div>
-            </div>
-
-            {/* PASSWORD */}
-            <div className="group relative border-b-2 border-gray-100 focus-within:border-orange-600 transition-all">
-              <label className="text-[9px] font-black text-black uppercase tracking-widest block mb-0.5">
-                Mot de passe
-              </label>
-              <div className="flex items-center">
-                <Lock className="text-black group-focus-within:text-orange-600 transition-colors" size={14} strokeWidth={2.5} />
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  placeholder="••••••••" 
-                  className="w-full pl-3 pr-10 py-3 text-[11px] font-black uppercase tracking-widest outline-none bg-transparent placeholder:text-gray-200 text-black"
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  required
-                />
-                <button 
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-0 text-gray-300 hover:text-black transition-colors"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
+        <form onSubmit={handleLogin} className="space-y-3">
+          <div className="space-y-2">
+            <input 
+              type="email" 
+              placeholder="Email professionnel"
+              className="w-full bg-white/10 border border-black/5 rounded-3xl py-5 px-7 text-black placeholder:text-black/30 font-bold focus:bg-white focus:shadow-inner outline-none transition-all"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input 
+              type="password" 
+              placeholder="Clé de sécurité"
+              className="w-full bg-white/10 border border-black/5 rounded-3xl py-5 px-7 text-black placeholder:text-black/30 font-bold focus:bg-white focus:shadow-inner outline-none transition-all"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
           </div>
 
-          <div className="flex flex-col gap-3 pt-2">
+          <div className="pt-4 flex flex-col gap-3">
             <button 
               type="submit"
               disabled={loading}
-              className="w-full bg-black text-white py-4 text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-orange-600 active:scale-95 transition-all duration-300 shadow-lg shadow-orange-50 disabled:bg-gray-100 italic"
+              className="w-full bg-black text-white rounded-3xl py-5 font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all shadow-xl"
             >
-              {loading ? <Loader2 className="animate-spin" size={16} /> : "Lancer la session"}
+              {loading ? <Loader2 className="animate-spin" size={20} /> : "Ouvrir la session"}
+              {!loading && <ArrowRight size={18} />}
             </button>
 
-            <div className="relative py-1">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-50"></div></div>
-              <div className="relative flex justify-center text-[8px] font-black uppercase tracking-widest text-gray-200 bg-white px-2">Ou</div>
-            </div>
-
             <Link 
-              to="/register" 
-              className="w-full border-2 border-black py-3.5 text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-black hover:text-white active:scale-95 transition-all duration-300 italic"
+              to="/register"
+              className="w-full py-4 text-center text-black/40 text-[9px] font-black uppercase tracking-[0.4em] hover:text-black transition-colors"
             >
-              Devenir Partenaire
+              Demander un accès boutique
             </Link>
           </div>
         </form>
 
-        {/* --- FOOTER --- */}
-        <div className="pt-4 flex flex-col items-center gap-4">
-          <div className="flex items-center gap-2 text-black px-3 py-1.5 bg-gray-50 rounded-full border border-gray-100">
-            <ShieldCheck size={12} className="text-orange-600" />
-            <span className="text-[7px] font-black uppercase tracking-[0.2em]">SSL Secured Terminal</span>
-          </div>
-          <p className="text-[8px] text-gray-300 font-bold uppercase tracking-[0.2em] text-center italic">
-            Festisolde &copy; 2026 — v2.0
-          </p>
+        <div className="mt-10 flex flex-col items-center gap-2 border-t border-black/5 pt-6">
+            <div className="flex items-center gap-2 opacity-30">
+                <Fingerprint size={14} className="text-black" />
+                <span className="text-[8px] font-black text-black uppercase tracking-widest">Biometric Encrypted Terminal</span>
+            </div>
+            <p className="text-[8px] font-bold text-black/20 uppercase tracking-widest">FestiSolde Studio &copy; 2026</p>
         </div>
       </div>
     </div>
