@@ -1,195 +1,185 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { 
-  Zap, 
-  TrendingDown, 
-  Timer, 
-  ShoppingBag, 
-  ArrowRight,
-  Flame,
-  Filter,
-  PackageCheck,
-  ArrowLeft 
+  Store, 
+  Flame, 
+  Package, 
+  MapPin, 
+  Search,
+  ArrowUpRight,
+  ArrowLeft,
+  LayoutGrid
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 
 export default function Liquidation() {
-  const [products, setProducts] = useState([]);
+  const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchLiquidationProducts();
+    fetchLiquidationStores();
   }, []);
 
-  async function fetchLiquidationProducts() {
+  async function fetchLiquidationStores() {
     setLoading(true);
     try {
-      // On filtre uniquement les produits de la catégorie "Liquidation"
       const { data, error } = await supabase
-        .from('products')
-        .select('*, stores(name)')
-        .eq('category', 'Liquidation') // Filtre crucial ici
+        .from('stores')
+        .select(`*, products!inner(category)`)
         .eq('status', 'active')
+        .ilike('products.category', 'Liquidation')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProducts(data || []);
+
+      const uniqueStores = Array.from(
+        new Map(data.map(store => [store.id, store])).values()
+      );
+      setStores(uniqueStores);
     } catch (err) {
-      console.error("Erreur liquidation:", err.message);
+      console.error("Erreur:", err.message);
     } finally {
       setLoading(false);
     }
   }
 
+  const filteredStores = stores.filter(s => 
+    s.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (loading) return <LoadingScreen />;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-20 font-sans text-white antialiased">
-      {/* --- FLASH HEADER --- */}
-      <div className="bg-red-600 py-3 overflow-hidden border-b border-white/10">
-        <div className="flex whitespace-nowrap animate-marquee">
-          {[...Array(10)].map((_, i) => (
-            <span key={i} className="flex items-center gap-4 mx-8 text-[10px] font-black uppercase italic tracking-[0.3em]">
-              <Zap size={14} fill="white" /> Déstockage Massif - Jusqu'à -80% - Vente Flash en cours
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* --- HERO SECTION --- */}
-      <header className="relative pt-16 pb-24 px-6 overflow-hidden">
-        <div className="max-w-7xl mx-auto relative z-10">
-          
-          <Link 
-            to="/" 
-            className="inline-flex items-center gap-2 mb-10 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-red-500 transition-colors group"
-          >
-            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-            Retour Accueil
-          </Link>
-
-          <div className="flex items-center gap-3 mb-6 text-red-500">
-            <Flame size={20} />
-            <span className="text-xs font-black uppercase tracking-widest">Offres à durée limitée</span>
-          </div>
-          <h1 className="text-5xl md:text-8xl font-black uppercase italic tracking-tighter leading-[0.85] mb-8">
-            Zone de <br /> <span className="text-red-600">Liquidation</span>
-          </h1>
-          <p className="max-w-xl text-slate-400 text-sm font-bold uppercase tracking-widest leading-relaxed">
-            Les arrivages les moins chers du marché. Stocks limités, 
-            <span className="text-white"> premiers arrivés, premiers servis.</span>
-          </p>
-        </div>
+    <div className="min-h-screen bg-[#F8F9FA] pb-24 font-sans antialiased text-slate-900 selection:bg-red-100">
+      
+      {/* --- HEADER ÉPURÉ (Fond Blanc) --- */}
+      <header className="pt-12 pb-10 px-6 bg-white border-b border-slate-100 relative overflow-hidden">
+        {/* Halo décoratif très subtil */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-red-50 rounded-full blur-3xl opacity-70 translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
         
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-red-600/10 to-transparent"></div>
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-red-600 rounded-full blur-[120px] opacity-20"></div>
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
+          
+          <div className="space-y-4">
+            <Link 
+              to="/" 
+              className="inline-flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-red-600 transition-all"
+            >
+              <ArrowLeft size={12} />
+              Retour Accueil
+            </Link>
+            
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-red-600 mb-1">
+                <div className="h-[1px] w-4 bg-red-600"></div>
+                <span className="text-[9px] font-black uppercase tracking-[0.2em]">Offres Flash</span>
+              </div>
+              <h1 className="text-3xl md:text-4xl font-light uppercase tracking-tight text-slate-950 leading-tight">
+                Zone <span className="font-black italic text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-slate-950">Liquidation</span>
+              </h1>
+            </div>
+          </div>
+
+          {/* Recherche minimaliste style Retail */}
+          <div className="relative w-full md:w-80 group">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-red-600 transition-colors" size={16} />
+            <input 
+              type="text" 
+              placeholder="CHERCHER UNE BOUTIQUE..."
+              className="w-full bg-slate-50 border border-slate-100 rounded-full py-4 pl-14 pr-6 text-[10px] font-bold uppercase tracking-widest outline-none focus:border-red-600/30 focus:bg-white focus:ring-4 focus:ring-red-50 transition-all placeholder:text-slate-300"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6">
-        {/* --- GRID PRODUITS --- */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {products.map((product) => {
-            // Calcul du pourcentage de réduction basé sur price et sale_price
-            const hasPromo = product.sale_price && product.sale_price < product.price;
-            const discount = hasPromo 
-              ? Math.round(((product.price - product.sale_price) / product.price) * 100) 
-              : null;
-            
-            return (
-              <div 
-                key={product.id}
-                onClick={() => navigate(`/produit/${product.id}`)}
-                className="group relative bg-[#141414] border border-white/5 rounded-3xl overflow-hidden hover:border-red-600/50 transition-all duration-500 cursor-pointer"
-              >
-                {/* Image */}
-                <div className="aspect-square overflow-hidden relative bg-[#1A1A1A]">
-                  <img 
-                    src={product.image_url} 
-                    alt={product.name} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                  />
-                  {/* Badge de Réduction */}
-                  {hasPromo && (
-                    <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1.5 rounded-xl text-[11px] font-black italic shadow-2xl">
-                      -{discount}%
-                    </div>
-                  )}
-                </div>
+      {/* --- GRID (Sur fond légèrement grisé) --- */}
+      <main className="max-w-7xl mx-auto px-6 py-16 md:py-20">
+        <div className="flex items-center gap-3 mb-12 border-b border-slate-100 pb-8 opacity-60">
+          <LayoutGrid size={14} className="text-red-600" />
+          <span className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Vendeurs Partenaires ({filteredStores.length})</span>
+        </div>
 
-                {/* Infos */}
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest">{product.stores?.name}</span>
-                    <div className="flex items-center gap-1 text-red-500">
-                      <Timer size={10} />
-                      <span className="text-[9px] font-black uppercase">Urgent</span>
-                    </div>
-                  </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredStores.map((store) => (
+            <div 
+              key={store.id}
+              onClick={() => navigate(`/${store.slug}`)}
+              className="group relative bg-white rounded-3xl transition-all duration-500 hover:shadow-2xl hover:shadow-red-500/5 border border-slate-50 cursor-pointer overflow-hidden shadow-sm"
+            >
+              {/* Effet au hover discret */}
+              <div className="absolute inset-0 bg-gradient-to-b from-red-50/0 to-red-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
-                  <h3 className="text-sm font-black uppercase tracking-tight mb-4 line-clamp-1 group-hover:text-red-500 transition-colors">
-                    {product.name}
-                  </h3>
-
-                  <div className="flex items-end justify-between">
-                    <div>
-                      {hasPromo && (
-                        <p className="text-[10px] text-slate-500 line-through font-bold">{product.price.toLocaleString()} F</p>
+              <div className="p-9 relative z-10">
+                <div className="flex justify-between items-start mb-9">
+                  <div className="relative">
+                    <div className="w-16 h-16 bg-slate-50 rounded-2xl border border-slate-100 p-1 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform duration-500">
+                      {store.logo_url ? (
+                        <img src={store.logo_url} alt={store.name} className="w-full h-full object-cover rounded-xl" />
+                      ) : (
+                        <Store size={24} className="text-slate-300" />
                       )}
-                      <p className="text-xl font-black italic text-white leading-none">
-                        {(hasPromo ? product.sale_price : product.price).toLocaleString()} <span className="text-[10px] not-italic text-red-600">FCFA</span>
-                      </p>
                     </div>
-                    
-                    <div className="w-10 h-10 bg-white text-black rounded-xl flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition-all">
-                      <ArrowRight size={18} />
+                    <div className="absolute -bottom-1.5 -right-1.5 bg-red-600 p-1.5 rounded-lg border-2 border-white shadow-lg shadow-red-500/20">
+                      <Flame size={10} fill="white" className="text-white" />
                     </div>
+                  </div>
+                  <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 px-3.5 py-1.5 bg-slate-50 border border-slate-100 rounded-md">
+                    Vérifié
                   </div>
                 </div>
 
-                {/* Barre de stock restant factice pour le style */}
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-white/5">
-                   <div className="h-full bg-red-600 w-1/3 animate-pulse"></div>
+                <div className="space-y-2.5">
+                  <h3 className="text-lg font-bold uppercase tracking-tighter text-slate-950 group-hover:text-red-600 transition-colors">
+                    {store.name}
+                  </h3>
+                  
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <MapPin size={10} />
+                    <span className="text-[9px] font-bold uppercase tracking-widest">{store.location || 'Burkina Faso'}</span>
+                  </div>
+
+                  <p className="text-[11px] text-slate-600 font-medium leading-relaxed line-clamp-2 pt-5 border-t border-slate-100 mt-5">
+                    {store.description || "Destockage massif. Accédez aux inventaires liquidés de ce partenaire."}
+                  </p>
+                </div>
+
+                <div className="mt-9 flex items-end justify-between border-t border-slate-100 pt-7">
+                  <div className="space-y-1">
+                    <span className="block text-[8px] font-black text-red-600 tracking-tighter uppercase">Remises Exceptionnelles</span>
+                    <span className="text-2xl font-black italic tracking-tighter text-slate-950">-70% MIN.</span>
+                  </div>
+                  
+                  <div className="w-11 h-11 rounded-full bg-slate-900 text-white flex items-center justify-center group-hover:bg-red-600 transition-all duration-500 shadow-xl shadow-slate-900/10">
+                    <ArrowUpRight size={18} />
+                  </div>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
 
-        {products.length === 0 && <EmptyState />}
+        {filteredStores.length === 0 && <EmptyState />}
       </main>
-
-      {/* --- FOOTER BANNER --- */}
-      <section className="max-w-7xl mx-auto px-6 mt-24">
-        <div className="bg-gradient-to-r from-red-700 to-red-900 rounded-[3rem] p-12 flex flex-col items-center text-center gap-8 relative overflow-hidden shadow-2xl">
-           <TrendingDown size={64} className="opacity-20 absolute -left-10 bottom-0 rotate-12" />
-           <div className="relative z-10">
-             <h2 className="text-3xl font-black uppercase italic tracking-tighter mb-4">Alerte Nouveaux Stocks</h2>
-             <p className="text-red-100 text-[10px] font-bold uppercase tracking-[0.2em] mb-8">Rejoignez notre réseau pour ne rater aucun arrivage</p>
-             <button className="px-10 py-4 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl">
-                S'abonner aux alertes
-             </button>
-           </div>
-        </div>
-      </section>
     </div>
   );
 }
 
 function EmptyState() {
   return (
-    <div className="py-40 text-center">
-      <PackageCheck size={48} className="mx-auto text-white/10 mb-4" />
-      <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em]">Aucun article en liquidation pour le moment</p>
+    <div className="py-32 text-center opacity-40">
+      <Package size={40} className="mx-auto mb-4 text-slate-300" />
+      <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Aucune boutique en liquidation</p>
     </div>
   );
 }
 
 function LoadingScreen() {
   return (
-    <div className="h-screen flex flex-col items-center justify-center bg-black">
-      <div className="w-10 h-10 border-4 border-white/5 border-t-red-600 rounded-full animate-spin mb-4" />
-      <span className="text-[9px] font-black uppercase text-red-600 tracking-widest animate-pulse">Scan des prix cassés...</span>
+    <div className="h-screen flex items-center justify-center bg-white">
+      <div className="w-6 h-6 border-2 border-slate-100 border-t-red-600 rounded-full animate-spin" />
     </div>
   );
 }
