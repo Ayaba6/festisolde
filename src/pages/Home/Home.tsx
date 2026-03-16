@@ -21,15 +21,21 @@ export default function Home() {
 
   async function fetchLatestProducts() {
     setLoading(true);
-    // ✅ MODIFIÉ : On récupère status pour filtrer les boutiques cachées
+    
+    // ✅ MODIFICATION : On filtre directement les catégories interdites sur l'accueil
     const { data } = await supabase
       .from('products')
       .select('*, stores(name, slug, status)') 
+      .not('category', 'eq', 'Grossiste')    // Exclure catégorie Grossiste
+      .not('category', 'eq', 'Liquidation')  // Exclure catégorie Liquidation
       .order('created_at', { ascending: false })
-      .limit(20); // On en prend un peu plus pour compenser les éventuels produits cachés
+      .limit(30); // On augmente un peu la limite pour filtrer ensuite en JS
     
     // On ne garde que les produits dont la boutique est 'active' (ou non 'hidden')
-    const visibleProducts = (data || []).filter(p => p.stores?.status !== 'hidden').slice(0, 8);
+    // Et on s'assure de n'afficher que les 8 premiers résultats valides
+    const visibleProducts = (data || [])
+      .filter(p => p.stores?.status !== 'hidden')
+      .slice(0, 8);
     
     setProducts(visibleProducts);
     setLoading(false);
