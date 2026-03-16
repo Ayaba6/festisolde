@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { 
   X, Save, Loader2, Image as ImageIcon, 
-  CheckCircle2, Plus
+  CheckCircle2, Plus 
 } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 
@@ -25,7 +25,20 @@ export default function AddProductModal({ storeId, productToEdit, onClose, onRef
     sizes: productToEdit?.sizes || ''    
   });
 
-  const categories = ["Vêtements", "Chaussures", "Accessoires", "Beauté", "Électronique", "Maison", "Autre"];
+  // Mise à jour de la liste avec Packeo, Grossistes et Liquidation
+  const categories = [
+    "Vêtements", 
+    "Chaussures", 
+    "Accessoires", 
+    "Beauté", 
+    "Électronique", 
+    "Maison", 
+    "Packeo", 
+    "Grossistes", 
+    "Liquidation", 
+    "Autre"
+  ];
+
   const inputStyle = "w-full border-[3px] border-black rounded-2xl px-5 py-4 text-sm font-bold focus:border-orange-500 outline-none bg-white transition-all placeholder:text-gray-400";
 
   const handleImageChange = async (e) => {
@@ -113,7 +126,6 @@ export default function AddProductModal({ storeId, productToEdit, onClose, onRef
             <button type="button" onClick={() => setProductType('pack')} className={`flex-1 py-3 rounded-xl font-black text-[10px] tracking-widest transition-all ${productType === 'pack' ? 'bg-orange-600 text-white' : 'text-gray-500'}`}>PACK</button>
           </div>
 
-          {/* SECTION SELECTION PHOTOS */}
           <div className="space-y-2">
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
               {previews.length < 5 && (
@@ -124,7 +136,6 @@ export default function AddProductModal({ storeId, productToEdit, onClose, onRef
                 >
                   <ImageIcon size={24} />
                   <span className="text-[8px] font-black uppercase">Choisir</span>
-                  {/* Suppression de capture="environment" pour mode SELECT classique */}
                   <input id="file-upload" type="file" accept="image/*" multiple hidden onChange={handleImageChange} />
                 </button>
               )}
@@ -135,9 +146,6 @@ export default function AddProductModal({ storeId, productToEdit, onClose, onRef
                 </div>
               ))}
             </div>
-            <p className="text-[9px] font-bold text-gray-400 italic px-1 italic">
-              💡 Conseil : Utilisez des images avec un <span className="text-orange-600">fond blanc</span> pour plus de ventes.
-            </p>
           </div>
 
           <div className="space-y-4">

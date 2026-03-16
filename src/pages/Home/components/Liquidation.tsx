@@ -9,9 +9,9 @@ import {
   Flame,
   Filter,
   PackageCheck,
-  ArrowLeft // Import ajouté
+  ArrowLeft 
 } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom'; // Import de Link ajouté
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function Liquidation() {
   const [products, setProducts] = useState([]);
@@ -24,23 +24,30 @@ export default function Liquidation() {
 
   async function fetchLiquidationProducts() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('products')
-      .select('*, stores(name)')
-      .eq('status', 'active')
-      .order('discount_price', { ascending: true })
-      .limit(20);
+    try {
+      // On filtre uniquement les produits de la catégorie "Liquidation"
+      const { data, error } = await supabase
+        .from('products')
+        .select('*, stores(name)')
+        .eq('category', 'Liquidation') // Filtre crucial ici
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
 
-    if (!error) setProducts(data);
-    setLoading(false);
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (err) {
+      console.error("Erreur liquidation:", err.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (loading) return <LoadingScreen />;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-20 font-sans text-white">
+    <div className="min-h-screen bg-[#0A0A0A] pb-20 font-sans text-white antialiased">
       {/* --- FLASH HEADER --- */}
-      <div className="bg-red-600 py-3 overflow-hidden">
+      <div className="bg-red-600 py-3 overflow-hidden border-b border-white/10">
         <div className="flex whitespace-nowrap animate-marquee">
           {[...Array(10)].map((_, i) => (
             <span key={i} className="flex items-center gap-4 mx-8 text-[10px] font-black uppercase italic tracking-[0.3em]">
@@ -54,7 +61,6 @@ export default function Liquidation() {
       <header className="relative pt-16 pb-24 px-6 overflow-hidden">
         <div className="max-w-7xl mx-auto relative z-10">
           
-          {/* BOUTON RETOUR ACCUEIL */}
           <Link 
             to="/" 
             className="inline-flex items-center gap-2 mb-10 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-red-500 transition-colors group"
@@ -76,7 +82,6 @@ export default function Liquidation() {
           </p>
         </div>
         
-        {/* Déco Arrière-plan */}
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-red-600/10 to-transparent"></div>
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-red-600 rounded-full blur-[120px] opacity-20"></div>
       </header>
@@ -85,25 +90,31 @@ export default function Liquidation() {
         {/* --- GRID PRODUITS --- */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {products.map((product) => {
-            const discount = Math.round(((product.price - product.discount_price) / product.price) * 100);
+            // Calcul du pourcentage de réduction basé sur price et sale_price
+            const hasPromo = product.sale_price && product.sale_price < product.price;
+            const discount = hasPromo 
+              ? Math.round(((product.price - product.sale_price) / product.price) * 100) 
+              : null;
             
             return (
               <div 
                 key={product.id}
-                onClick={() => navigate(`/produit/${product.id}`)} // Corrigé le chemin pour correspondre à tes routes
+                onClick={() => navigate(`/produit/${product.id}`)}
                 className="group relative bg-[#141414] border border-white/5 rounded-3xl overflow-hidden hover:border-red-600/50 transition-all duration-500 cursor-pointer"
               >
                 {/* Image */}
-                <div className="aspect-square overflow-hidden relative">
+                <div className="aspect-square overflow-hidden relative bg-[#1A1A1A]">
                   <img 
                     src={product.image_url} 
                     alt={product.name} 
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                   />
                   {/* Badge de Réduction */}
-                  <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1.5 rounded-xl text-[11px] font-black italic shadow-2xl">
-                    -{discount}%
-                  </div>
+                  {hasPromo && (
+                    <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1.5 rounded-xl text-[11px] font-black italic shadow-2xl">
+                      -{discount}%
+                    </div>
+                  )}
                 </div>
 
                 {/* Infos */}
@@ -122,9 +133,11 @@ export default function Liquidation() {
 
                   <div className="flex items-end justify-between">
                     <div>
-                      <p className="text-[10px] text-slate-500 line-through font-bold">{product.price.toLocaleString()} F</p>
+                      {hasPromo && (
+                        <p className="text-[10px] text-slate-500 line-through font-bold">{product.price.toLocaleString()} F</p>
+                      )}
                       <p className="text-xl font-black italic text-white leading-none">
-                        {product.discount_price?.toLocaleString()} <span className="text-[10px] not-italic">FCFA</span>
+                        {(hasPromo ? product.sale_price : product.price).toLocaleString()} <span className="text-[10px] not-italic text-red-600">FCFA</span>
                       </p>
                     </div>
                     
@@ -134,9 +147,9 @@ export default function Liquidation() {
                   </div>
                 </div>
 
-                {/* Barre de stock restant (visuel) */}
+                {/* Barre de stock restant factice pour le style */}
                 <div className="absolute bottom-0 left-0 w-full h-1 bg-white/5">
-                   <div className="h-full bg-red-600 w-1/4 animate-pulse"></div>
+                   <div className="h-full bg-red-600 w-1/3 animate-pulse"></div>
                 </div>
               </div>
             );
@@ -152,8 +165,8 @@ export default function Liquidation() {
            <TrendingDown size={64} className="opacity-20 absolute -left-10 bottom-0 rotate-12" />
            <div className="relative z-10">
              <h2 className="text-3xl font-black uppercase italic tracking-tighter mb-4">Alerte Nouveaux Stocks</h2>
-             <p className="text-red-100 text-[10px] font-bold uppercase tracking-[0.2em] mb-8">Rejoignez notre groupe WhatsApp pour ne rater aucun arrivage</p>
-             <button className="px-10 py-4 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black hover:text-white transition-all">
+             <p className="text-red-100 text-[10px] font-bold uppercase tracking-[0.2em] mb-8">Rejoignez notre réseau pour ne rater aucun arrivage</p>
+             <button className="px-10 py-4 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl">
                 S'abonner aux alertes
              </button>
            </div>
@@ -167,7 +180,7 @@ function EmptyState() {
   return (
     <div className="py-40 text-center">
       <PackageCheck size={48} className="mx-auto text-white/10 mb-4" />
-      <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em]">Aucune liquidation en cours</p>
+      <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em]">Aucun article en liquidation pour le moment</p>
     </div>
   );
 }
