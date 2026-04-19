@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { 
   X, Save, Loader2, Image as ImageIcon, 
-  CheckCircle2, Plus 
+  Plus, Trash2, Camera
 } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 
@@ -25,21 +25,10 @@ export default function AddProductModal({ storeId, productToEdit, onClose, onRef
     sizes: productToEdit?.sizes || ''    
   });
 
-  // Mise à jour de la liste avec Packeo, Grossistes et Liquidation
-  const categories = [
-    "Vêtements", 
-    "Chaussures", 
-    "Accessoires", 
-    "Beauté", 
-    "Électronique", 
-    "Maison", 
-    "Packeo", 
-    "Grossistes", 
-    "Liquidation", 
-    "Autre"
-  ];
+  const categories = ["Vêtements", "Chaussures", "Accessoires", "Beauté", "Électronique", "Maison", "Packeo", "Grossistes", "Liquidation", "Autre"];
 
-  const inputStyle = "w-full border-[3px] border-black rounded-2xl px-5 py-4 text-sm font-bold focus:border-orange-500 outline-none bg-white transition-all placeholder:text-gray-400";
+  // Style des inputs modernisé : fini les bordures noires, place au Slate-50 épuré
+  const inputStyle = "w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-semibold text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-orange-500/20 transition-all outline-none";
 
   const handleImageChange = async (e) => {
     const files = Array.from(e.target.files);
@@ -56,7 +45,7 @@ export default function AddProductModal({ storeId, productToEdit, onClose, onRef
       setImageFiles(prev => [...prev, ...results.map(r => r.file)]);
       setPreviews(prev => [...prev, ...results.map(r => r.preview)]);
     } catch (err) {
-      console.error("Erreur compression:", err);
+      console.error(err);
     } finally {
       setProcessing(false);
     }
@@ -104,62 +93,102 @@ export default function AddProductModal({ storeId, productToEdit, onClose, onRef
       onRefresh();
       onClose();
     } catch (err) {
-      alert(`Erreur: ${err.message || "Impossible de publier l'article"}`);
+      alert(`Erreur: ${err.message}`);
     } finally {
       setProcessing(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md text-gray-900">
-      <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] border-[3px] border-black">
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         
-        <div className="p-6 border-b-[3px] border-black flex justify-between items-center bg-gray-50">
-          <h2 className="text-xl font-black uppercase italic">{productToEdit ? 'Modifier' : 'Ajouter'} <span className="text-orange-600">Article</span></h2>
-          <button onClick={onClose} type="button" className="p-3 border-2 border-black rounded-full hover:bg-red-50 text-red-500 transition-all"><X size={24} /></button>
+        {/* Header épuré */}
+        <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-white">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-slate-900">
+              {productToEdit ? 'Modifier' : 'Nouvel article'}
+            </h2>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Édition de votre inventaire</p>
+          </div>
+          <button onClick={onClose} className="p-2.5 hover:bg-slate-50 rounded-full text-slate-400 transition-colors">
+            <X size={20} />
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 overflow-y-auto space-y-6">
+        <form onSubmit={handleSubmit} className="p-8 overflow-y-auto space-y-8">
           
-          <div className="flex gap-4 p-1.5 bg-gray-100 rounded-2xl border-[3px] border-black">
-            <button type="button" onClick={() => setProductType('simple')} className={`flex-1 py-3 rounded-xl font-black text-[10px] tracking-widest transition-all ${productType === 'simple' ? 'bg-black text-white' : 'text-gray-500'}`}>SIMPLE</button>
-            <button type="button" onClick={() => setProductType('pack')} className={`flex-1 py-3 rounded-xl font-black text-[10px] tracking-widest transition-all ${productType === 'pack' ? 'bg-orange-600 text-white' : 'text-gray-500'}`}>PACK</button>
+          {/* Switch Type de Produit Premium */}
+          <div className="flex gap-2 p-1.5 bg-slate-50 rounded-2xl">
+            <button 
+              type="button" 
+              onClick={() => setProductType('simple')} 
+              className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all ${productType === 'simple' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              SIMPLE
+            </button>
+            <button 
+              type="button" 
+              onClick={() => setProductType('pack')} 
+              className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all ${productType === 'pack' ? 'bg-orange-500 text-white shadow-lg shadow-orange-100' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              PACK (LOT)
+            </button>
           </div>
 
-          <div className="space-y-2">
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+          {/* Galerie Photo Style Studio */}
+          <div className="space-y-3">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 ml-1">Photos de l'article (max 5)</label>
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
               {previews.length < 5 && (
                 <button 
                   type="button" 
                   onClick={() => document.getElementById('file-upload').click()} 
-                  className="aspect-square border-[3px] border-dashed border-black rounded-[1.5rem] flex flex-col items-center justify-center gap-1 text-black bg-gray-50 hover:bg-orange-50 transition-colors"
+                  className="aspect-square border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2 text-slate-300 hover:text-orange-500 hover:border-orange-500/30 hover:bg-orange-50/30 transition-all group"
                 >
-                  <ImageIcon size={24} />
-                  <span className="text-[8px] font-black uppercase">Choisir</span>
+                  <div className="p-2 bg-slate-50 rounded-full group-hover:bg-orange-100 transition-colors">
+                    <Camera size={20} />
+                  </div>
                   <input id="file-upload" type="file" accept="image/*" multiple hidden onChange={handleImageChange} />
                 </button>
               )}
               {previews.map((src, i) => (
-                <div key={i} className="relative aspect-square">
-                  <img src={src} className="w-full h-full object-cover rounded-[1.5rem] border-[3px] border-black shadow-sm" />
-                  <button type="button" onClick={() => { setPreviews(p => p.filter((_, idx) => idx !== i)); setImageFiles(f => f.filter((_, idx) => idx !== i)); }} className="absolute -top-2 -right-2 bg-black text-white rounded-full p-1.5 border-2 border-white shadow-md transition-transform hover:scale-110"><X size={10}/></button>
+                <div key={i} className="relative aspect-square group">
+                  <img src={src} className="w-full h-full object-cover rounded-2xl border border-slate-100 shadow-sm" />
+                  <button 
+                    type="button" 
+                    onClick={() => { setPreviews(p => p.filter((_, idx) => idx !== i)); setImageFiles(f => f.filter((_, idx) => idx !== i)); }} 
+                    className="absolute -top-2 -right-2 bg-white text-red-500 rounded-full p-1.5 shadow-xl border border-slate-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 size={12}/>
+                  </button>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="space-y-4">
-            <input required className={inputStyle} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="NOM DE L'ARTICLE *" />
-            <textarea className={`${inputStyle} h-24 resize-none`} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="DESCRIPTION (MATIÈRE, COUPE...)" />
+            <div className="space-y-1">
+               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Informations de base</label>
+               <input required className={inputStyle} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Nom de l'article (ex: Veste en lin)" />
+            </div>
+            
+            <textarea className={`${inputStyle} h-28 resize-none`} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Description détaillée..." />
 
             <div className="grid grid-cols-2 gap-4">
-              <input type="number" required className={inputStyle} value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} placeholder="PRIX (FCFA) *" />
-              <input type="number" className={`${inputStyle} text-orange-600`} value={formData.sale_price} onChange={e => setFormData({...formData, sale_price: e.target.value})} placeholder="PRIX PROMO" />
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-400 ml-1">PRIX DE VENTE (FCFA)</label>
+                <input type="number" required className={inputStyle} value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} placeholder="0" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-orange-500/70 ml-1">PRIX PROMO (OPTIONNEL)</label>
+                <input type="number" className={`${inputStyle} text-orange-600 bg-orange-50/30`} value={formData.sale_price} onChange={e => setFormData({...formData, sale_price: e.target.value})} placeholder="0" />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <input className={inputStyle} value={formData.colors} onChange={e => setFormData({...formData, colors: e.target.value})} placeholder="COULEURS (EX: GRIS, NOIR)" />
-              <input className={inputStyle} value={formData.sizes} onChange={e => setFormData({...formData, sizes: e.target.value})} placeholder="TAILLES (EX: M, 42)" />
+              <input className={inputStyle} value={formData.colors} onChange={e => setFormData({...formData, colors: e.target.value})} placeholder="Couleurs (Noir, Blanc...)" />
+              <input className={inputStyle} value={formData.sizes} onChange={e => setFormData({...formData, sizes: e.target.value})} placeholder="Tailles (M, L, XL...)" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -167,13 +196,17 @@ export default function AddProductModal({ storeId, productToEdit, onClose, onRef
                 <option value="">CATÉGORIE</option>
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <input type="number" required className={inputStyle} value={formData.stock_quantity} onChange={e => setFormData({...formData, stock_quantity: e.target.value})} placeholder="STOCK DISPO" />
+              <input type="number" required className={inputStyle} value={formData.stock_quantity} onChange={e => setFormData({...formData, stock_quantity: e.target.value})} placeholder="Stock disponible" />
             </div>
           </div>
 
-          <button disabled={processing} type="submit" className="w-full bg-black hover:bg-orange-600 text-white py-6 rounded-2xl font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all disabled:bg-gray-400">
-            {processing ? <Loader2 className="animate-spin" /> : <Save size={20} />}
-            {processing ? "PUBLICATION..." : "CONFIRMER LA VENTE"}
+          <button 
+            disabled={processing} 
+            type="submit" 
+            className="w-full bg-slate-950 text-white py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-slate-800 active:scale-[0.98] transition-all disabled:bg-slate-200 disabled:text-slate-400 mt-4 shadow-xl shadow-slate-200"
+          >
+            {processing ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+            {processing ? "PUBLICATION EN COURS..." : productToEdit ? "MODIFIER L'ARTICLE" : "METTRE EN VENTE"}
           </button>
         </form>
       </div>

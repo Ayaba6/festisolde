@@ -1,8 +1,18 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Store, Smartphone, Save, Loader2, CheckCircle2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Store, 
+  Smartphone, 
+  Save, 
+  Loader2, 
+  CheckCircle2, 
+  ChevronLeft,
+  Info
+} from 'lucide-react';
 
 export default function Settings() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [message, setMessage] = useState('');
@@ -49,96 +59,112 @@ export default function Settings() {
 
       if (error) throw error;
 
-      setMessage("Boutique mise à jour !");
+      setMessage("Réglages mis à jour");
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       console.error(error);
-      alert("Erreur de mise à jour");
+      alert("Erreur lors de la mise à jour");
     } finally {
       setUpdating(false);
     }
   };
 
   if (loading) return (
-    <div className="h-screen flex items-center justify-center">
-      <Loader2 className="animate-spin text-orange-600" size={32} />
+    <div className="h-screen flex items-center justify-center bg-white">
+      <Loader2 className="animate-spin text-slate-900" size={32} />
     </div>
   );
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 md:py-10 antialiased text-black font-sans pb-40">
+    <div className="max-w-4xl mx-auto px-6 py-10 antialiased pb-40">
       
-      {/* --- HEADER --- */}
-      <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-4 border-black pb-6">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-black uppercase italic tracking-tighter">
-            Réglages <span className="text-orange-600">Boutique</span>
-          </h1>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Gérez vos informations de contact</p>
+      {/* HEADER AVEC RETOUR */}
+      <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-5">
+          <button 
+            onClick={() => navigate('/dashboard')}
+            className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Paramètres</h1>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Informations de contact & boutique</p>
+          </div>
         </div>
         
         {message && (
-          <div className="flex items-center gap-2 text-[10px] font-black uppercase text-green-600 bg-green-50 px-4 py-2 border-2 border-green-200 rounded-xl animate-bounce">
-            <CheckCircle2 size={14} /> {message}
+          <div className="flex items-center gap-2 text-emerald-600 text-[10px] font-bold bg-emerald-50 px-5 py-2.5 rounded-full border border-emerald-100 animate-in fade-in slide-in-from-top-2">
+            <CheckCircle2 size={14} strokeWidth={3} /> {message.toUpperCase()}
           </div>
         )}
       </header>
 
-      {/* --- FORMULAIRE --- */}
-      <div className="bg-white border-2 border-black p-6 md:p-10 rounded-[2rem] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] md:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+      {/* SECTION PRINCIPALE */}
+      <div className="grid grid-cols-1 gap-8">
+        <div className="bg-white border border-slate-100 p-8 md:p-10 rounded-[2.5rem] shadow-sm space-y-10">
           
-          {/* NOM DE LA BOUTIQUE */}
-          <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2 ml-1">
-              <Store size={14} /> Nom de l'enseigne
-            </label>
-            <input 
-              type="text"
-              value={storeData.name}
-              onChange={(e) => setStoreData({...storeData, name: e.target.value})}
-              placeholder="Ex: Ma Boutique Studio"
-              className="w-full bg-gray-50 border-2 border-gray-200 p-4 rounded-2xl font-bold text-base md:text-sm outline-none focus:border-black focus:bg-white transition-all shadow-sm"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+            
+            {/* NOM DE LA BOUTIQUE */}
+            <div className="space-y-4">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 ml-1">
+                <Store size={14} className="text-slate-900" /> Nom de l'enseigne
+              </label>
+              <input 
+                type="text"
+                value={storeData.name}
+                onChange={(e) => setStoreData({...storeData, name: e.target.value})}
+                placeholder="Ex: Ma Boutique Studio"
+                className="w-full bg-slate-50 border border-transparent p-5 rounded-2xl font-bold text-slate-900 outline-none focus:border-slate-200 focus:bg-white transition-all shadow-inner"
+              />
+            </div>
+
+            {/* NUMÉRO WHATSAPP */}
+            <div className="space-y-4">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 ml-1">
+                <Smartphone size={14} className="text-slate-900" /> WhatsApp (Ventes)
+              </label>
+              <input 
+                type="tel"
+                inputMode="tel"
+                value={storeData.whatsapp_number}
+                onChange={(e) => setStoreData({...storeData, whatsapp_number: e.target.value})}
+                placeholder="Ex: 22670000000"
+                className="w-full bg-slate-50 border border-transparent p-5 rounded-2xl font-bold text-slate-900 outline-none focus:border-slate-200 focus:bg-white transition-all shadow-inner"
+              />
+            </div>
           </div>
 
-          {/* NUMÉRO WHATSAPP */}
-          <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2 ml-1">
-              <Smartphone size={14} /> Numéro WhatsApp (Ventes)
-            </label>
-            <input 
-              type="tel"
-              inputMode="tel"
-              value={storeData.whatsapp_number}
-              onChange={(e) => setStoreData({...storeData, whatsapp_number: e.target.value})}
-              placeholder="Ex: 22670000000"
-              className="w-full bg-gray-50 border-2 border-gray-200 p-4 rounded-2xl font-bold text-base md:text-sm outline-none focus:border-black focus:bg-white transition-all shadow-sm"
-            />
+          {/* CONSEIL PRATIQUE */}
+          <div className="bg-orange-50/50 p-6 rounded-3xl border border-orange-100/50 flex gap-4">
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-orange-600 shadow-sm shrink-0">
+               <Info size={20} />
+            </div>
+            <p className="text-[11px] font-medium text-orange-900 leading-relaxed">
+              <span className="font-bold uppercase block mb-1 tracking-tight">Format Recommandé</span>
+              Utilisez le format international sans le "+" (ex: <span className="underline decoration-orange-300">22670112233</span>). 
+              Cela permet une ouverture automatique de la discussion dès qu'un client clique sur "Acheter".
+            </p>
           </div>
-
         </div>
 
-        <div className="pt-6 border-t-2 border-dashed border-gray-100">
-           <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100">
-             <p className="text-[10px] font-bold text-orange-800 uppercase leading-relaxed italic">
-               💡 Conseil : Indiquez votre numéro avec l'indicatif pays (ex: 226...) sans le "+" pour que les clients tombent directement sur votre discussion WhatsApp.
-             </p>
-           </div>
+        {/* ACTIONS */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-2">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center md:text-left">
+            Dernière mise à jour : {new Date().toLocaleDateString()}
+          </p>
+          
+          <button 
+            onClick={handleUpdate}
+            disabled={updating}
+            className="w-full md:w-auto bg-slate-950 text-white px-10 py-5 rounded-2xl text-[11px] font-bold tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-orange-600 transition-all shadow-xl active:scale-[0.98] disabled:bg-slate-100 disabled:text-slate-300"
+          >
+            {updating ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+            {updating ? "ENREGISTREMENT..." : "SAUVEGARDER LES RÉGLAGES"}
+          </button>
         </div>
       </div>
-
-      {/* --- BOUTON DE SAUVEGARDE --- */}
-      <footer className="mt-8">
-        <button 
-          onClick={handleUpdate}
-          disabled={updating}
-          className="w-full md:w-auto md:ml-auto bg-black text-white px-8 py-5 rounded-2xl text-[11px] font-black tracking-[0.2em] flex items-center justify-center gap-3 active:scale-95 transition-all hover:bg-orange-600 shadow-xl"
-        >
-          {updating ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-          {updating ? "ENREGISTREMENT..." : "SAUVEGARDER LES RÉGLAGES"}
-        </button>
-      </footer>
 
     </div>
   );

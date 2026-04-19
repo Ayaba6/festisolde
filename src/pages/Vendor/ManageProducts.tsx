@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { 
-  Plus, Trash2, Edit3, ShoppingCart, Loader2, Package 
+  Plus, Trash2, Edit3, Loader2, Package, ChevronLeft 
 } from 'lucide-react';
 import AddProductModal from './AddProductModal';
 
@@ -11,8 +12,8 @@ export default function ManageProducts() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [storeId, setStoreId] = useState(null);
+  const navigate = useNavigate();
 
-  // 1. Chargement initial
   useEffect(() => {
     fetchInitialData();
   }, []);
@@ -33,13 +34,12 @@ export default function ManageProducts() {
         }
       }
     } catch (error) {
-      console.error("Erreur chargement initial:", error);
+      console.error("Erreur:", error);
     } finally {
       setLoading(false);
     }
   }
 
-  // 2. Récupérer la liste des produits
   async function fetchProducts(sId = storeId) {
     if (!sId) return;
     const { data } = await supabase.from('products')
@@ -49,7 +49,6 @@ export default function ManageProducts() {
     setProducts(data || []);
   }
 
-  // 3. Suppression
   const handleDelete = async (id) => {
     if (window.confirm("Supprimer cet article définitivement ?")) {
       try {
@@ -62,118 +61,117 @@ export default function ManageProducts() {
     }
   };
 
-  // 4. Gestion du Modal
-  const openAddModal = () => {
-    setEditingProduct(null);
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (product) => {
-    setEditingProduct(product);
-    setIsModalOpen(true);
-  };
-
   if (loading) return (
-    <div className="h-screen flex items-center justify-center bg-[#F8F9FB]">
+    <div className="h-screen flex items-center justify-center bg-[#FDFDFD]">
       <div className="flex flex-col items-center gap-4">
-        <Loader2 className="animate-spin text-orange-600" size={40} />
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400">Chargement du stock...</p>
+        <Loader2 className="animate-spin text-orange-500" size={32} />
+        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Inventaire en cours...</p>
       </div>
     </div>
   );
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-8 font-sans antialiased">
+    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-8 pb-32">
       
-      {/* HEADER DE LA PAGE */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-black text-gray-900 uppercase italic tracking-tight">
-            Gestion <span className="text-orange-600">Stock</span>
-          </h1>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
-            {products.length} Articles en ligne
-          </p>
+      {/* BARRE DE NAVIGATION / RETOUR */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => navigate('/dashboard')}
+            className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-slate-900 transition-all hover:shadow-sm"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Inventaire</h1>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+              {products.length} articles publiés
+            </p>
+          </div>
         </div>
         
         <button 
-          onClick={openAddModal}
-          className="bg-orange-600 hover:bg-orange-700 text-white px-5 py-3 md:px-6 md:py-4 rounded-2xl font-black text-[10px] md:text-xs tracking-widest flex items-center gap-2 shadow-xl shadow-orange-100 transition-transform active:scale-95"
+          onClick={() => { setEditingProduct(null); setIsModalOpen(true); }}
+          className="bg-slate-950 hover:bg-slate-800 text-white px-6 py-4 rounded-2xl font-bold text-xs tracking-wide flex items-center justify-center gap-2 shadow-xl shadow-slate-200 transition-all active:scale-95"
         >
-          <Plus size={18} strokeWidth={3} /> 
-          <span className="hidden sm:inline">NOUVEL ARTICLE</span>
-          <span className="sm:hidden">AJOUTER</span>
+          <Plus size={18} /> 
+          AJOUTER UN ARTICLE
         </button>
       </div>
 
-      {/* CONTENU PRINCIPAL */}
+      {/* ÉTAT VIDE */}
       {products.length === 0 ? (
-        <div className="p-20 text-center flex flex-col items-center gap-4 bg-white rounded-[3rem] border-2 border-dashed border-gray-100">
-          <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-200">
+        <div className="py-24 text-center flex flex-col items-center gap-6 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
+          <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200">
              <Package size={40} />
           </div>
           <div className="space-y-1">
-            <p className="text-gray-900 font-black uppercase text-sm italic">Votre stock est vide</p>
-            <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest">Commencez par ajouter votre premier produit</p>
+            <p className="text-slate-900 font-bold text-lg">Votre stock est vide</p>
+            <p className="text-slate-400 text-sm">Commencez à vendre en ajoutant votre premier produit.</p>
           </div>
-          <button onClick={openAddModal} className="mt-4 text-orange-600 font-black text-[10px] uppercase underline underline-offset-4">Ajouter maintenant</button>
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="text-orange-500 font-bold text-xs uppercase tracking-widest hover:text-orange-600 transition-colors"
+          >
+            + Créer un produit
+          </button>
         </div>
       ) : (
         <>
-          {/* VERSION MOBILE : CARDS ÉLÉGANTES */}
-          <div className="grid grid-cols-1 gap-4 md:hidden pb-20">
+          {/* VERSION MOBILE */}
+          <div className="grid grid-cols-1 gap-4 md:hidden">
             {products.map((p) => (
-              <div key={p.id} className="bg-white border border-gray-100 rounded-[2rem] p-4 shadow-sm flex items-center gap-4 relative">
-                <img src={p.image_url} className="w-20 h-20 rounded-2xl object-cover border border-gray-50" />
+              <div key={p.id} className="bg-white border border-slate-100 rounded-[2rem] p-4 shadow-sm flex items-center gap-4">
+                <img src={p.image_url} className="w-20 h-20 rounded-2xl object-cover" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[9px] text-orange-600 font-black uppercase tracking-widest mb-1">{p.category}</p>
-                  <h3 className="text-sm font-black uppercase text-gray-900 truncate leading-tight">{p.name}</h3>
-                  <p className="text-gray-900 font-black text-sm mt-1">{p.price.toLocaleString()} CFA</p>
-                  <div className={`inline-block mt-2 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase ${p.stock_quantity > 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                    {p.stock_quantity > 0 ? `${p.stock_quantity} EN STOCK` : 'RUPTURE'}
+                  <p className="text-[9px] text-orange-500 font-bold uppercase tracking-widest mb-0.5">{p.category}</p>
+                  <h3 className="text-sm font-bold text-slate-900 truncate uppercase">{p.name}</h3>
+                  <p className="text-slate-900 font-bold text-sm mt-1">{p.price.toLocaleString()} CFA</p>
+                  <div className={`inline-block mt-2 px-2 py-0.5 rounded-lg text-[8px] font-bold ${p.stock_quantity > 0 ? 'bg-slate-50 text-slate-500' : 'bg-red-50 text-red-500'}`}>
+                    STOCK : {p.stock_quantity}
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <button onClick={() => openEditModal(p)} className="p-3 text-gray-400 hover:text-orange-600 bg-gray-50 rounded-2xl transition-colors"><Edit3 size={18} /></button>
-                  <button onClick={() => handleDelete(p.id)} className="p-3 text-gray-400 hover:text-red-600 bg-gray-50 rounded-2xl transition-colors"><Trash2 size={18} /></button>
+                  <button onClick={() => { setEditingProduct(p); setIsModalOpen(true); }} className="p-3 text-slate-400 hover:text-slate-900 bg-slate-50 rounded-xl transition-colors"><Edit3 size={16} /></button>
+                  <button onClick={() => handleDelete(p.id)} className="p-3 text-slate-400 hover:text-red-500 bg-slate-50 rounded-xl transition-colors"><Trash2 size={16} /></button>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* VERSION DESKTOP : TABLEAU PRO */}
-          <div className="hidden md:block bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+          {/* VERSION DESKTOP */}
+          <div className="hidden md:block bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50/50 border-b border-gray-100">
+              <thead className="bg-slate-50/50">
                 <tr>
-                  <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Article</th>
-                  <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Prix</th>
-                  <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Stock</th>
-                  <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Actions</th>
+                  <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Produit</th>
+                  <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Prix</th>
+                  <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Stock</th>
+                  <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-slate-50">
                 {products.map((p) => (
-                  <tr key={p.id} className="hover:bg-gray-50/30 transition-colors group">
-                    <td className="px-8 py-5 flex items-center gap-4">
-                      <img src={p.image_url} className="w-16 h-16 rounded-2xl object-cover border border-gray-100 shadow-sm" />
+                  <tr key={p.id} className="hover:bg-slate-50/30 transition-colors">
+                    <td className="px-8 py-4 flex items-center gap-4">
+                      <img src={p.image_url} className="w-14 h-14 rounded-xl object-cover shadow-sm border border-slate-100" />
                       <div>
-                        <p className="text-sm font-black uppercase text-gray-900 leading-tight">{p.name}</p>
-                        <p className="text-[10px] text-gray-400 font-bold tracking-widest uppercase mt-1">{p.category}</p>
+                        <p className="text-sm font-bold text-slate-900 uppercase">{p.name}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{p.category}</p>
                       </div>
                     </td>
-                    <td className="px-8 py-5 text-center font-black text-sm text-gray-900 italic">
-                      {p.price.toLocaleString()} <span className="text-[10px]">CFA</span>
+                    <td className="px-8 py-4 text-center font-bold text-slate-900">
+                      {p.price.toLocaleString()} <span className="text-[10px] text-slate-400">CFA</span>
                     </td>
-                    <td className="px-8 py-5 text-center">
-                      <span className={`px-4 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase ${p.stock_quantity > 0 ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-                        {p.stock_quantity} EN STOCK
+                    <td className="px-8 py-4 text-center">
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-tight ${p.stock_quantity > 0 ? 'bg-slate-100 text-slate-600' : 'bg-red-50 text-red-500'}`}>
+                        {p.stock_quantity} UNITÉS
                       </span>
                     </td>
-                    <td className="px-8 py-5 text-right">
-                      <div className="flex justify-end gap-3">
-                        <button onClick={() => openEditModal(p)} className="p-2.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all"><Edit3 size={18} /></button>
-                        <button onClick={() => handleDelete(p.id)} className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={18} /></button>
+                    <td className="px-8 py-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => { setEditingProduct(p); setIsModalOpen(true); }} className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all"><Edit3 size={18} /></button>
+                        <button onClick={() => handleDelete(p.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={18} /></button>
                       </div>
                     </td>
                   </tr>
@@ -184,15 +182,12 @@ export default function ManageProducts() {
         </>
       )}
 
-      {/* MODAL EXTRACTÉ (AJOUT & MODIF) */}
+      {/* MODAL */}
       {isModalOpen && (
         <AddProductModal 
           storeId={storeId}
           productToEdit={editingProduct} 
-          onClose={() => {
-            setIsModalOpen(false);
-            setEditingProduct(null);
-          }}
+          onClose={() => { setIsModalOpen(false); setEditingProduct(null); }}
           onRefresh={() => fetchProducts()}
         />
       )}
