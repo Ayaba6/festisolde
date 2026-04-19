@@ -4,40 +4,46 @@
 
 @layer base {
   body {
-    @apply antialiased text-brand-slate-900 bg-[#F9FAFB]; /* Un gris très léger en fond fait ressortir les cartes blanches */
+    /* On utilise le #FDFDFD des pages Auth pour une cohérence totale */
+    @apply antialiased text-slate-900 bg-[#FDFDFD]; 
   }
 }
 
 @layer components {
   /* --- TYPOGRAPHIE --- */
-  .title-main { @apply text-festi-h1 font-black tracking-tighter text-white; }
-  .title-section { @apply text-festi-h2 font-light tracking-tight text-brand-slate-900; } /* Passage en font-light pour le côté luxe */
+  /* Utilise font-semibold au lieu de font-black pour un look plus "Apple/Studio" */
+  .title-main { @apply text-4xl font-semibold tracking-tight text-slate-900; }
+  .title-section { @apply text-2xl font-light tracking-tight text-slate-800; }
   
-  .text-p { @apply text-festi-base text-brand-slate-500 font-normal leading-relaxed; }
-  .text-caption { @apply text-[10px] font-black uppercase tracking-[0.2em] text-brand-slate-400; }
+  .text-p { @apply text-base text-slate-500 font-medium leading-relaxed; }
+  .text-caption { @apply text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400; }
 
-  /* --- BOUTONS ÉPURÉS --- */
-  .btn-primary {
-    @apply px-6 py-3 bg-[#0866FF] text-white text-[11px] font-bold uppercase tracking-widest rounded-full 
-           transition-all active:scale-95 flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-blue-200/50;
-  }
-
+  /* --- BOUTONS --- */
+  /* Harmonisation avec le bouton noir de la page Auth */
   .btn-dark {
-    @apply px-6 py-3 bg-brand-slate-900 text-white text-[11px] font-bold uppercase tracking-widest rounded-full 
-           transition-all active:scale-95 flex items-center justify-center gap-2 hover:bg-black;
+    @apply px-6 py-4 bg-slate-950 text-white text-[12px] font-semibold rounded-xl 
+           transition-all active:scale-95 flex items-center justify-center gap-2 
+           hover:bg-slate-800 disabled:opacity-50;
   }
 
-  /* --- CARTES PRODUITS (MODE & TECH) --- */
-  .card-product {
-    @apply bg-white border border-gray-100 rounded-2xl overflow-hidden transition-all duration-500
-           hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:-translate-y-1;
+  /* Harmonisation avec le bouton orange du Register */
+  .btn-primary {
+    @apply px-6 py-4 bg-orange-500 text-white text-[12px] font-semibold rounded-xl 
+           transition-all active:scale-95 flex items-center justify-center gap-2 
+           hover:bg-orange-600 shadow-lg shadow-orange-100;
   }
 
-  /* --- EFFET SKELETON (SHIMMER) --- */
-  .skeleton-box {
-    @apply relative overflow-hidden bg-gray-100 before:absolute before:inset-0 
-           before:-translate-x-full before:animate-[shimmer_2s_infinite] 
-           before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent;
+  /* --- CARTES --- */
+  .card-studio {
+    @apply bg-white border border-slate-100 rounded-[2rem] p-6 transition-all duration-500
+           hover:shadow-[0_20px_50px_rgba(0,0,0,0.04)] hover:-translate-y-1;
+  }
+
+  /* --- INPUTS (Pour réutilisation partout) --- */
+  .input-field {
+    @apply w-full bg-slate-50 border-none rounded-xl py-4 px-5 text-slate-900 
+           placeholder:text-slate-300 focus:ring-2 focus:ring-orange-500/20 
+           outline-none transition-all;
   }
 }
 
@@ -53,16 +59,23 @@
   }
 
   .animate-infinite-scroll {
-    animation: scroll 25s linear infinite; /* Un peu plus lent pour plus de classe */
+    animation: scroll 35s linear infinite; /* Ralenti pour un effet plus luxueux */
   }
 
-  /* --- ASPECT RATIO MODE --- */
+  .skeleton-shimmer {
+    @apply relative overflow-hidden bg-slate-100;
+    &::after {
+      @apply absolute inset-0 content-[''];
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: shimmer 2s infinite;
+    }
+  }
+
   .aspect-fashion {
     aspect-ratio: 4 / 5;
   }
 }
 
-/* Utilitaires spécifiques pour les produits */
 .glass-effect {
-  @apply backdrop-blur-md bg-white/70 border border-white/20;
+  @apply backdrop-blur-xl bg-white/80 border border-white/40;
 }

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
-import { Loader2, ArrowRight, Store, BarChart3, ShieldCheck } from 'lucide-react';
+import { Loader2, ArrowRight, Store } from 'lucide-react';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
@@ -30,85 +30,72 @@ export default function Auth() {
   };
 
   return (
-    <div className="h-screen bg-white flex flex-col font-sans antialiased overflow-hidden">
+    <div className="min-h-screen bg-[#FDFDFD] flex flex-col items-center justify-center p-6 font-sans antialiased text-slate-900">
       
-      {/* --- SECTION HAUTE : Ajustée (Moins de vide) --- */}
-      <div className="h-[35%] flex flex-col justify-end px-8 pb-12 relative">
-        <div className="absolute top-8 right-8 w-32 h-32 bg-orange-50 rounded-full blur-3xl opacity-60"></div>
-        
-        <div className="relative z-10 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-200">
-              <Store size={16} strokeWidth={2.5} />
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-600">Studio Pro</span>
-          </div>
-          
-          <h1 className="text-3xl font-light tracking-tighter leading-tight text-slate-900">
-            Prenez le contrôle <br />
-            <span className="font-serif italic text-orange-500">de votre boutique.</span>
-          </h1>
-        </div>
+      {/* Background Decor */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-[10%] -right-[10%] w-[40%] h-[40%] bg-orange-50 rounded-full blur-[120px] opacity-60"></div>
+        <div className="absolute -bottom-[10%] -left-[10%] w-[30%] h-[30%] bg-slate-100 rounded-full blur-[100px]"></div>
       </div>
 
-      {/* --- SECTION BASSE : Le Terminal (Ajusté & Compact) --- */}
-      <div className="flex-1 bg-[#F97316] relative rounded-t-[3.5rem] shadow-[0_-15px_40px_rgba(249,115,22,0.2)] px-8 pt-12 flex flex-col">
-        
-        {/* Logo Badge (Plus petit et mieux centré sur la bordure) */}
-        <div className="absolute -top-8 left-1/2 -translate-x-1/2 md:left-16 md:translate-x-0">
-            <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center shadow-2xl border-4 border-[#F97316]">
-                <span className="text-white text-2xl font-black italic">F</span>
-            </div>
-        </div>
-
-        <div className="mb-8 text-center md:text-left">
-          <h2 className="text-black text-2xl font-black uppercase tracking-tighter italic">Connexion</h2>
-          <div className="h-1 w-8 bg-black/20 mx-auto md:mx-0 mt-1"></div>
-        </div>
-
-        <form onSubmit={handleLogin} className="space-y-3 flex-1">
-          <div className="space-y-2">
-            <input 
-              type="email" 
-              placeholder="Email"
-              className="w-full bg-black/5 border border-black/5 rounded-2xl py-4 px-6 text-black placeholder:text-black/30 font-bold focus:bg-white outline-none transition-all"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <input 
-              type="password" 
-              placeholder="Mot de passe"
-              className="w-full bg-black/5 border border-black/5 rounded-2xl py-4 px-6 text-black placeholder:text-black/30 font-bold focus:bg-white outline-none transition-all"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+      <div className="w-full max-w-md z-10">
+        {/* Header section */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-orange-500 text-white shadow-xl shadow-orange-100 mb-6">
+            <Store size={24} />
           </div>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 mb-2">
+            Studio Pro
+          </h1>
+          <p className="text-slate-500 font-medium">Heureux de vous revoir.</p>
+        </div>
 
-          <button 
-            type="submit"
-            disabled={loading}
-            className="w-full bg-black text-white rounded-2xl py-4 font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 mt-4 hover:bg-slate-900 active:scale-95 transition-all"
-          >
-            {loading ? <Loader2 className="animate-spin" size={18} /> : "Lancer le Dashboard"}
-            {!loading && <ArrowRight size={16} />}
-          </button>
+        {/* Form Card */}
+        <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 ml-1">Email</label>
+              <input 
+                type="email" 
+                placeholder="nom@exemple.com"
+                className="w-full bg-slate-50 border-none rounded-xl py-4 px-5 text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
 
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 ml-1">Mot de passe</label>
+              <input 
+                type="password" 
+                placeholder="••••••••"
+                className="w-full bg-slate-50 border-none rounded-xl py-4 px-5 text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <button 
+              type="submit"
+              disabled={loading}
+              className="w-full bg-slate-950 text-white rounded-xl py-4 font-semibold flex items-center justify-center gap-2 mt-6 hover:bg-orange-600 transition-all active:scale-[0.98]"
+            >
+              {loading ? <Loader2 className="animate-spin" size={20} /> : "Se connecter"}
+              {!loading && <ArrowRight size={18} />}
+            </button>
+          </form>
+        </div>
+
+        {/* Footer Link */}
+        <div className="mt-8 text-center">
           <Link 
             to="/register"
-            className="w-full py-4 text-center text-black/40 text-[9px] font-black uppercase tracking-[0.3em] block"
+            className="text-sm font-medium text-slate-400 hover:text-orange-500 transition-colors"
           >
-            Créer un compte partenaire
+            Pas encore de compte ? <span className="text-slate-900 underline decoration-orange-500/30 underline-offset-4">Créer un profil</span>
           </Link>
-        </form>
-
-        {/* Footer ajusté en bas de l'écran */}
-        <div className="pb-8 pt-4 flex flex-col items-center gap-2 border-t border-black/5">
-            <div className="flex items-center gap-1.5 opacity-20 text-black">
-                <ShieldCheck size={12} />
-                <span className="text-[8px] font-black uppercase tracking-widest">Secured Terminal 2.0</span>
-            </div>
         </div>
       </div>
     </div>

@@ -6,14 +6,12 @@ export default function SplashScreen() {
   const [isVendor, setIsVendor] = useState(false);
 
   useEffect(() => {
-    // Détection du sous-domaine
     const hostname = window.location.hostname;
     setIsVendor(hostname.startsWith('vendeur.'));
 
-    // 1. On lance l'animation de sortie après 2.5s
-    const fadeTimer = setTimeout(() => setIsVisible(false), 2500);
-    // 2. On retire le composant du DOM après la fin de la transition (0.7s plus tard)
-    const removeTimer = setTimeout(() => setShouldRender(false), 3200);
+    // On réduit un peu le temps (2s c'est souvent le "sweet spot" pour ne pas agacer l'utilisateur)
+    const fadeTimer = setTimeout(() => setIsVisible(false), 2000);
+    const removeTimer = setTimeout(() => setShouldRender(false), 2700);
 
     return () => {
       clearTimeout(fadeTimer);
@@ -23,45 +21,44 @@ export default function SplashScreen() {
 
   if (!shouldRender) return null;
 
-  // Choix du logo et de la couleur selon le mode
   const logoSrc = isVendor ? "/studio-pwa-192x192.png" : "/logo-festisolde.png";
-  const brandColor = isVendor ? "#F97316" : "#FF5A5A"; // Orange pour Studio, Corail pour Festisolde
+  // On utilise l'orange de la marque ou un gris ardoise élégant
+  const brandColor = isVendor ? "#F97316" : "#0F172A"; 
 
   return (
     <div 
-      className={`fixed inset-0 z-[9999] flex items-center justify-center bg-brand-dark transition-opacity duration-700 ${
+      className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#FDFDFD] transition-opacity duration-700 ${
         isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
       }`}
     >
       <div className="relative flex flex-col items-center">
         
-        {/* Halo lumineux dynamique */}
+        {/* Halo lumineux très subtil (plus doux sur fond clair) */}
         <div 
-          className="absolute inset-0 rounded-full blur-[60px] opacity-10 animate-pulse"
+          className="absolute inset-0 w-64 h-64 -translate-x-1/4 -translate-y-1/4 rounded-full blur-[80px] opacity-20 animate-pulse"
           style={{ backgroundColor: brandColor }}
         ></div>
 
-        {/* LOGO DYNAMIQUE */}
-        <div className="relative animate-bounce-slow">
+        {/* LOGO avec une animation d'échelle douce plutôt qu'un bounce (plus premium) */}
+        <div className="relative animate-subtle-zoom">
            <img 
              src={logoSrc} 
-             alt={isVendor ? "Festi Studio Logo" : "Festisolde Logo"} 
-             className="w-32 h-32 md:w-40 md:h-40 object-contain"
-             style={{ filter: `drop-shadow(0 0 20px ${brandColor}66)` }}
+             alt="Logo" 
+             className="w-24 h-24 md:w-32 md:h-32 object-contain"
            />
         </div>
 
-        {/* Barre de chargement dynamique */}
-        <div className="mt-12 w-40 h-[1.5px] bg-white/5 rounded-full overflow-hidden">
+        {/* Barre de chargement plus fine et élégante */}
+        <div className="mt-10 w-32 h-[2px] bg-slate-100 rounded-full overflow-hidden">
           <div 
-            className="h-full animate-loading-bar"
+            className="h-full animate-loading-bar origin-left"
             style={{ backgroundColor: brandColor }}
           ></div>
         </div>
 
-        {/* Texte dynamique */}
-        <p className="mt-4 text-[9px] font-black uppercase tracking-[0.5em] text-white/30 italic">
-          {isVendor ? "Festi Studio" : "Festisolde"}
+        {/* Texte en Slate-400 pour le minimalisme */}
+        <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.4em] text-slate-400">
+          {isVendor ? "Studio Pro" : "Festisolde"}
         </p>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2, Store } from 'lucide-react';
+import { ArrowLeft, Loader2, Store, Sparkles } from 'lucide-react';
 
 export default function Register() {
   const [loading, setLoading] = useState(false);
@@ -42,11 +42,10 @@ export default function Register() {
 
         if (storeError) throw storeError;
 
-        alert('Compte créé avec succès ! Vérifiez vos e-mails pour confirmer.');
+        alert('Compte créé ! Vérifiez vos e-mails pour confirmer.');
         navigate('/auth');
       }
     } catch (error) {
-      console.error("Erreur d'inscription:", error.message);
       alert(error.message);
     } finally {
       setLoading(false);
@@ -54,102 +53,96 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4 sm:px-6 antialiased py-8">
+    <div className="min-h-screen bg-[#FDFDFD] flex flex-col items-center justify-center p-6 font-sans antialiased text-slate-900">
       
-      {/* Bouton Retour - Ajusté pour mobile */}
-      <Link to="/auth" className="fixed top-6 left-6 md:top-10 md:left-10 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors z-50">
-        <ArrowLeft size={14} strokeWidth={3} /> <span className="hidden sm:inline">Retour</span>
+      {/* Background Decor */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-orange-50 rounded-full blur-[120px] opacity-60"></div>
+        <div className="absolute -top-[10%] -left-[10%] w-[30%] h-[30%] bg-slate-100 rounded-full blur-[100px]"></div>
+      </div>
+
+      {/* Back Button */}
+      <Link 
+        to="/auth" 
+        className="fixed top-8 left-8 flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-slate-900 transition-colors z-20"
+      >
+        <ArrowLeft size={18} />
+        <span>Retour</span>
       </Link>
 
-      <div className="w-full max-w-[360px] space-y-8 md:space-y-10">
-        
-        {/* Header - Plus compact */}
-        <div className="text-center space-y-3">
-          <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-2">
-            <Store size={22} strokeWidth={1.5} />
+      <div className="w-full max-w-md z-10">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-slate-900 text-white shadow-xl mb-6">
+            <Sparkles size={22} className="text-orange-400" />
           </div>
-          <h1 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-gray-900 italic">
-            Nouveau <span className="text-orange-600">Vendeur</span>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 mb-2">
+            Créer votre studio
           </h1>
-          <p className="text-[9px] font-bold text-gray-300 uppercase tracking-[0.2em] leading-tight">
-            Lancez votre boutique aujourd'hui
+          <p className="text-slate-500 font-medium text-sm">
+            Rejoignez l'aventure en quelques secondes.
           </p>
         </div>
 
-        {/* Formulaire - Marges réduites */}
-        <form className="space-y-6" onSubmit={handleRegister}>
-          <div className="space-y-5">
+        <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
+          <form onSubmit={handleRegister} className="space-y-4">
             
-            <div className="group relative">
-              <label className="text-[9px] font-black text-gray-900 uppercase tracking-widest mb-1 block group-focus-within:text-orange-600 transition-colors">
-                Nom de la boutique
-              </label>
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 ml-1">Nom de la boutique</label>
               <input 
                 type="text" 
-                placeholder="EX: MAISON VINTAGE" 
-                className="w-full border-b-2 border-gray-100 py-3 text-[11px] font-bold uppercase tracking-widest outline-none focus:border-orange-600 transition-all bg-transparent placeholder:text-gray-200 text-gray-900"
-                value={storeName} 
-                onChange={(e) => setStoreName(e.target.value)} 
+                placeholder="Ex: Maison Minimaliste"
+                className="w-full bg-slate-50 border-none rounded-xl py-4 px-5 text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all"
+                value={storeName}
+                onChange={(e) => setStoreName(e.target.value)}
                 required
               />
             </div>
 
-            <div className="group relative">
-              <label className="text-[9px] font-black text-gray-900 uppercase tracking-widest mb-1 block group-focus-within:text-orange-600 transition-colors">
-                Email 
-              </label>
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 ml-1">Email professionnel</label>
               <input 
                 type="email" 
-                placeholder="PRO@EMAIL.COM" 
-                className="w-full border-b-2 border-gray-100 py-3 text-[11px] font-bold uppercase tracking-widest outline-none focus:border-orange-600 transition-all bg-transparent placeholder:text-gray-200 text-gray-900"
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
+                placeholder="hello@votre-store.com"
+                className="w-full bg-slate-50 border-none rounded-xl py-4 px-5 text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
 
-            <div className="group relative">
-              <label className="text-[9px] font-black text-gray-900 uppercase tracking-widest mb-1 block group-focus-within:text-orange-600 transition-colors">
-                Mot de passe (8+ car.)
-              </label>
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 ml-1">Mot de passe</label>
               <input 
                 type="password" 
-                placeholder="••••••••" 
-                className="w-full border-b-2 border-gray-100 py-3 text-[11px] font-bold uppercase tracking-widest outline-none focus:border-orange-600 transition-all bg-transparent placeholder:text-gray-200 text-gray-900"
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
+                placeholder="••••••••"
+                className="w-full bg-slate-50 border-none rounded-xl py-4 px-5 text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={8}
               />
             </div>
-          </div>
 
-          <div className="pt-2">
             <button 
               type="submit"
               disabled={loading}
-              className="w-full bg-black text-white py-4 md:py-5 text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-orange-600 active:scale-95 transition-all duration-300 disabled:bg-gray-100 disabled:text-gray-400"
+              className="w-full bg-orange-500 text-white rounded-xl py-4 font-semibold flex items-center justify-center gap-2 mt-6 hover:bg-orange-600 transition-all active:scale-[0.98] shadow-lg shadow-orange-100"
             >
-              {loading ? <Loader2 className="animate-spin" size={16} /> : "Créer ma boutique"}
+              {loading ? <Loader2 className="animate-spin" size={20} /> : "Lancer ma boutique"}
             </button>
-          </div>
-        </form>
+          </form>
+        </div>
 
-        {/* Footer info & Connexion */}
-        <div className="text-center space-y-6">
-          <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest leading-relaxed">
-            En cliquant sur créer, vous acceptez nos <br/>
-            <span className="text-black border-b border-black cursor-pointer">Conditions Partenaires</span>
+        <div className="mt-8 text-center">
+          <p className="text-xs text-slate-400 mb-4 px-8 leading-relaxed">
+            En créant un compte, vous acceptez nos <span className="text-slate-900 font-medium">Conditions d'Utilisation</span>.
           </p>
-
-          <div className="pt-4 border-t border-gray-50">
-            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-              Déjà partenaire ?{' '}
-              <Link to="/auth" className="text-orange-600 font-black hover:underline block mt-1 sm:inline sm:mt-0 transition-all">
-                Connectez-vous
-              </Link>
-            </p>
-          </div>
+          <Link 
+            to="/auth"
+            className="text-sm font-medium text-slate-900 underline decoration-orange-500/30 underline-offset-4"
+          >
+            Déjà partenaire ? Connectez-vous
+          </Link>
         </div>
       </div>
     </div>
