@@ -117,14 +117,14 @@ export default function Dashboard() {
 
         <div className="flex items-center gap-4">
           <button onClick={() => setShowBoostModal(true)} className="group relative flex items-center justify-center gap-3 bg-orange-600 text-white px-8 py-5 rounded-[2rem] text-[11px] font-black tracking-widest shadow-2xl shadow-orange-200 hover:bg-orange-500 transition-all active:scale-95">
-            <Zap size={18} fill="currentColor" className="group-hover:animate-bounce" /> BOOSTER L'ENSEIGNE
+            <Zap size={18} fill="currentColor" className="group-hover:animate-bounce" /> BOOSTER ARTICLE
           </button>
           
           <button 
             onClick={() => setIsAddModalOpen(true)} 
             className="flex items-center justify-center gap-3 bg-slate-900 text-white px-8 py-5 rounded-[2rem] text-[11px] font-black tracking-widest shadow-2xl shadow-slate-200 hover:bg-slate-800 transition-all active:scale-95"
           >
-            <Plus size={18} strokeWidth={3} /> AJOUTER UN PRODUIT
+            <Plus size={18} strokeWidth={3} /> AJOUT PRODUIT
           </button>
         </div>
       </div>
