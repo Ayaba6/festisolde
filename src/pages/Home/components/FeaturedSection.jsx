@@ -1,107 +1,82 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Zap, Star, ArrowRight } from 'lucide-react';
+import { ArrowRight, BadgePercent, Truck, Smartphone } from 'lucide-react';
 
+/**
+ * Hero de la page d'accueil : promesse claire + 2 actions + preuves de confiance.
+ */
 export default function FeaturedSection() {
-  const [currentSlide, setCurrentSlide] = useState(0);
-
-  const slides = [
-    {
-      title: "ARRIVAGE ÉLECTRONIQUE",
-      subtitle: "SÉLECTION IPHONE & SAMSUNG",
-      image: "https://images.unsplash.com/photo-1556656793-062ff9878273?q=80&w=1000&auto=format&fit=crop",
-    },
-    {
-      title: "MODE & TEXTILE",
-      subtitle: "BALLOTS DE FRIPERIE PREMIUM",
-      image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1000&auto=format&fit=crop",
-    }
-  ];
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [slides.length]);
-
   return (
-    <section className="max-w-7xl mx-auto px-6 py-10">
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[380px]">
-        
-        {/* --- BANNIÈRE GAUCHE : MINIMALISTE --- */}
-        <div className="hidden lg:flex relative overflow-hidden group bg-gray-100">
-          <img 
-            src="https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=500&auto=format&fit=crop" 
-            className="absolute inset-0 w-full h-full object-cover grayscale opacity-40 group-hover:scale-110 transition-transform duration-[2s]"
-            alt="Promo"
-          />
-          <div className="relative z-10 p-8 flex flex-col justify-between h-full border border-gray-100">
-            <div>
-              <Zap size={18} className="text-gray-900 mb-4" />
-              <h3 className="text-gray-900 font-light text-xl leading-tight uppercase tracking-tighter">
-                VENTES<br/><span className="font-medium text-red-600">FLASH</span>
-              </h3>
-            </div>
-            <Link to="/products" className="text-gray-900 text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2 group-hover:gap-4 transition-all">
-              EXPLORER <ArrowRight size={14} />
+    <section className="bg-cream">
+      <div className="shop-container grid items-center gap-10 py-10 md:py-16 lg:grid-cols-[1.05fr_1fr] lg:gap-16">
+        {/* Texte */}
+        <div className="order-2 lg:order-1">
+          <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-orange-700 shadow-card">
+            <BadgePercent size={14} /> Déstockage &amp; promotions toute l’année
+          </span>
+
+          <h1 className="mt-5 text-[2.5rem] font-extrabold leading-[1.05] tracking-tight text-ink sm:text-5xl lg:text-[3.6rem]">
+            Les bonnes affaires du Burkina,{' '}
+            <span className="relative whitespace-nowrap text-orange-600">
+              en direct
+              <svg aria-hidden="true" viewBox="0 0 220 12" className="absolute -bottom-2 left-0 h-3 w-full text-orange-300" preserveAspectRatio="none">
+                <path d="M2 9c40-6 120-9 216-4" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+              </svg>
+            </span>{' '}
+            des vendeurs.
+          </h1>
+
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-soft">
+            Mode, beauté, électronique, lots en gros… Des prix cassés sur des stocks réels,
+            payés en toute sécurité par Mobile Money ou à la livraison.
+          </p>
+
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link to="/products" className="shop-btn-primary px-7 py-3.5 text-[15px]">
+              Voir les offres <ArrowRight size={18} />
+            </Link>
+            <Link to="/grossistes" className="shop-btn-ghost px-7 py-3.5 text-[15px]">
+              Acheter en gros
             </Link>
           </div>
+
+          <ul className="mt-10 grid max-w-xl grid-cols-1 gap-4 text-sm sm:grid-cols-3">
+            {[
+              { icon: BadgePercent, title: 'Prix déstockage', text: 'Prix cassés' },
+              { icon: Smartphone, title: 'Orange & Moov', text: 'Paiement sécurisé' },
+              { icon: Truck, title: 'Livraison', text: 'Payez à réception' },
+            ].map(({ icon: Icon, title, text }) => (
+              <li key={title} className="flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-orange-600 shadow-card">
+                  <Icon size={18} />
+                </span>
+                <span>
+                  <span className="block font-bold text-ink">{title}</span>
+                  <span className="block text-ink-muted">{text}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        {/* --- SLIDER CENTRAL : ÉPURÉ --- */}
-        <div className="lg:col-span-3 relative overflow-hidden group">
-          {slides.map((slide, index) => (
-            <div 
-              key={index}
-              className={`absolute inset-0 transition-opacity duration-[1.5s] ease-in-out ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}
-            >
-              <img src={slide.image} alt="" className="w-full h-full object-cover scale-105 group-hover:scale-100 transition-transform duration-[3s]" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-10">
-                <p className="text-white/80 text-[10px] font-bold uppercase tracking-[0.3em] mb-2">
-                  {slide.subtitle}
-                </p>
-                <h2 className="text-4xl font-light text-white leading-none mb-6 tracking-[ -0.05em]">
-                  {slide.title}
-                </h2>
-                <button className="border border-white/30 backdrop-blur-sm text-white px-8 py-3 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all w-fit">
-                  DÉCOUVRIR LE STOCK
-                </button>
-              </div>
-            </div>
-          ))}
-          
-          {/* Navigation Slider */}
-          <div className="absolute bottom-8 right-8 flex gap-4 z-20">
-            <button onClick={() => setCurrentSlide(currentSlide === 0 ? slides.length-1 : currentSlide-1)} className="text-white/50 hover:text-white transition-colors">
-              <ChevronLeft size={24} strokeWidth={1} />
-            </button>
-            <button onClick={() => setCurrentSlide(currentSlide === slides.length-1 ? 0 : currentSlide+1)} className="text-white/50 hover:text-white transition-colors">
-              <ChevronRight size={24} strokeWidth={1} />
-            </button>
+        {/* Visuel */}
+        <div className="relative order-1 lg:order-2">
+          <div className="relative mx-auto aspect-[5/4] w-full overflow-hidden rounded-[2rem] bg-orange-100 shadow-lift sm:aspect-[4/3] lg:aspect-[10/11]">
+            <img
+              src="/categories/hero.webp"
+              alt="Cliente surprise devant un portant de vêtements soldés"
+              className="h-full w-full object-cover"
+              fetchPriority="high"
+            />
+          </div>
+          <div className="absolute -bottom-4 left-4 hidden rounded-2xl bg-white px-4 py-3 shadow-lift sm:block lg:-left-6 lg:bottom-10">
+            <p className="text-xs font-semibold text-ink-muted">Nouveaux arrivages</p>
+            <p className="text-lg font-extrabold text-ink">Chaque semaine</p>
+          </div>
+          <div className="absolute -top-3 right-4 rotate-6 rounded-2xl bg-orange-600 px-4 py-3 text-white shadow-lift lg:-right-4 lg:top-10">
+            <p className="text-xs font-semibold opacity-90">Toute l’année</p>
+            <p className="text-2xl font-extrabold leading-none">Soldes</p>
           </div>
         </div>
-
-        {/* --- BANNIÈRE DROITE : ÉPURÉE --- */}
-        <div className="hidden lg:flex relative overflow-hidden group bg-gray-900">
-          <img 
-            src="https://images.unsplash.com/photo-1534452286304-a814d494777e?q=80&w=500&auto=format&fit=crop" 
-            className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:scale-110 transition-transform duration-[2s]"
-            alt="Grossiste"
-          />
-          <div className="relative z-10 p-8 flex flex-col justify-between h-full">
-            <div>
-              <Star size={18} className="text-white/50 mb-4" />
-              <h3 className="text-white font-light text-xl leading-tight uppercase tracking-tighter">
-                ESPACE<br/><span className="font-medium">GROSSISTE</span>
-              </h3>
-            </div>
-            <Link to="/auth" className="text-white text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2 group-hover:gap-4 transition-all">
-              REJOINDRE <ArrowRight size={14} />
-            </Link>
-          </div>
-        </div>
-
       </div>
     </section>
   );

@@ -42,13 +42,11 @@ export default function PartnersMarquee() {
   if (loading) return <div className="h-24 bg-white" />;
 
   return (
-    <section className="py-12 bg-white overflow-hidden border-y border-gray-100 group/marquee">
+    <section className="py-12 bg-white overflow-hidden border-t border-stone-100 group/marquee">
       {/* Label - Style Minimaliste Noir */}
-      <div className="max-w-7xl mx-auto px-6 mb-8 flex items-center gap-4">
-        <span className="text-[9px] font-black uppercase tracking-[0.4em] text-black italic">
-          Notre reseau de <span className="text-orange-600">Partenaires</span>
-        </span>
-        <div className="h-[1px] flex-1 bg-gray-100"></div>
+      <div className="shop-container mb-8 flex items-center gap-4">
+        <span className="shop-eyebrow text-ink-muted">Ils vendent sur FestiSolde</span>
+        <div className="h-px flex-1 bg-stone-100"></div>
       </div>
 
       <div className="relative flex items-center overflow-hidden">
@@ -79,7 +77,7 @@ export default function PartnersMarquee() {
                 </div>
 
                 {/* NOM DE LA BOUTIQUE - Affiché en NOIR PUR directement */}
-                <span className="text-xl md:text-2xl font-black uppercase italic tracking-tighter text-black">
+                <span className="text-lg md:text-xl font-bold tracking-tight text-ink-soft">
                   {store.name}
                 </span>
 

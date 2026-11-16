@@ -1,121 +1,109 @@
-import React from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { Plus, Store } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Store, ImageOff } from 'lucide-react';
+import { unitPrice } from '../../context/CartContext';
+
+// Les images peuvent arriver en tableau, en chaîne Postgres "{a,b}" ou en URL simple.
+export const getProductImages = (product) => {
+  const raw = product?.images;
+  let list = [];
+  if (Array.isArray(raw)) list = raw;
+  else if (typeof raw === 'string' && raw.startsWith('{')) list = raw.slice(1, -1).split(',').map((u) => u.trim().replace(/^"|"$/g, ''));
+  else if (typeof raw === 'string' && raw) list = [raw];
+  if (product?.image_url && !list.includes(product.image_url)) list = [product.image_url, ...list];
+  return list.filter(Boolean);
+};
+
+export const formatPrice = (value) => `${Math.round(Number(value) || 0).toLocaleString('fr-FR')} F`;
 
 export const ProductCard = ({ product }) => {
-  const navigate = useNavigate();
   const location = useLocation();
+  const images = getProductImages(product);
+  const price = unitPrice(product);
+  const original = Number(product.price) || 0;
+  const hasPromo = Number(product.sale_price) > 0 && Number(product.sale_price) < original;
+  const discountPct = hasPromo ? Math.round(((original - price) / original) * 100) : 0;
 
-  const discount = (product.price || 0) - (product.sale_price || 0);
-  const hasPromo = product.sale_price < product.price && discount > 0;
-
-  const storeName = product.stores?.name || "Boutique Officielle";
-  const storeSlug = product.stores?.slug || ""; 
-
-  const isAlreadyInStore = location.pathname.includes(storeSlug) && storeSlug !== "";
-
-  const getImages = () => {
-    const raw = product.images;
-    if (!raw) return [];
-    if (Array.isArray(raw)) return raw;
-    if (typeof raw === 'string' && raw.startsWith('{')) {
-      return raw.replace('{', '').replace('}', '').split(',').map(url => url.trim());
-    }
-    return typeof raw === 'string' ? [raw] : [];
-  };
-
-  const images = getImages();
-  const isPack = product.product_type === 'pack' || 
-                 product.category === 'Packs Promo' || 
-                 product.name?.toLowerCase().includes('pack');
-
-  const renderMedia = () => {
-    const zoom = "transition-transform duration-1000 ease-out group-hover:scale-110";
-    if (isPack && images.length >= 2) {
-      return (
-        <div className={`grid grid-cols-2 grid-rows-2 h-full w-full gap-[1px] bg-white ${zoom}`}>
-          <img src={images[0]} className="w-full h-full object-cover" alt="" />
-          <img src={images[1]} className="w-full h-full object-cover" alt="" />
-          <div className="bg-orange-50 flex items-center justify-center overflow-hidden">
-             {images[2] ? <img src={images[2]} className="w-full h-full object-cover" alt="" /> : <span className="text-[5px] font-black text-orange-200 italic uppercase">Festisolde</span>}
-          </div>
-          <div className="bg-orange-600 flex items-center justify-center p-1 overflow-hidden">
-             {images[3] ? <img src={images[3]} className="w-full h-full object-cover" alt="" /> : <span className="text-[6px] font-bold text-white uppercase text-center leading-none italic">{product.name}</span>}
-          </div>
-        </div>
-      );
-    }
-    return <img src={product.image_url || images[0]} className={`w-full h-full object-cover ${zoom}`} alt={product.name} />;
-  };
+  const storeName = product.stores?.name;
+  const storeSlug = product.stores?.slug;
+  const isInStorePage = storeSlug && location.pathname === `/${storeSlug}`;
+  const outOfStock = product.stock_quantity !== null && product.stock_quantity !== undefined && product.stock_quantity <= 0;
 
   return (
-    <div 
-      onClick={() => navigate(`/produit/${product.id}`)}
-      className="group cursor-pointer flex flex-col w-full"
-    >
-      <div className="relative aspect-[3/4] bg-gray-50 rounded-[1.8rem] overflow-hidden mb-3 border border-gray-100 shadow-sm transition-all duration-500 group-hover:shadow-lg">
-        {renderMedia()}
-        
-        {/* --- BADGE BOUTIQUE INTELLIGENT --- */}
-        {/* z-20 pour passer SOUS le Header (z-50) au scroll */}
-        <div className="absolute bottom-3 left-3 z-20">
-          {storeSlug ? (
-            !isAlreadyInStore && (
-              <Link 
-                to={`/${storeSlug}`}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white/95 backdrop-blur-md border border-gray-100 pl-2 pr-3 py-1.5 rounded-full shadow-xl flex items-center gap-1.5 transition-all duration-300 hover:bg-black group/store active:scale-95"
-              >
-                <Store size={12} className="text-orange-600 group-hover/store:text-white" />
-                <span className="text-[9px] font-black uppercase tracking-wider text-gray-800 group-hover/store:text-white">
-                  {storeName}
-                </span>
-              </Link>
-            )
-          ) : (
-            <div className="bg-red-500 text-white text-[7px] px-2 py-1 rounded-full uppercase font-black animate-pulse">
-               Lien Store Manquant
-            </div>
-          )}
-        </div>
-
-        {/* Badge Promo - z-30 pour rester au dessus du badge boutique mais sous le header */}
-        {hasPromo && (
-          <div className="absolute top-3 left-3 bg-orange-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg italic z-30">
-            -{Math.round((discount / product.price) * 100)}%
+    <article className="group relative flex flex-col">
+      <Link
+        to={`/produit/${product.id}`}
+        className="relative block aspect-[4/5] overflow-hidden rounded-2xl bg-stone-100"
+        aria-label={product.name}
+      >
+        {images[0] ? (
+          <img
+            src={images[0]}
+            alt=""
+            loading="lazy"
+            className={`h-full w-full object-cover transition duration-500 group-hover:scale-[1.04] ${images[1] ? 'group-hover:opacity-0' : ''}`}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-stone-300">
+            <ImageOff size={32} />
           </div>
         )}
+        {images[1] && (
+          <img
+            src={images[1]}
+            alt=""
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-500 group-hover:opacity-100"
+          />
+        )}
 
-        {/* Overlay Noir */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-500 flex items-center justify-center z-10 pointer-events-none">
-          <div className="bg-white text-orange-600 p-2.5 rounded-full shadow-2xl scale-0 group-hover:scale-100 transition-transform duration-300 border border-gray-100">
-            <Plus size={20} strokeWidth={3} />
-          </div>
-        </div>
-      </div>
-
-      {/* --- INFOS --- */}
-      <div className="flex flex-col px-2 space-y-0.5">
-        <h3 className="text-xs font-black text-gray-900 uppercase italic truncate tracking-wide group-hover:text-orange-600 transition-colors">
-          {product.name}
-        </h3>
-        <p className="text-[10px] text-gray-400 italic line-clamp-1 font-medium">
-          {product.description || "Édition limitée"}
-        </p>
-        
-        {/* --- SECTION PRIX --- */}
-        <div className="flex items-center flex-wrap gap-2 pt-1">
-          <span className="text-sm font-black italic text-orange-600">
-            {(product.sale_price || product.price).toLocaleString()} <span className="text-[10px] not-italic">CFA</span>
-          </span>
-
-          {hasPromo && (
-            <span className="text-[10px] font-bold text-gray-300 line-through decoration-gray-400">
-              {product.price.toLocaleString()} CFA
-            </span>
+        <div className="absolute left-2.5 top-2.5 flex flex-col items-start gap-1.5">
+          {hasPromo && discountPct > 0 && (
+            <span className="rounded-full bg-orange-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm">-{discountPct}%</span>
+          )}
+          {product.product_type === 'pack' && (
+            <span className="rounded-full bg-ink px-2.5 py-1 text-xs font-bold text-white">Pack</span>
           )}
         </div>
+
+        {outOfStock && (
+          <div className="absolute inset-x-2.5 bottom-2.5 rounded-xl bg-white/90 py-2 text-center text-xs font-bold text-ink backdrop-blur">
+            Épuisé
+          </div>
+        )}
+      </Link>
+
+      <div className="mt-3 flex flex-1 flex-col px-0.5">
+        {storeName && !isInStorePage && (
+          <Link
+            to={`/${storeSlug}`}
+            className="mb-1 inline-flex max-w-full items-center gap-1 self-start text-xs font-semibold text-ink-muted hover:text-orange-600"
+          >
+            <Store size={12} className="shrink-0" />
+            <span className="truncate">{storeName}</span>
+          </Link>
+        )}
+
+        <Link to={`/produit/${product.id}`} className="line-clamp-2 text-[15px] font-semibold leading-snug text-ink hover:text-orange-600">
+          {product.name}
+        </Link>
+
+        <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
+          <span className={`text-base font-extrabold ${hasPromo ? 'text-orange-600' : 'text-ink'}`}>{formatPrice(price)}</span>
+          {hasPromo && <span className="text-sm text-stone-400 line-through">{formatPrice(original)}</span>}
+        </div>
       </div>
-    </div>
+    </article>
   );
 };
+
+export const ProductCardSkeleton = () => (
+  <div className="animate-pulse">
+    <div className="aspect-[4/5] rounded-2xl bg-stone-100" />
+    <div className="mt-3 h-3 w-1/3 rounded bg-stone-100" />
+    <div className="mt-2 h-4 w-4/5 rounded bg-stone-100" />
+    <div className="mt-2 h-4 w-1/3 rounded bg-stone-100" />
+  </div>
+);
+
+// Ancien nom conservé pour ProductGrid.
+export const ProductSkeleton = ProductCardSkeleton;

@@ -1,6 +1,8 @@
 import { useCart, unitPrice } from '../../context/CartContext';
-import { Trash2, ShoppingBag, ArrowRight, ChevronLeft, Plus, Minus, MessageCircle, MapPin, CreditCard } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Trash2, ShoppingBag, ArrowRight, Plus, Minus, MessageCircle, MapPin, CreditCard, Check, Lock, Loader2 } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import Header from '../Home/components/Header';
+import { getProductImages, formatPrice } from './ProductCard';
 import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { buildOrderWhatsappUrl, cleanPhone } from '../../lib/whatsapp';
@@ -119,140 +121,199 @@ export default function Cart() {
     }
   };
 
+  const total = getCartTotal();
+  const itemCount = cart.reduce((acc, i) => acc + i.quantity, 0);
+  const storeName = cart[0]?.stores?.name;
+
   if (cart.length === 0) return (
-    <div className="min-h-[80vh] bg-white flex flex-col items-center justify-center p-6 text-center antialiased">
-      <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
-        <ShoppingBag size={32} className="text-gray-300" />
+    <div className="min-h-screen bg-white">
+      <Header />
+      <div className="shop-container flex flex-col items-center py-28 text-center">
+        <span className="flex h-20 w-20 items-center justify-center rounded-full bg-stone-100">
+          <ShoppingBag size={32} className="text-stone-400" />
+        </span>
+        <h1 className="mt-6 text-2xl font-extrabold text-ink">Votre panier est vide</h1>
+        <p className="mt-2 max-w-sm text-ink-muted">Parcourez les offres du moment et ajoutez vos coups de cœur.</p>
+        <Link to="/products" className="shop-btn-primary mt-8">Découvrir les offres <ArrowRight size={18} /></Link>
       </div>
-      <h2 className="text-xl font-black uppercase italic tracking-tighter text-gray-900">Ton panier est vide</h2>
-      <button onClick={() => navigate('/')} className="mt-10 px-10 py-4 bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl">
-        Découvrir
-      </button>
     </div>
   );
 
+  const paymentOptions = [
+    { id: 'ligdicash', label: 'Payer maintenant', hint: 'Orange Money, Moov Money ou carte', icon: CreditCard },
+    { id: 'livraison', label: 'Payer à la livraison', hint: 'En espèces, commande envoyée sur WhatsApp', icon: MessageCircle },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#FBFBFB] pb-32 antialiased text-gray-900">
-      <div className="max-w-5xl mx-auto p-4 md:p-10">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6 bg-white px-5 py-3 rounded-full border border-gray-100 shadow-sm active:scale-95 transition-all">
-          <ChevronLeft size={14} /> Retour
-        </button>
+    <div className="min-h-screen bg-stone-50/70 text-ink">
+      <Header />
 
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-          <div className="flex-1 space-y-6">
-            <h1 className="text-2xl font-black uppercase italic tracking-tighter flex items-baseline gap-3">
-              Panier <span className="text-xs not-italic font-black text-orange-600 bg-orange-50 px-3 py-1 rounded-full">{cart.length}</span>
-            </h1>
+      <main className="shop-container pb-24 pt-8 md:pt-12">
+        {/* Étapes */}
+        <ol className="mb-8 flex items-center gap-3 text-sm font-semibold" aria-label="Étapes de commande">
+          <li className={`flex items-center gap-2 ${!isOrdering ? 'text-ink' : 'text-ink-muted'}`}>
+            <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs ${!isOrdering ? 'bg-ink text-white' : 'bg-green-600 text-white'}`}>
+              {isOrdering ? <Check size={14} /> : 1}
+            </span>
+            Panier
+          </li>
+          <li aria-hidden="true" className="h-px w-8 bg-stone-300" />
+          <li className={`flex items-center gap-2 ${isOrdering ? 'text-ink' : 'text-ink-muted'}`}>
+            <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs ${isOrdering ? 'bg-ink text-white' : 'bg-stone-200'}`}>2</span>
+            Livraison &amp; paiement
+          </li>
+        </ol>
 
-            <div className="space-y-4">
-              {cart.map((item, index) => (
-                <div key={item.cartKey || `${item.id}-${index}`} className="bg-white p-4 rounded-[2rem] flex gap-4 items-center border border-gray-100 shadow-sm transition-all group">
-                  <div className="w-20 h-20 md:w-24 md:h-24 bg-[#F9F9F9] rounded-2xl overflow-hidden shrink-0 border border-gray-50">
-                    <img src={item.image_url || item.images?.[0]} className="w-full h-full object-cover" alt={item.name} />
+        <div className="grid gap-8 lg:grid-cols-[1fr_400px] lg:gap-10">
+          {/* Colonne gauche */}
+          <section>
+            {!isOrdering ? (
+              <>
+                <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl">
+                  Mon panier <span className="text-lg font-semibold text-ink-muted">({itemCount})</span>
+                </h1>
+                {storeName && <p className="mt-1 text-sm text-ink-muted">Boutique : <span className="font-semibold text-ink">{storeName}</span></p>}
+
+                <ul className="mt-6 divide-y divide-stone-100 rounded-3xl border border-stone-100 bg-white shadow-card">
+                  {cart.map((item, index) => {
+                    const img = getProductImages(item)[0];
+                    return (
+                      <li key={item.cartKey || `${item.id}-${index}`} className="flex gap-4 p-4 sm:p-5">
+                        <Link to={`/produit/${item.id}`} className="h-24 w-20 shrink-0 overflow-hidden rounded-xl bg-stone-100 sm:h-28 sm:w-24">
+                          {img && <img src={img} alt="" className="h-full w-full object-cover" />}
+                        </Link>
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <div className="flex items-start justify-between gap-3">
+                            <Link to={`/produit/${item.id}`} className="line-clamp-2 font-semibold leading-snug hover:text-orange-600">{item.name}</Link>
+                            <button onClick={() => removeFromCart(item.cartKey)} className="-mr-1 -mt-1 rounded-full p-2 text-stone-400 transition hover:bg-red-50 hover:text-red-600" aria-label={`Retirer ${item.name}`}>
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                          {(item.selectedSize || item.selectedColor) && (
+                            <p className="mt-1 text-sm text-ink-muted">
+                              {[item.selectedSize && `Taille ${item.selectedSize}`, item.selectedColor].filter(Boolean).join(' · ')}
+                            </p>
+                          )}
+                          <div className="mt-auto flex items-end justify-between gap-3 pt-3">
+                            <div className="flex items-center rounded-full border border-stone-200">
+                              <button onClick={() => (item.quantity > 1 ? addToCart(item, -1) : removeFromCart(item.cartKey))} className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-stone-100" aria-label="Diminuer la quantité">
+                                <Minus size={14} />
+                              </button>
+                              <span className="w-8 text-center text-sm font-bold">{item.quantity}</span>
+                              <button onClick={() => addToCart(item, 1)} className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-stone-100" aria-label="Augmenter la quantité">
+                                <Plus size={14} />
+                              </button>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-extrabold">{formatPrice(unitPrice(item) * item.quantity)}</p>
+                              {item.quantity > 1 && <p className="text-xs text-ink-muted">{formatPrice(unitPrice(item))} l’unité</p>}
+                            </div>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <button onClick={() => navigate(-1)} className="mt-6 text-sm font-bold text-ink hover:text-orange-600">← Continuer mes achats</button>
+              </>
+            ) : (
+              <form
+                id="checkout-form"
+                onSubmit={(e) => { e.preventDefault(); handleConfirmOrder(); }}
+                className="space-y-8"
+              >
+                <div>
+                  <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl">Livraison</h1>
+                  <div className="mt-5 grid gap-4 rounded-3xl border border-stone-100 bg-white p-5 shadow-card sm:grid-cols-2 sm:p-6">
+                    <label className="block">
+                      <span className="mb-1.5 block text-sm font-semibold">Nom complet</span>
+                      <input required autoComplete="name" className="shop-input" value={customerInfo.name} onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })} />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1.5 block text-sm font-semibold">Numéro WhatsApp</span>
+                      <input required type="tel" autoComplete="tel" inputMode="tel" placeholder="70 00 00 00" className="shop-input" value={customerInfo.phone} onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })} />
+                    </label>
+                    <label className="block sm:col-span-2">
+                      <span className="mb-1.5 block text-sm font-semibold">Ville et quartier <span className="font-normal text-ink-muted">(facultatif)</span></span>
+                      <input autoComplete="address-level2" placeholder="Ouagadougou, Ouaga 2000" className="shop-input" value={customerInfo.city} onChange={(e) => setCustomerInfo({ ...customerInfo, city: e.target.value })} />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleGetLocation}
+                      className={`flex items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-3 text-sm font-semibold transition sm:col-span-2 ${locationLink ? 'border-green-500 bg-green-50 text-green-700' : 'border-stone-300 text-ink-soft hover:border-orange-500 hover:text-orange-600'}`}
+                    >
+                      {locationLink ? <Check size={16} /> : <MapPin size={16} />}
+                      {locationLink ? 'Position GPS ajoutée' : 'Partager ma position GPS (livraison plus rapide)'}
+                    </button>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-[11px] md:text-sm font-black uppercase tracking-tight truncate text-gray-900 leading-tight">{item.name}</h3>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                        {item.selectedSize && <span className="text-[8px] font-black bg-orange-50 text-orange-600 px-2 py-0.5 rounded-md uppercase">Taille: {item.selectedSize}</span>}
-                        {item.selectedColor && <span className="text-[8px] font-black bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md uppercase">Couleur: {item.selectedColor}</span>}
-                    </div>
-                    <p className="font-black text-orange-600 mt-1.5 text-sm italic">{unitPrice(item).toLocaleString()} <span className="text-[9px] not-italic ml-0.5">CFA</span></p>
-                    <div className="flex items-center gap-4 mt-2">
-                      <div className="flex items-center bg-gray-50 rounded-xl p-0.5 border border-gray-100">
-                        <button onClick={() => item.quantity > 1 && addToCart(item, -1)} className="w-8 h-8 flex items-center justify-center hover:text-orange-600 transition-colors"><Minus size={12} /></button>
-                        <span className="text-xs font-black w-6 text-center italic">{item.quantity}</span>
-                        <button onClick={() => addToCart(item, 1)} className="w-8 h-8 flex items-center justify-center hover:text-orange-600 transition-colors"><Plus size={12} /></button>
-                      </div>
-                    </div>
-                  </div>
-                  <button onClick={() => removeFromCart(item.cartKey)} className="p-3 text-gray-200 hover:text-red-500 transition-all">
-                    <Trash2 size={18} />
-                  </button>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          <div className="lg:w-[380px]">
-            <div className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-xl border border-gray-100 lg:sticky lg:top-24">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.3em] mb-6 text-gray-300">Mon Résumé</h2>
-              
-              <div className="space-y-3 mb-8 pb-8 border-b border-gray-50">
-                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-400">
-                  <span>Articles ({cart.length})</span>
-                  <span className="text-gray-900">{getCartTotal().toLocaleString()} CFA</span>
-                </div>
-                <div className="flex justify-between items-end pt-2">
-                  <span className="text-[11px] font-black uppercase tracking-widest mb-1 italic">Total</span>
-                  <span className="text-3xl font-black italic tracking-tighter text-orange-600 leading-none">
-                    {getCartTotal().toLocaleString()} <span className="text-[10px] not-italic text-gray-400">CFA</span>
-                  </span>
-                </div>
-              </div>
-
-              {!isOrdering ? (
-                <button onClick={() => setIsOrdering(true)} className="w-full py-5 bg-black text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-orange-600 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 group">
-                  Passer à la caisse <ArrowRight size={14} />
-                </button>
-              ) : (
-                <div className="space-y-4">
-                  <div className="space-y-3">
-                    <input required type="text" placeholder="TON NOM COMPLET" className="w-full p-4 bg-[#FBFBFB] border border-gray-100 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-orange-600 transition-all" onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})} />
-                    <input required type="tel" placeholder="NUMÉRO WHATSAPP" className="w-full p-4 bg-[#FBFBFB] border border-gray-100 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-orange-600 transition-all" onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})} />
-                    <input type="text" placeholder="VILLE & QUARTIER" className="w-full p-4 bg-[#FBFBFB] border border-gray-100 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-orange-600 transition-all" onChange={(e) => setCustomerInfo({...customerInfo, city: e.target.value})} />
-                  </div>
-
-                  {/* MODE DE PAIEMENT */}
-                  <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Mode de paiement">
-                    {[
-                      { id: 'ligdicash', label: 'Payer maintenant', hint: 'Orange · Moov · Carte' },
-                      { id: 'livraison', label: 'À la livraison', hint: 'Espèces via WhatsApp' },
-                    ].map((m) => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={paymentMethod === m.id}
-                        onClick={() => setPaymentMethod(m.id)}
-                        className={`p-3 rounded-2xl border-2 text-left transition-all ${paymentMethod === m.id ? 'border-orange-600 bg-orange-50' : 'border-gray-100 bg-white hover:border-gray-200'}`}
+                <fieldset>
+                  <legend className="text-2xl font-extrabold tracking-tight">Paiement</legend>
+                  <div className="mt-5 space-y-3">
+                    {paymentOptions.map(({ id, label, hint, icon: Icon }) => (
+                      <label
+                        key={id}
+                        className={`flex cursor-pointer items-center gap-4 rounded-2xl border-2 bg-white p-4 transition ${paymentMethod === id ? 'border-orange-600 shadow-card' : 'border-stone-100 hover:border-stone-200'}`}
                       >
-                        <span className={`block text-[10px] font-black uppercase tracking-wide ${paymentMethod === m.id ? 'text-orange-600' : 'text-gray-900'}`}>{m.label}</span>
-                        <span className="block text-[9px] font-bold text-gray-400 mt-0.5">{m.hint}</span>
-                      </button>
+                        <input type="radio" name="payment" value={id} checked={paymentMethod === id} onChange={() => setPaymentMethod(id)} className="sr-only" />
+                        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${paymentMethod === id ? 'bg-orange-600 text-white' : 'bg-stone-100 text-ink-soft'}`}>
+                          <Icon size={20} />
+                        </span>
+                        <span className="flex-1">
+                          <span className="block font-bold">{label}</span>
+                          <span className="block text-sm text-ink-muted">{hint}</span>
+                        </span>
+                        <span className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === id ? 'border-orange-600' : 'border-stone-300'}`}>
+                          {paymentMethod === id && <span className="h-2.5 w-2.5 rounded-full bg-orange-600" />}
+                        </span>
+                      </label>
                     ))}
                   </div>
+                </fieldset>
 
-                  {/* BOUTON GPS */}
-                  <button 
-                    type="button"
-                    onClick={handleGetLocation}
-                    className={`w-full py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest border-2 transition-all flex items-center justify-center gap-2 ${locationLink ? 'bg-green-50 border-green-500 text-green-600' : 'bg-white border-gray-100 text-gray-400 hover:border-orange-600 hover:text-orange-600'}`}
-                  >
-                    <MapPin size={14} />
-                    {locationLink ? "Position enregistrée ✓" : "Ajouter ma position GPS"}
-                  </button>
+                <button type="button" onClick={() => setIsOrdering(false)} className="text-sm font-bold text-ink hover:text-orange-600">← Modifier mon panier</button>
+              </form>
+            )}
+          </section>
 
-                  <button 
-                    disabled={loading}
-                    className="w-full py-5 bg-orange-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-lg flex items-center justify-center gap-3 disabled:bg-gray-200"
-                    onClick={handleConfirmOrder}
-                  >
-                    {paymentMethod === 'ligdicash' ? <CreditCard size={18} /> : <MessageCircle size={18} />}
-                    {loading
-                      ? "Traitement..."
-                      : paymentMethod === 'ligdicash'
-                        ? `Payer ${getCartTotal().toLocaleString()} CFA`
-                        : "Confirmer sur WhatsApp"}
-                  </button>
-                  <button onClick={() => setIsOrdering(false)} className="w-full py-2 text-[9px] font-black text-gray-300 uppercase tracking-widest">
-                    ← Retour au panier
-                  </button>
+          {/* Récapitulatif */}
+          <aside className="lg:sticky lg:top-40 lg:self-start">
+            <div className="rounded-3xl border border-stone-100 bg-white p-6 shadow-card">
+              <h2 className="text-lg font-bold">Récapitulatif</h2>
+              <dl className="mt-5 space-y-3 text-[15px]">
+                <div className="flex justify-between">
+                  <dt className="text-ink-muted">Articles ({itemCount})</dt>
+                  <dd className="font-semibold">{formatPrice(total)}</dd>
                 </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-ink-muted">Livraison</dt>
+                  <dd className="text-right text-sm text-ink-muted">À convenir avec le vendeur</dd>
+                </div>
+                <div className="flex items-baseline justify-between border-t border-stone-100 pt-4">
+                  <dt className="font-bold">Total</dt>
+                  <dd className="text-2xl font-extrabold">{formatPrice(total)}</dd>
+                </div>
+              </dl>
+
+              {!isOrdering ? (
+                <button onClick={() => { setIsOrdering(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="shop-btn-primary mt-6 w-full py-4 text-base">
+                  Commander <ArrowRight size={18} />
+                </button>
+              ) : (
+                <button type="submit" form="checkout-form" disabled={loading} className="shop-btn-primary mt-6 w-full py-4 text-base">
+                  {loading ? <Loader2 size={18} className="animate-spin" /> : paymentMethod === 'ligdicash' ? <Lock size={18} /> : <MessageCircle size={18} />}
+                  {loading ? 'Traitement…' : paymentMethod === 'ligdicash' ? `Payer ${formatPrice(total)}` : 'Envoyer ma commande'}
+                </button>
               )}
+
+              <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-ink-muted">
+                <Lock size={12} /> Prix vérifiés par FestiSolde au moment de la commande
+              </p>
             </div>
-          </div>
+          </aside>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

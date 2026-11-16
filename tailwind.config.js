@@ -3,7 +3,18 @@ module.exports = {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+      },
       colors: {
+        // Encre chaude (textes, boutons sombres) — à utiliser à la place du noir pur
+        ink: {
+          DEFAULT: '#1c1917',
+          soft: '#44403c',
+          muted: '#78716c',
+        },
+        // Fond crème de la vitrine
+        cream: '#faf7f2',
         brand: {
           primary: "#FF5A5A", // Ton rouge corail
           dark: "#0F1115",
@@ -20,6 +31,10 @@ module.exports = {
         'festi-base': ['0.938rem', { lineHeight: '1.5' }], 
         'festi-sm': ['0.813rem', { lineHeight: '1.4' }],   
         'festi-xs': ['0.688rem', { lineHeight: '1.2' }],   
+      },
+      boxShadow: {
+        card: '0 1px 2px rgba(28,25,23,0.04), 0 8px 24px -12px rgba(28,25,23,0.12)',
+        lift: '0 2px 4px rgba(28,25,23,0.04), 0 18px 40px -16px rgba(28,25,23,0.22)',
       },
       borderRadius: {
         'brand': '0.75rem', 

@@ -1,112 +1,98 @@
 import { Link } from 'react-router-dom';
-import { Facebook, Instagram, Twitter, Mail, MapPin, Phone } from 'lucide-react';
+import { Mail, MapPin, Phone, ArrowRight } from 'lucide-react';
+
+const COLUMNS = [
+  {
+    title: 'Acheter',
+    links: [
+      { name: 'Tout le catalogue', to: '/products' },
+      { name: 'Vente en gros', to: '/grossistes' },
+      { name: 'Liquidation', to: '/liquidation' },
+      { name: 'Mon panier', to: '/panier' },
+    ],
+  },
+  {
+    title: 'Vendre',
+    links: [
+      { name: 'Ouvrir ma boutique', to: '/register' },
+      { name: 'Espace vendeur', to: '/auth' },
+      { name: 'Centre d’aide', to: '/aide' },
+    ],
+  },
+  {
+    title: 'FestiSolde',
+    links: [
+      { name: 'À propos', to: '/about' },
+      { name: 'Contact', to: '/contact' },
+      { name: 'Confidentialité', to: '/privacy' },
+    ],
+  },
+];
 
 export default function Footer() {
   return (
-    <footer className="bg-[#0A0A0A] text-white pt-20 pb-10 border-t border-gray-900">
-      <div className="max-w-7xl mx-auto px-6">
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-20">
-          
-          {/* --- COLONNE 1 : BRAND --- */}
-          <div className="space-y-6">
-            <img 
-              src="/logo-festisolde.png" 
-              alt="Festisolde" 
-              className="h-10 brightness-0 invert opacity-90" 
-            />
-            <p className="text-gray-500 text-[11px] leading-relaxed uppercase tracking-widest font-medium">
-              Le carrefour stratégique du gros et des opportunités promotionnelles au Burkina Faso. Des stocks directs, des prix imbattables.
+    <footer className="bg-ink text-stone-300">
+      <div className="shop-container py-14 md:py-20">
+        <div className="grid gap-12 lg:grid-cols-[1fr_2.4fr]">
+          {/* Marque */}
+          <div className="max-w-sm">
+            <img src="/logo-festisolde.png" alt="FestiSolde" className="h-10 w-auto brightness-0 invert" />
+            <p className="mt-5 text-[15px] leading-relaxed text-stone-400">
+              La place de marché du déstockage, des promotions et de la vente en gros au Burkina Faso.
             </p>
-            <div className="flex gap-5">
-              {[Facebook, Instagram, Twitter].map((Icon, i) => (
-                <a key={i} href="#" className="text-gray-500 hover:text-orange-500 transition-colors">
-                  <Icon size={18} strokeWidth={1.5} />
-                </a>
-              ))}
+            <Link to="/register" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-white hover:text-orange-300">
+              Vendre sur FestiSolde <ArrowRight size={16} />
+            </Link>
+          </div>
+
+          {/* Liens */}
+          <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
+            {COLUMNS.map((col) => (
+              <div key={col.title}>
+                <h4 className="text-sm font-bold text-white">{col.title}</h4>
+                <ul className="mt-4 space-y-3">
+                  {col.links.map((l) => (
+                    <li key={l.to}>
+                      <Link to={l.to} className="text-[15px] text-stone-400 transition hover:text-white">
+                        {l.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+
+            <div className="col-span-2 sm:col-span-1">
+              <h4 className="text-sm font-bold text-white">Contact</h4>
+              <ul className="mt-4 space-y-3 text-[15px] text-stone-400">
+                <li className="flex items-start gap-2.5">
+                  <MapPin size={16} className="mt-0.5 shrink-0 text-orange-400" /> Ouagadougou, Burkina Faso
+                </li>
+                <li>
+                  <a href="tel:+22670189912" className="flex items-center gap-2.5 hover:text-white">
+                    <Phone size={16} className="shrink-0 text-orange-400" /> +226 70 18 99 12
+                  </a>
+                </li>
+                <li>
+                  <a href="mailto:contact@festisolde.com" className="flex items-center gap-2.5 hover:text-white">
+                    <Mail size={16} className="shrink-0 text-orange-400" /> contact@festisolde.com
+                  </a>
+                </li>
+              </ul>
             </div>
           </div>
-
-          {/* --- COLONNE 2 : SHOPPING --- */}
-          <div>
-            <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-orange-500 mb-8">Navigation</h4>
-            <ul className="space-y-4">
-              {[
-                { name: 'Catalogue Complet', link: '/products' },
-                { name: 'Vente en Gros', link: '/products?type=gros' },
-                { name: 'Arrivages Promo', link: '/products?type=promo' },
-                { name: 'Nos Grossistes', link: '/grossistes' }
-              ].map((item) => (
-                <li key={item.name}>
-                  <Link to={item.link} className="text-[10px] font-medium text-gray-400 uppercase tracking-widest hover:text-white transition-colors">
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* --- COLONNE 3 : AIDE --- */}
-          <div>
-            <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-orange-500 mb-8">Business</h4>
-            <ul className="space-y-4">
-              {[
-                'Devenir Vendeur',
-                'Guide Grossiste',
-                'Tarifs Logistique',
-                'Contact Support'
-              ].map((item) => (
-                <li key={item}>
-                  <Link to="/" className="text-[10px] font-medium text-gray-400 uppercase tracking-widest hover:text-white transition-colors">
-                    {item}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* --- COLONNE 4 : CONTACT --- */}
-          <div className="space-y-6">
-            <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-orange-500 mb-8">Contact</h4>
-            <div className="space-y-4 text-[10px] font-medium text-gray-400 uppercase tracking-widest">
-              <div className="flex items-start gap-3">
-                <MapPin size={14} className="text-orange-500 mt-0.5" />
-                <span>Ouagadougou, Burkina Faso<br /><span className="text-gray-600 text-[9px]">Secteur 15, Ouaga 2000</span></span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Phone size={14} className="text-orange-500" />
-                <span>+226 70 18 99 12</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Mail size={14} className="text-orange-500" />
-                <span>contact@festisolde.com</span>
-              </div>
-            </div>
-          </div>
-
         </div>
 
-        {/* --- BOTTOM BAR --- */}
-        <div className="pt-10 border-t border-gray-900 flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="text-[9px] font-medium text-gray-600 uppercase tracking-[0.3em]">
-            Festisolde © 2026 — Plateforme B2B & Promotionnelle
-          </p>
-          
-          <div className="flex gap-8">
-            {['CGV', 'Confidentialité'].map((item) => (
-              <span key={item} className="text-[9px] font-medium text-gray-600 uppercase tracking-[0.3em] hover:text-white cursor-pointer transition-colors">
-                {item}
+        <div className="mt-14 flex flex-col gap-6 border-t border-white/10 pt-8 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-stone-500">© {new Date().getFullYear()} FestiSolde. Tous droits réservés.</p>
+          <div className="flex flex-wrap items-center gap-2" aria-label="Moyens de paiement acceptés">
+            {['Orange Money', 'Moov Money', 'Carte bancaire', 'À la livraison'].map((m) => (
+              <span key={m} className="rounded-md border border-white/10 px-2.5 py-1 text-xs font-semibold text-stone-400">
+                {m}
               </span>
             ))}
           </div>
-
-          {/* Moyens de paiement */}
-          <div className="flex gap-3">
-             <div className="px-2 py-1 border border-gray-800 text-[7px] font-bold text-gray-500 tracking-tighter">ORANGE MONEY</div>
-             <div className="px-2 py-1 border border-gray-800 text-[7px] font-bold text-gray-500 tracking-tighter">MOOV MONEY</div>
-          </div>
         </div>
-
       </div>
     </footer>
   );

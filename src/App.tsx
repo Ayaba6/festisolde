@@ -25,6 +25,10 @@ import Analytics from './pages/Vendor/Analytics';
 import Grossistes from './pages/Home/components/Grossistes';
 import Liquidation from './pages/Home/components/Liquidation'; 
 import Aide from './pages/Home/components/Aide';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import Privacy from './pages/Privacy';
+import ShopLayout from './components/ShopLayout';
 
 import { 
   LayoutDashboard, Package, LogOut, ExternalLink, Wallet, 
@@ -229,7 +233,10 @@ export default function App() {
             <Route path="/produit/:productId" element={<ProductDetails />} />
             <Route path="/panier" element={<Cart />} />
             <Route path="/confirmation" element={<OrderSuccess />} />
-            <Route path="/paiement/retour" element={<PaymentReturn />} />
+            <Route path="/paiement/retour" element={<ShopLayout><PaymentReturn /></ShopLayout>} />
+            <Route path="/about" element={<ShopLayout><About /></ShopLayout>} />
+            <Route path="/contact" element={<ShopLayout><Contact /></ShopLayout>} />
+            <Route path="/privacy" element={<ShopLayout><Privacy /></ShopLayout>} />
             <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/dashboard" replace />} />
             <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/auth" />} />
