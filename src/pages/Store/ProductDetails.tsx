@@ -7,17 +7,8 @@ import { Minus, Plus, ShoppingBag, MessageCircle, Share2, Check, BadgeCheck, Tru
 import Header from '../Home/components/Header';
 import Footer from '../Home/components/Footer';
 import { ProductCard, getProductImages, formatPrice } from './ProductCard';
+import { parseOptions } from '../../lib/productOptions';
 
-// "S, M ,L" | "{S,M}" | '{"S","M"}' -> ['S', 'M', 'L']
-const parseOptions = (raw: unknown): string[] => {
-  if (Array.isArray(raw)) return raw.map(String).map((s) => s.trim()).filter(Boolean);
-  if (typeof raw !== 'string') return [];
-  return raw
-    .replace(/^\{|\}$/g, '')
-    .split(',')
-    .map((s) => s.trim().replace(/^"|"$/g, ''))
-    .filter(Boolean);
-};
 
 export default function ProductDetails() {
   const { productId } = useParams();

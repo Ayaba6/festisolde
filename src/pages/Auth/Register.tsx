@@ -114,7 +114,7 @@ export default function Register() {
         </button>
 
         <p className="text-center text-xs leading-relaxed text-ink-muted">
-          En créant un compte, vous acceptez nos conditions d’utilisation et notre{' '}
+          En créant un compte, vous acceptez nos <Link to="/cgu" className="underline">conditions d’utilisation</Link> et notre{' '}
           <Link to="/privacy" className="underline">politique de confidentialité</Link>.
         </p>
       </form>

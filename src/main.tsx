@@ -2,16 +2,22 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
-import './index.css' 
-import { CartProvider } from './context/CartContext' // Import du fournisseur de panier
+import './index.css'
+import { CartProvider } from './context/CartContext'
+import ErrorBoundary from './components/ErrorBoundary'
+import { initMonitoring } from './lib/monitoring'
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+initMonitoring()
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      {/* On entoure App avec CartProvider pour que toutes les pages aient accès au panier */}
-      <CartProvider>
-        <App />
-      </CartProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        {/* Le panier est accessible depuis toutes les pages */}
+        <CartProvider>
+          <App />
+        </CartProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </React.StrictMode>
 )

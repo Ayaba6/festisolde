@@ -1,135 +1,45 @@
-import { motion } from 'framer-motion'
-import { Heart, ShieldCheck, Zap, Store, Users, Star } from 'lucide-react'
+import { Link } from 'react-router-dom';
+import { BadgePercent, Smartphone, Store, MessageCircle, ArrowRight } from 'lucide-react';
+
+const VALUES = [
+  { icon: BadgePercent, title: 'Des prix vraiment cassés', text: 'Fins de séries, déstockages, lots en gros : les vendeurs écoulent leurs stocks, vous faites de bonnes affaires.' },
+  { icon: Store, title: 'En direct des vendeurs', text: 'Pas d’intermédiaire caché : chaque produit appartient à une boutique que vous pouvez contacter.' },
+  { icon: Smartphone, title: 'Pensé pour le mobile', text: 'Commande en quelques clics, paiement Orange Money ou Moov Money, ou en espèces à la livraison.' },
+  { icon: MessageCircle, title: 'Simple comme un message', text: 'Le vendeur reçoit votre commande sur WhatsApp et organise la livraison avec vous.' },
+];
 
 export default function About() {
-  const stats = [
-    { label: "Boutiques Partenaires", value: "50+", icon: <Store className="text-rose-500" /> },
-    { label: "Cadeaux Livrés", value: "2k+", icon: <Heart className="text-rose-500" /> },
-    { label: "Clients Heureux", value: "99%", icon: <Users className="text-rose-500" /> },
-  ]
-
-  const values = [
-    {
-      title: "Rapidité Éclair",
-      desc: "Parce que l'amour n'attend pas, nous optimisons chaque étape de la commande.",
-      icon: <Zap size={30} className="text-amber-500" />
-    },
-    {
-      title: "Confiance Totale",
-      desc: "Nous sélectionnons rigoureusement nos vendeurs pour garantir la qualité de vos cadeaux.",
-      icon: <ShieldCheck size={30} className="text-emerald-500" />
-    },
-    {
-      title: "Expérience Unique",
-      desc: "Une interface pensée pour que le plaisir d'offrir commence dès la navigation.",
-      icon: <Star size={30} className="text-rose-500" />
-    }
-  ]
-
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      {/* HERO SECTION */}
-      <section className="relative py-20 lg:py-32 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-3xl mx-auto"
-          >
-            <span className="text-rose-600 font-black uppercase tracking-[0.3em] text-[10px] mb-4 block">Notre Mission</span>
-            <h1 className="text-5xl lg:text-7xl font-black tracking-tighter italic uppercase mb-8">
-              Rendre chaque <span className="text-rose-600">instant</span> inoubliable.
-            </h1>
-            <p className="text-lg text-slate-500 font-medium leading-relaxed italic">
-              DASHBOARDPRO est né d'une idée simple : connecter les meilleurs créateurs et vendeurs de cadeaux avec ceux qui souhaitent exprimer leurs sentiments de la plus belle des manières.
-            </p>
-          </motion.div>
-        </div>
-        
-        {/* Background Decor */}
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[500px] h-[500px] bg-rose-50 rounded-full blur-3xl opacity-50" />
-      </section>
-
-      {/* STATS SECTION */}
-      <section className="py-20 bg-slate-900 text-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {stats.map((stat, idx) => (
-              <motion.div 
-                key={idx}
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.2 }}
-                className="text-center space-y-4"
-              >
-                <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto backdrop-blur-xl">
-                  {stat.icon}
-                </div>
-                <div className="text-4xl font-black italic">{stat.value}</div>
-                <div className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">{stat.label}</div>
-              </motion.div>
-            ))}
-          </div>
+    <div>
+      <section className="bg-cream">
+        <div className="shop-container max-w-4xl py-14 text-center md:py-20">
+          <p className="shop-eyebrow">À propos</p>
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-ink md:text-5xl">
+            La place de marché des bonnes affaires au Burkina Faso
+          </h1>
+          <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-soft">
+            FestiSolde aide les commerçants à écouler leurs stocks plus vite, et permet à chacun d’acheter moins cher,
+            en toute confiance, depuis son téléphone.
+          </p>
         </div>
       </section>
 
-      {/* VALUES SECTION */}
-      <section className="py-24 lg:py-32">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col lg:flex-row gap-16 items-center">
-            <div className="lg:w-1/2 space-y-8">
-              <h2 className="text-4xl font-black uppercase italic tracking-tighter">Pourquoi nous faire <span className="text-rose-600">confiance ?</span></h2>
-              <div className="grid gap-8">
-                {values.map((v, i) => (
-                  <motion.div 
-                    key={i}
-                    whileHover={{ x: 10 }}
-                    className="flex gap-6 p-6 rounded-[2rem] border border-slate-50 hover:border-rose-100 hover:bg-rose-50/30 transition-all"
-                  >
-                    <div className="shrink-0">{v.icon}</div>
-                    <div>
-                      <h3 className="font-black uppercase text-sm mb-1 italic">{v.title}</h3>
-                      <p className="text-slate-500 text-sm font-medium leading-relaxed">{v.desc}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+      <section className="shop-container max-w-5xl py-14">
+        <div className="grid gap-4 sm:grid-cols-2">
+          {VALUES.map(({ icon: Icon, title, text }) => (
+            <div key={title} className="rounded-3xl border border-stone-100 bg-white p-6 shadow-card">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-600"><Icon size={22} /></span>
+              <h2 className="mt-4 text-lg font-bold text-ink">{title}</h2>
+              <p className="mt-2 text-[15px] leading-relaxed text-ink-muted">{text}</p>
             </div>
-            
-            <div className="lg:w-1/2 relative">
-              <div className="relative z-10 rounded-[3rem] overflow-hidden shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-700">
-                <img 
-                  src="https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800&auto=format&fit=crop" 
-                  alt="Love and Gifts" 
-                  className="w-full h-[500px] object-cover"
-                />
-              </div>
-              <div className="absolute inset-0 bg-rose-600 rounded-[3rem] -rotate-3 scale-95 opacity-20" />
-            </div>
-          </div>
+          ))}
         </div>
-      </section>
 
-      {/* CTA SECTION */}
-      <section className="py-20">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="bg-rose-600 rounded-[3rem] p-12 lg:p-20 text-center text-white relative overflow-hidden shadow-2xl shadow-rose-200">
-            <div className="relative z-10">
-              <h2 className="text-4xl lg:text-6xl font-black uppercase italic tracking-tighter mb-8">Prêt à propulser votre business ?</h2>
-              <p className="text-rose-100 mb-10 max-w-xl mx-auto font-medium italic">
-                Rejoignez des dizaines de vendeurs passionnés et commencez à vendre vos produits en moins de 5 minutes.
-              </p>
-              <button className="bg-white text-rose-600 px-12 py-5 rounded-2xl font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-900 hover:text-white transition-all transform active:scale-95 shadow-xl">
-                Ouvrir ma boutique
-              </button>
-            </div>
-            {/* Decorative circles */}
-            <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
-            <div className="absolute bottom-0 right-0 w-64 h-64 bg-rose-900/20 rounded-full translate-x-1/2 translate-y-1/2 blur-3xl" />
-          </div>
+        <div className="mt-12 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          <Link to="/products" className="shop-btn-primary px-7 py-3.5">Découvrir les offres <ArrowRight size={18} /></Link>
+          <Link to="/register" className="shop-btn-ghost px-7 py-3.5">Vendre sur FestiSolde</Link>
         </div>
       </section>
     </div>
-  )
+  );
 }

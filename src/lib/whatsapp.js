@@ -15,6 +15,7 @@ export function buildOrderWhatsappUrl({ order, customer = {}, paidOnline = false
     `${item.image ? `  📷 Photo: ${item.image}\n` : ''}`
   ).join('\n');
 
+  const orderId = order.order_id || order.id;
   const reference = (order.reference || String(order.order_id || order.id || '').slice(0, 8)).toUpperCase();
   const total = Number(order.total).toLocaleString();
 
@@ -31,7 +32,8 @@ export function buildOrderWhatsappUrl({ order, customer = {}, paidOnline = false
     (paidOnline
       ? `✅ *PAYÉE EN LIGNE (LigdiCash) : ${total} FCFA*\nRien à encaisser à la livraison.\n\n`
       : `💰 *TOTAL À PAYER À LA LIVRAISON : ${total} FCFA*\n\n`) +
-    (order.store_slug ? `🔗 *Lien boutique :* https://festisolde.com/${order.store_slug}` : '');
+    (order.store_slug ? `🔗 *Lien boutique :* https://festisolde.com/${order.store_slug}\n` : '') +
+    (orderId ? `📦 *Suivi de la commande :* https://festisolde.com/commande/${orderId}` : '');
 
   return `https://wa.me/${sellerPhone}?text=${encodeURIComponent(message)}`;
 }

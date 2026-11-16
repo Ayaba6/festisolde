@@ -1,7 +1,29 @@
 {
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/produit/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(whatsapp|facebookexternalhit|facebot|twitterbot|telegrambot|slackbot|discordbot|linkedinbot|pinterest|skypeuripreview|snapchat|viber).*"
+        }
+      ],
+      "destination": "/api/og?type=product&id=:id"
+    },
+    {
+      "source": "/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(whatsapp|facebookexternalhit|facebot|twitterbot|telegrambot|slackbot|discordbot|linkedinbot|pinterest|skypeuripreview|snapchat|viber).*"
+        }
+      ],
+      "destination": "/api/og?type=store&slug=:slug"
+    },
+    {
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]

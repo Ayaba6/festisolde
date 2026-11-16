@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { Link } from 'react-router-dom';
 import { Plus, Trash2, Pencil, Package, Search, ExternalLink } from 'lucide-react';
 import AddProductModal from './AddProductModal';
+import { removeProductImages } from '../../lib/storage';
 import { PageHeader, Card, EmptyState, PageLoader, formatF } from '../../components/vendor/ui';
 
 const priceOf = (p: any) => (Number(p.sale_price) > 0 ? Number(p.sale_price) : Number(p.price) || 0);
@@ -51,6 +52,7 @@ export default function ManageProducts() {
     const { error } = await supabase.from('products').delete().eq('id', p.id);
     if (error) return alert('Suppression impossible : ' + error.message);
     setProducts((list) => list.filter((x) => x.id !== p.id));
+    removeProductImages([p.image_url, ...(Array.isArray(p.images) ? p.images : [])]);
   };
 
   const openNew = () => { setEditingProduct(null); setIsModalOpen(true); };

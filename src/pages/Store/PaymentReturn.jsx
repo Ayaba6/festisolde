@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { rememberOrder } from './OrderTracking';
 import { CheckCircle2, Loader2, XCircle, MessageCircle, ShoppingBag } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useCart } from '../../context/CartContext';
@@ -54,6 +55,7 @@ export default function PaymentReturn() {
       }
       if (data.status === 'completed') {
         clearCart();
+        if (data.order?.id) rememberOrder(data.order.id);
       }
       setState({ status: data.status, order: data.order, error: null });
     };
@@ -74,13 +76,13 @@ export default function PaymentReturn() {
       : null;
 
   return (
-    <div className="min-h-[80vh] bg-[#FBFBFB] flex items-center justify-center p-6 antialiased text-gray-900">
-      <div className="w-full max-w-md bg-white rounded-[2.5rem] border border-gray-100 shadow-xl p-8 text-center">
+    <div className="min-h-[80vh] bg-[#FBFBFB] flex items-center justify-center p-6 antialiased text-ink">
+      <div className="w-full max-w-md bg-white rounded-3xl border border-stone-100 shadow-xl p-8 text-center">
         {(state.status === 'loading' || (state.status === 'pending' && !gaveUp)) && (
           <>
             <Loader2 className="mx-auto animate-spin text-orange-600" size={44} />
-            <h1 className="mt-6 text-xl font-black uppercase italic tracking-tighter">Vérification du paiement</h1>
-            <p className="mt-3 text-sm text-gray-500">
+            <h1 className="mt-6 text-xl font-extrabold uppercase tracking-tight">Vérification du paiement</h1>
+            <p className="mt-3 text-sm text-stone-500">
               {state.status === 'pending'
                 ? 'Validez le paiement sur votre téléphone si ce n’est pas déjà fait. Cette page se met à jour toute seule.'
                 : 'Un instant…'}
@@ -91,27 +93,30 @@ export default function PaymentReturn() {
         {state.status === 'completed' && (
           <>
             <CheckCircle2 className="mx-auto text-green-500" size={52} />
-            <h1 className="mt-6 text-xl font-black uppercase italic tracking-tighter">Paiement réussi !</h1>
+            <h1 className="mt-6 text-xl font-extrabold uppercase tracking-tight">Paiement réussi !</h1>
             {state.order && (
-              <p className="mt-3 text-sm text-gray-500">
-                Commande <span className="font-black text-gray-900">#{state.order.reference}</span> —{' '}
-                <span className="font-black text-gray-900">{Number(state.order.total).toLocaleString()} FCFA</span>
+              <p className="mt-3 text-sm text-stone-500">
+                Commande <span className="font-extrabold text-ink">#{state.order.reference}</span> —{' '}
+                <span className="font-extrabold text-ink">{Number(state.order.total).toLocaleString()} FCFA</span>
               </p>
             )}
-            <p className="mt-2 text-sm text-gray-500">La commande apparaît dans l’espace du vendeur. Prévenez-le sur WhatsApp pour organiser la livraison.</p>
+            <p className="mt-2 text-sm text-stone-500">La commande apparaît dans l’espace du vendeur. Prévenez-le sur WhatsApp pour organiser la livraison.</p>
             {whatsappUrl && (
               <a
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-8 w-full py-5 bg-[#25D366] text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-lg flex items-center justify-center gap-3"
+                className="mt-8 w-full py-5 bg-[#25D366] text-white rounded-2xl text-xs font-extrabold uppercase tracking-wide shadow-lg flex items-center justify-center gap-3"
               >
                 <MessageCircle size={18} /> Prévenir le vendeur
               </a>
             )}
+            {state.order?.id && (
+              <Link to={`/commande/${state.order.id}`} className="shop-btn-ghost mt-3 w-full py-3.5">Suivre ma commande</Link>
+            )}
             <button
               onClick={() => navigate(state.order?.store_slug ? `/${state.order.store_slug}` : '/')}
-              className="mt-3 w-full py-4 text-[10px] font-black uppercase tracking-widest text-gray-400"
+              className="mt-3 w-full py-4 text-xs font-extrabold uppercase tracking-wide text-stone-400"
             >
               Continuer mes achats
             </button>
@@ -121,17 +126,17 @@ export default function PaymentReturn() {
         {(state.status === 'notcompleted' || gaveUp) && (
           <>
             <XCircle className="mx-auto text-red-500" size={52} />
-            <h1 className="mt-6 text-xl font-black uppercase italic tracking-tighter">
+            <h1 className="mt-6 text-xl font-extrabold uppercase tracking-tight">
               {cancelled ? 'Paiement annulé' : 'Paiement non abouti'}
             </h1>
-            <p className="mt-3 text-sm text-gray-500">
+            <p className="mt-3 text-sm text-stone-500">
               {gaveUp && !cancelled
                 ? 'Le paiement n’est pas encore confirmé. Si vous avez été débité, il sera pris en compte automatiquement : ne repayez pas.'
                 : 'Aucun paiement n’a été validé. Votre panier est conservé, vous pouvez réessayer.'}
             </p>
             <button
               onClick={() => navigate('/panier')}
-              className="mt-8 w-full py-5 bg-black text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3"
+              className="mt-8 w-full py-5 bg-ink text-white rounded-2xl text-xs font-extrabold uppercase tracking-wide flex items-center justify-center gap-3"
             >
               <ShoppingBag size={16} /> Retour au panier
             </button>
@@ -141,9 +146,9 @@ export default function PaymentReturn() {
         {state.status === 'error' && (
           <>
             <XCircle className="mx-auto text-red-500" size={52} />
-            <h1 className="mt-6 text-xl font-black uppercase italic tracking-tighter">Oups</h1>
-            <p className="mt-3 text-sm text-gray-500">{state.error}</p>
-            <button onClick={() => window.location.reload()} className="mt-8 w-full py-5 bg-black text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em]">
+            <h1 className="mt-6 text-xl font-extrabold uppercase tracking-tight">Oups</h1>
+            <p className="mt-3 text-sm text-stone-500">{state.error}</p>
+            <button onClick={() => window.location.reload()} className="mt-8 w-full py-5 bg-ink text-white rounded-2xl text-xs font-extrabold uppercase tracking-wide">
               Réessayer
             </button>
           </>

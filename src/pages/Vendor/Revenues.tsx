@@ -1,449 +1,353 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Wallet, TrendingUp, Users, Download, Search, 
-  ArrowUpRight, Loader2, Clock, CheckCircle2,
-  FileText, X, Printer, FileSpreadsheet, Info, ChevronLeft
-} from 'lucide-react';
-import { PDFDownloadLink } from '@react-pdf/renderer';
-import { InvoicePDF } from './InvoicePDF';
+import { Link } from 'react-router-dom';
+import { Wallet, TrendingUp, Users, Download, Search, ShoppingBag, Clock, FileText, Info, Loader2, MapPin, Receipt } from 'lucide-react';
+import { PageHeader, StatCard, Card, StatusBadge, EmptyState, PageLoader, Modal, Field, formatF } from '../../components/vendor/ui';
+import { lineUnitPrice, orderReference, ordersToCsv, downloadCsv } from '../../lib/orders';
+
+// La bibliothèque PDF n'est chargée qu'à l'ouverture d'une facture.
+const InvoiceDownload = lazy(() => import('./InvoiceDownload'));
+
+const COMMISSION = 0.1;
+const STATUS_OPTIONS = [
+  ['nouveau', 'Nouveau'],
+  ['en cours', 'En cours'],
+  ['livré', 'Livré'],
+  ['annulé', 'Annulé'],
+];
 
 export default function Revenues() {
-  const navigate = useNavigate();
-  const [sales, setSales] = useState([]);
-  const [stats, setStats] = useState({ total: 0, count: 0, customers: 0, average: 0 });
+  const [sales, setSales] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  
+  const [statusFilter, setStatusFilter] = useState('tous');
   const [balance, setBalance] = useState(0);
-  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-  const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('Orange Money');
-  const [paymentPhone, setPaymentPhone] = useState('');
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const [notice, setNotice] = useState<{ type: 'ok' | 'error'; text: string } | null>(null);
 
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [showExportModal, setShowExportModal] = useState(false);
-  
-  const [dateStart, setDateStart] = useState('');
-  const [dateEnd, setDateEnd] = useState('');
-  const [previewData, setPreviewData] = useState([]);
-
-  // CALCULS COMMISSION
-  const requestedAmount = parseFloat(withdrawAmount) || 0;
-  const commission = requestedAmount * 0.10;
-  const netAmount = requestedAmount - commission;
-
-  useEffect(() => {
-    fetchSalesData();
-  }, []);
-
-  useEffect(() => {
-    let filtered = [...sales];
-    if (dateStart) filtered = filtered.filter(s => new Date(s.created_at) >= new Date(dateStart));
-    if (dateEnd) {
-      const end = new Date(dateEnd);
-      end.setHours(23, 59, 59);
-      filtered = filtered.filter(s => new Date(s.created_at) <= end);
-    }
-    setPreviewData(filtered);
-  }, [dateStart, dateEnd, sales]);
+  useEffect(() => { fetchSalesData(); }, []);
 
   async function fetchSalesData() {
-    setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
-    
     if (user) {
-      const { data: store } = await supabase.from('stores').select('id').eq('owner_id', user.id).single();
+      const { data: store } = await supabase.from('stores').select('id').eq('owner_id', user.id).maybeSingle();
       if (store) {
-        const { data: wallet } = await supabase.from('wallets').select('balance').eq('store_id', store.id).maybeSingle();
+        const [{ data: wallet }, { data: salesData }] = await Promise.all([
+          supabase.from('wallets').select('balance').eq('store_id', store.id).maybeSingle(),
+          supabase.from('orders').select('*').eq('store_id', store.id).order('created_at', { ascending: false }),
+        ]);
         setBalance(Number(wallet?.balance) || 0);
-        const { data: salesData } = await supabase.from('orders').select('*').eq('store_id', store.id).order('created_at', { ascending: false });
-        if (salesData) {
-          setSales(salesData);
-          updateStats(salesData);
-        }
+        setSales(salesData || []);
       }
     }
     setLoading(false);
   }
 
-  const updateStats = (data) => {
-    const validSales = data.filter(s => s.status !== 'annulé');
-    const total = validSales.reduce((acc, curr) => acc + (curr.total_amount || 0), 0);
-    const uniqueCustomers = new Set(validSales.map(s => s.customer_phone)).size;
-    const averageOrder = validSales.length > 0 ? total / validSales.length : 0;
-    setStats({ total, count: validSales.length, customers: uniqueCustomers, average: averageOrder });
+  const flash = (type: 'ok' | 'error', text: string) => {
+    setNotice({ type, text });
+    setTimeout(() => setNotice(null), 4000);
   };
 
-  const handleStatusChange = async (orderId, newStatus) => {
-    try {
-      const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
-      if (error) throw error;
-      fetchSalesData();
-    } catch (error) {
-      alert(error?.message || "Erreur lors de la mise à jour.");
-      fetchSalesData();
+  const handleStatusChange = async (order: any, newStatus: string) => {
+    if (newStatus === 'annulé' && !window.confirm('Annuler cette commande ? Le stock des articles sera remis en vente.')) return;
+    const previous = sales;
+    setSales((list) => list.map((o) => (o.id === order.id ? { ...o, status: newStatus } : o)));
+    const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', order.id);
+    if (error) {
+      setSales(previous);
+      flash('error', error.message);
+    } else {
+      fetchSalesData(); // le solde peut avoir changé (commande payée livrée)
     }
   };
 
-  const handleWithdrawRequest = async () => {
-    const amount = parseFloat(withdrawAmount);
-    if (!amount || amount < 500) return alert("Minimum 500 FCFA.");
-    if (amount > balance) return alert("Solde insuffisant.");
-    if (!paymentPhone) return alert("Numéro requis.");
+  const stats = useMemo(() => {
+    const valid = sales.filter((s) => s.status !== 'annulé');
+    const total = valid.reduce((acc, s) => acc + (Number(s.total_amount) || 0), 0);
+    return {
+      total,
+      count: valid.length,
+      customers: new Set(valid.map((s) => s.customer_phone)).size,
+      average: valid.length ? total / valid.length : 0,
+    };
+  }, [sales]);
 
-    setIsWithdrawing(true);
-    try {
-      // Vérification du solde, débit et création de la demande en une seule opération serveur.
-      const { error } = await supabase.rpc('request_withdrawal', {
-        p_amount: amount,
-        p_method: paymentMethod,
-        p_details: paymentPhone,
-      });
-      if (error) throw error;
-      setShowWithdrawModal(false);
-      setWithdrawAmount('');
-      fetchSalesData();
-    } catch (error) {
-      alert(error.message);
-    } finally {
-      setIsWithdrawing(false);
-    }
-  };
+  const filtered = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    return sales.filter(
+      (s) =>
+        (statusFilter === 'tous' || s.status === statusFilter) &&
+        (!q || s.customer_name?.toLowerCase().includes(q) || s.customer_phone?.includes(q) || orderReference(s).toLowerCase().includes(q))
+    );
+  }, [sales, searchTerm, statusFilter]);
 
-  const filteredSales = sales.filter(sale => 
-    sale.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) || sale.customer_phone?.includes(searchTerm)
-  );
-
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case 'livré': return 'bg-green-50 text-green-600 border-green-100';
-      case 'annulé': return 'bg-red-50 text-red-600 border-red-100';
-      case 'en cours': return 'bg-blue-50 text-blue-600 border-blue-100';
-      default: return 'bg-stone-50 text-stone-500 border-stone-100';
-    }
-  };
-
-  if (loading) return (
-    <div className="h-screen flex items-center justify-center bg-[#FDFDFD]">
-      <Loader2 className="animate-spin text-orange-500" size={32} />
-    </div>
-  );
+  if (loading) return <PageLoader label="Chargement de vos ventes…" />;
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-8 pb-32">
-      
-      {/* HEADER & NAV */}
-      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => navigate('/dashboard')}
-            className="p-3 bg-white border border-stone-100 rounded-2xl text-stone-400 hover:text-ink transition-all hover:shadow-sm"
-          >
-            <ChevronLeft size={20} />
-          </button>
+    <div>
+      <PageHeader
+        title="Ventes & finances"
+        subtitle="Vos commandes, votre solde et vos retraits."
+        actions={
+          <>
+            <Link to="/withdrawal-history" className="shop-btn-ghost"><Clock size={18} /> Mes retraits</Link>
+            <button onClick={() => setShowExport(true)} className="shop-btn-ghost"><Download size={18} /> Exporter</button>
+          </>
+        }
+      />
+
+      {notice && (
+        <p className={`mb-6 rounded-2xl px-4 py-3 text-sm font-semibold ${notice.type === 'ok' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-700'}`} role="status">
+          {notice.text}
+        </p>
+      )}
+
+      {/* Solde */}
+      <div className="relative mb-6 overflow-hidden rounded-3xl bg-ink p-6 text-white md:p-8">
+        <div aria-hidden="true" className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-orange-600/25 blur-3xl" />
+        <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-ink">Ventes &amp; finances</h1>
-            <p className="text-xs font-bold text-stone-400 uppercase tracking-wide mt-0.5">Suivi des revenus et retraits</p>
+            <p className="text-sm font-semibold text-stone-300">Solde disponible</p>
+            <p className="mt-1 text-4xl font-extrabold tracking-tight md:text-5xl">{formatF(balance)}</p>
+            <p className="mt-2 flex items-center gap-1.5 text-sm text-stone-400">
+              <Info size={14} /> Crédité quand une commande payée en ligne est livrée.
+            </p>
           </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <button onClick={() => navigate('/withdrawal-history')} className="flex-1 md:flex-none px-4 py-3 bg-white border border-stone-100 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-stone-50">
-            <Clock size={14} /> Historique
-          </button>
-          <button onClick={() => setShowExportModal(true)} className="flex-1 md:flex-none px-4 py-3 bg-ink text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-stone-800 transition-all">
-            <Download size={14} /> Exporter
+          <button onClick={() => setShowWithdraw(true)} disabled={balance < 500} className="shop-btn-primary px-7 py-3.5 text-[15px]">
+            <Wallet size={18} /> Retirer mon argent
           </button>
         </div>
       </div>
 
-      {/* PORTEFEUILLE STYLE STUDIO */}
-      <div className="bg-ink rounded-3xl p-8 text-white relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-stone-500 mb-2">Solde disponible</p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-              {balance.toLocaleString()} <span className="text-sm font-medium text-stone-500 ml-1">FCFA</span>
-            </h2>
-          </div>
-          <button 
-            onClick={() => setShowWithdrawModal(true)}
-            className="w-full md:w-auto bg-orange-500 hover:bg-white hover:text-stone-950 text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-wide transition-all active:scale-95 flex items-center justify-center gap-3 shadow-lg shadow-orange-950/20"
-          >
-            <Wallet size={18} /> Effectuer un retrait
-          </button>
-        </div>
+      <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
+        <StatCard label="Chiffre d’affaires" value={formatF(stats.total)} hint="Hors annulées" icon={TrendingUp} tone="green" />
+        <StatCard label="Commandes" value={stats.count} icon={ShoppingBag} tone="orange" />
+        <StatCard label="Panier moyen" value={formatF(stats.average)} icon={Receipt} />
+        <StatCard label="Clients" value={stats.customers} icon={Users} tone="blue" />
       </div>
 
-      {/* STATS GRID */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="CA Global" value={stats.total.toLocaleString()} unit="FCFA" icon={<TrendingUp size={16}/>} />
-        <StatCard label="Ventes" value={stats.count} unit="CMD" icon={<CheckCircle2 size={16}/>} />
-        <StatCard label="Panier Moyen" value={Math.round(stats.average).toLocaleString()} unit="FCFA" icon={<ArrowUpRight size={16}/>} />
-        <StatCard label="Clients" value={stats.customers} unit="PERS" icon={<Users size={16}/>} />
-      </div>
-
-      {/* LISTE DES TRANSACTIONS */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold uppercase tracking-wide text-stone-400">Ventes récentes</h3>
-          <div className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-300" size={14} />
-            <input 
-              type="text" 
-              placeholder="Rechercher..." 
-              className="pl-9 pr-4 py-2 border border-stone-100 rounded-xl text-xs font-medium outline-none focus:border-orange-500 w-64"
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* TABLEAU DESKTOP */}
-        <div className="hidden md:block bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden">
-          <table className="w-full text-left">
-            <thead className="bg-stone-50/50">
-              <tr className="border-b border-stone-50">
-                <th className="px-8 py-4 text-xs font-bold text-stone-400 uppercase">Commande</th>
-                <th className="px-8 py-4 text-xs font-bold text-stone-400 uppercase">Client</th>
-                <th className="px-8 py-4 text-xs font-bold text-stone-400 uppercase text-center">Montant</th>
-                <th className="px-8 py-4 text-xs font-bold text-stone-400 uppercase text-center">Statut</th>
-                <th className="px-8 py-4 text-xs font-bold text-stone-400 uppercase text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-50">
-              {filteredSales.map((sale) => (
-                <tr key={sale.id} className="hover:bg-stone-50/30 transition-all">
-                  <td className="px-8 py-5">
-                    <p className="text-xs font-bold text-ink">{new Date(sale.created_at).toLocaleDateString('fr-FR')}</p>
-                    <p className="text-xs text-stone-400 font-medium uppercase tracking-tight">#{sale.id.slice(0,8)}</p>
-                  </td>
-                  <td className="px-8 py-5">
-                    <p className="text-xs font-bold text-ink uppercase">{sale.customer_name}</p>
-                    <p className="text-xs text-orange-500 font-bold">{sale.customer_phone}</p>
-                  </td>
-                  <td className="px-8 py-5 text-center font-bold text-ink">
-                    {sale.total_amount?.toLocaleString()} <span className="text-xs text-stone-400">F</span>
-                    {sale.payment_status === 'paye' && (
-                      <span className="block mt-1 text-xs font-bold uppercase tracking-wide text-green-600">Payé en ligne</span>
-                    )}
-                  </td>
-                  <td className="px-8 py-5 text-center">
-                    <select 
-                      value={sale.status || 'nouveau'}
-                      onChange={(e) => handleStatusChange(sale.id, e.target.value)}
-                      className={`px-3 py-1.5 rounded-lg border text-xs font-bold uppercase outline-none ${getStatusStyle(sale.status)}`}
-                    >
-                      <option value="nouveau">Nouveau</option>
-                      <option value="en cours">En cours</option>
-                      <option value="livré">Livré ✅</option>
-                      <option value="annulé">Annulé ❌</option>
-                    </select>
-                  </td>
-                  <td className="px-8 py-5 text-right">
-                    <button onClick={() => setSelectedOrder(sale)} className="p-2 text-stone-400 hover:text-ink hover:bg-stone-100 rounded-lg transition-all">
-                      <FileText size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* MOBILE CARDS */}
-        <div className="md:hidden space-y-3">
-          {filteredSales.map((sale) => (
-            <div key={sale.id} className="bg-white p-5 rounded-3xl border border-stone-100 shadow-sm space-y-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-xs font-bold text-stone-400 uppercase mb-1">{new Date(sale.created_at).toLocaleDateString('fr-FR')}</p>
-                  <h3 className="text-sm font-bold text-ink uppercase">{sale.customer_name}</h3>
-                  <p className="text-xs font-bold text-orange-500">{sale.customer_phone}</p>
-                </div>
-                <p className="text-lg font-bold text-ink tracking-tight">
-                  {sale.total_amount?.toLocaleString()} <span className="text-xs font-medium text-stone-400">F</span>
-                  {sale.payment_status === 'paye' && (
-                    <span className="block text-xs font-bold uppercase tracking-wide text-green-600">Payé en ligne</span>
-                  )}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <select 
-                  value={sale.status || 'nouveau'}
-                  onChange={(e) => handleStatusChange(sale.id, e.target.value)}
-                  className={`flex-1 px-4 py-2.5 rounded-xl border text-xs font-bold uppercase outline-none ${getStatusStyle(sale.status)}`}
-                >
-                  <option value="nouveau">Nouveau</option>
-                  <option value="en cours">En cours</option>
-                  <option value="livré">Livré ✅</option>
-                  <option value="annulé">Annulé ❌</option>
-                </select>
-                <button onClick={() => setSelectedOrder(sale)} className="p-3 bg-ink text-white rounded-xl"><FileText size={18} /></button>
-              </div>
-            </div>
+      {/* Commandes */}
+      <div className="mt-10 mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+          {[['tous', 'Toutes'], ...STATUS_OPTIONS].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setStatusFilter(key)}
+              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${statusFilter === key ? 'bg-ink text-white' : 'bg-white text-ink-soft ring-1 ring-stone-200 hover:bg-stone-50'}`}
+            >
+              {label} <span className="opacity-60">{key === 'tous' ? sales.length : sales.filter((s) => s.status === key).length}</span>
+            </button>
           ))}
         </div>
+        <div className="relative md:w-72">
+          <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+          <input type="search" placeholder="Client, téléphone, référence" aria-label="Rechercher une commande" className="shop-input py-2.5 pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        </div>
       </div>
 
-      {/* MODAL RETRAIT */}
-      {showWithdrawModal && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-ink/60 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl relative">
-            <button onClick={() => setShowWithdrawModal(false)} className="absolute top-6 right-6 text-stone-400 hover:text-ink"><X size={20} /></button>
-            <h2 className="text-xl font-bold text-ink mb-6">Demander un retrait</h2>
-            
-            <div className="space-y-4">
-              <div className="bg-stone-50 p-5 rounded-2xl border border-stone-100 text-center">
-                <p className="text-xs font-bold text-stone-400 uppercase tracking-wide mb-1">Montant disponible</p>
-                <p className="text-3xl font-bold text-ink">{balance.toLocaleString()} FCFA</p>
+      {sales.length === 0 ? (
+        <EmptyState icon={ShoppingBag} title="Aucune commande pour l’instant" text="Vos commandes apparaîtront ici dès qu’un client achètera dans votre boutique." />
+      ) : (
+        <Card as="ul" className="divide-y divide-stone-100">
+          {filtered.map((sale) => (
+            <li key={sale.id} className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:gap-6">
+              <div className="flex min-w-0 flex-1 items-center gap-4">
+                <span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full bg-stone-100 text-sm font-bold text-ink-soft sm:flex">
+                  {sale.customer_name?.charAt(0)?.toUpperCase() || '?'}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-ink">{sale.customer_name}</p>
+                  <p className="text-sm text-ink-muted">
+                    #{orderReference(sale)} · {new Date(sale.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} ·{' '}
+                    <a href={`tel:${sale.customer_phone}`} className="hover:text-orange-600">{sale.customer_phone}</a>
+                  </p>
+                </div>
               </div>
-
-              <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex gap-3">
-                <Info size={16} className="text-blue-500 shrink-0 mt-0.5" />
-                <p className="text-xs font-medium text-blue-800 leading-tight">
-                  Frais de service : <span className="font-bold">10%</span> déduits à la validation.
-                </p>
+              <div className="flex items-center justify-between gap-3 md:justify-end">
+                <div className="text-left md:text-right">
+                  <p className="font-bold text-ink">{formatF(sale.total_amount)}</p>
+                  {sale.payment_status === 'paye' ? (
+                    <p className="text-xs font-bold text-green-700">Payé en ligne</p>
+                  ) : (
+                    <p className="text-xs text-ink-muted">À encaisser</p>
+                  )}
+                </div>
+                <select
+                  value={sale.status || 'nouveau'}
+                  onChange={(e) => handleStatusChange(sale, e.target.value)}
+                  aria-label={`Statut de la commande ${orderReference(sale)}`}
+                  className="rounded-xl border border-stone-200 bg-white py-2 pl-3 pr-8 text-sm font-semibold text-ink outline-none focus:border-orange-500"
+                >
+                  {STATUS_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+                <button onClick={() => setSelectedOrder(sale)} className="rounded-xl p-2.5 text-ink-muted hover:bg-stone-100 hover:text-ink" aria-label="Voir le détail">
+                  <FileText size={18} />
+                </button>
               </div>
+            </li>
+          ))}
+          {filtered.length === 0 && <li className="p-8 text-center text-ink-muted">Aucune commande ne correspond.</li>}
+        </Card>
+      )}
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold uppercase text-stone-400 ml-1">Montant à retirer</label>
-                <input type="number" className="w-full p-4 bg-stone-50 border border-transparent focus:border-orange-500 rounded-xl text-sm font-bold outline-none" placeholder="Ex: 5000" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} />
-                {requestedAmount > 0 && (
-                  <p className="text-xs font-bold text-green-600 mt-2 px-1">NET À RECEVOIR : {netAmount.toLocaleString()} FCFA</p>
+      {showWithdraw && (
+        <WithdrawModal
+          balance={balance}
+          onClose={() => setShowWithdraw(false)}
+          onDone={() => { setShowWithdraw(false); flash('ok', 'Demande de retrait envoyée. Vous serez payé après validation.'); fetchSalesData(); }}
+        />
+      )}
+      {showExport && <ExportModal sales={sales} onClose={() => setShowExport(false)} />}
+      {selectedOrder && <OrderModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />}
+    </div>
+  );
+}
+
+function WithdrawModal({ balance, onClose, onDone }: any) {
+  const [amount, setAmount] = useState('');
+  const [method, setMethod] = useState('Orange Money');
+  const [phone, setPhone] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const value = parseFloat(amount) || 0;
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (value < 500) return setError('Le montant minimum est de 500 FCFA.');
+    if (value > balance) return setError('Montant supérieur à votre solde.');
+    setBusy(true);
+    const { error: rpcError } = await supabase.rpc('request_withdrawal', { p_amount: value, p_method: method, p_details: phone });
+    setBusy(false);
+    if (rpcError) return setError(rpcError.message);
+    onDone();
+  };
+
+  return (
+    <Modal title="Retirer mon argent" subtitle={`Solde disponible : ${formatF(balance)}`} onClose={onClose} size="max-w-md">
+      <form onSubmit={submit} className="space-y-5 p-6">
+        <Field label="Montant à retirer (FCFA)">
+          <input type="number" min={500} max={balance} step={1} inputMode="numeric" required className="shop-input" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="5 000" />
+        </Field>
+        {value >= 500 && (
+          <dl className="space-y-1.5 rounded-2xl bg-stone-50 p-4 text-sm">
+            <div className="flex justify-between"><dt className="text-ink-muted">Frais de service (10 %)</dt><dd>- {formatF(value * COMMISSION)}</dd></div>
+            <div className="flex justify-between font-bold"><dt>Vous recevrez</dt><dd className="text-green-700">{formatF(value * (1 - COMMISSION))}</dd></div>
+          </dl>
+        )}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Réception par">
+            <select className="shop-input" value={method} onChange={(e) => setMethod(e.target.value)}>
+              <option>Orange Money</option>
+              <option>Moov Money</option>
+              <option>Wave</option>
+            </select>
+          </Field>
+          <Field label="Numéro">
+            <input type="tel" inputMode="tel" required className="shop-input" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="70 00 00 00" />
+          </Field>
+        </div>
+        {error && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700" role="alert">{error}</p>}
+        <button type="submit" disabled={busy} className="shop-btn-primary w-full py-3.5">
+          {busy && <Loader2 size={18} className="animate-spin" />} Confirmer la demande
+        </button>
+      </form>
+    </Modal>
+  );
+}
+
+function ExportModal({ sales, onClose }: any) {
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const selection = sales.filter((s: any) => {
+    const d = new Date(s.created_at);
+    if (from && d < new Date(from)) return false;
+    if (to) { const end = new Date(to); end.setHours(23, 59, 59); if (d > end) return false; }
+    return true;
+  });
+  const total = selection.filter((s: any) => s.status !== 'annulé').reduce((a: number, s: any) => a + (Number(s.total_amount) || 0), 0);
+
+  return (
+    <Modal title="Exporter mes ventes" subtitle="Fichier compatible Excel et Google Sheets" onClose={onClose} size="max-w-md">
+      <div className="space-y-5 p-6">
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Du"><input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="shop-input" /></Field>
+          <Field label="Au"><input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="shop-input" /></Field>
+        </div>
+        <div className="rounded-2xl bg-stone-50 p-4 text-sm">
+          <p><strong>{selection.length}</strong> commande{selection.length > 1 ? 's' : ''} · chiffre d’affaires <strong>{formatF(total)}</strong> (hors annulées)</p>
+        </div>
+        <button
+          disabled={selection.length === 0}
+          onClick={() => downloadCsv(`ventes-festisolde-${new Date().toISOString().slice(0, 10)}.csv`, ordersToCsv(selection))}
+          className="shop-btn-dark w-full py-3.5"
+        >
+          <Download size={18} /> Télécharger le fichier
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function OrderModal({ order, onClose }: any) {
+  return (
+    <Modal title={`Commande #${orderReference(order)}`} subtitle={new Date(order.created_at).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' })} onClose={onClose} size="max-w-lg">
+      <div className="space-y-5 p-6">
+        <div className="flex flex-wrap gap-2">
+          <StatusBadge status={order.status} />
+          {order.payment_status === 'paye'
+            ? <span className="rounded-full bg-green-50 px-2.5 py-1 text-xs font-bold text-green-700">Payé en ligne</span>
+            : <span className="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-bold text-ink-soft">À encaisser à la livraison</span>}
+        </div>
+
+        <div className="rounded-2xl bg-stone-50 p-4">
+          <p className="font-bold text-ink">{order.customer_name}</p>
+          <a href={`tel:${order.customer_phone}`} className="text-sm font-semibold text-orange-600">{order.customer_phone}</a>
+          {order.customer_city && <p className="text-sm text-ink-muted">{order.customer_city}</p>}
+          {order.customer_location && (
+            <a href={order.customer_location} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-ink hover:text-orange-600">
+              <MapPin size={14} /> Voir la position GPS
+            </a>
+          )}
+        </div>
+
+        <ul className="divide-y divide-stone-100">
+          {(order.items || []).map((item: any, i: number) => (
+            <li key={i} className="flex justify-between gap-4 py-2.5 text-[15px]">
+              <span className="min-w-0">
+                <span className="font-semibold">{item.quantity} × {item.name}</span>
+                {(item.size || item.selectedSize || item.color || item.selectedColor) && (
+                  <span className="block text-sm text-ink-muted">
+                    {[item.size || item.selectedSize, item.color || item.selectedColor].filter(Boolean).join(' · ')}
+                  </span>
                 )}
-              </div>
+              </span>
+              <span className="shrink-0 font-semibold">{formatF(lineUnitPrice(item) * item.quantity)}</span>
+            </li>
+          ))}
+        </ul>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold uppercase text-stone-400 ml-1">Méthode</label>
-                  <select className="w-full p-4 bg-stone-50 border border-transparent rounded-xl text-xs font-bold uppercase outline-none" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-                    <option>Orange Money</option>
-                    <option>Moov Money</option>
-                    <option>Wave</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold uppercase text-stone-400 ml-1">Numéro</label>
-                  <input type="tel" className="w-full p-4 bg-stone-50 border border-transparent focus:border-orange-500 rounded-xl text-sm font-bold outline-none" placeholder="01020304" value={paymentPhone} onChange={(e) => setPaymentPhone(e.target.value)} />
-                </div>
-              </div>
-
-              <button 
-                disabled={isWithdrawing || !withdrawAmount || requestedAmount < 500}
-                onClick={handleWithdrawRequest}
-                className="w-full py-4 bg-ink text-white rounded-xl text-xs font-bold uppercase tracking-wide hover:bg-orange-500 transition-all disabled:bg-stone-200"
-              >
-                {isWithdrawing ? "Envoi..." : "Confirmer le retrait"}
-              </button>
-            </div>
-          </div>
+        <div className="flex items-baseline justify-between border-t border-stone-100 pt-4">
+          <span className="font-bold">Total</span>
+          <span className="text-2xl font-extrabold">{formatF(order.total_amount)}</span>
         </div>
-      )}
 
-      {/* EXPORT MODAL */}
-      {showExportModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-ink/60 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl relative">
-            <button onClick={() => setShowExportModal(false)} className="absolute top-6 right-6 text-stone-400 hover:text-ink"><X size={20} /></button>
-            <h2 className="text-xl font-bold text-ink mb-6">Exporter mes ventes</h2>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-stone-400 uppercase ml-1">Début</label>
-                  <input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} className="w-full p-3 bg-stone-50 rounded-xl text-xs font-bold outline-none" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-stone-400 uppercase ml-1">Fin</label>
-                  <input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} className="w-full p-3 bg-stone-50 rounded-xl text-xs font-bold outline-none" />
-                </div>
-              </div>
-              <button onClick={() => {}} className="w-full flex items-center justify-center gap-3 p-4 bg-stone-50 rounded-xl border border-stone-100 hover:bg-stone-100 transition-all">
-                <FileSpreadsheet size={18} className="text-green-600" />
-                <span className="text-xs font-bold uppercase">Télécharger le CSV</span>
-              </button>
-              <div className="pt-4 border-t border-stone-50 text-center">
-                <p className="text-xs font-bold text-stone-400 uppercase mb-1">CA sur la période</p>
-                <p className="text-2xl font-bold text-orange-500 tracking-tight">{previewData.reduce((acc, curr) => acc + (curr.total_amount || 0), 0).toLocaleString()} F</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {selectedOrder && <ModalFacture order={selectedOrder} onClose={() => setSelectedOrder(null)} />}
-    </div>
-  );
-}
-
-function StatCard({ label, value, unit, icon }) {
-  return (
-    <div className="bg-white p-5 rounded-3xl border border-stone-100 shadow-sm group hover:-translate-y-1 transition-all">
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-8 h-8 bg-stone-50 text-stone-400 rounded-xl flex items-center justify-center group-hover:bg-orange-50 group-hover:text-orange-500 transition-colors">
-          {icon}
-        </div>
-        <p className="text-xs font-bold text-stone-400 uppercase tracking-wide">{label}</p>
-      </div>
-      <p className="text-xl font-bold text-ink tracking-tight">
-        {value} <span className="text-xs font-medium text-stone-400">{unit}</span>
-      </p>
-    </div>
-  );
-}
-
-function ModalFacture({ order, onClose }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95">
-        <div className="p-6 border-b border-stone-50 flex justify-between items-center">
-          <h2 className="text-xs font-bold uppercase tracking-wide text-stone-400">Facture Client</h2>
-          <button onClick={onClose} className="p-2 text-stone-400 hover:text-ink"><X size={20} /></button>
-        </div>
-        <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-2xl font-bold text-orange-500 tracking-tight">FACTURE</h3>
-              <p className="text-xs font-medium text-stone-400 uppercase">ID: {order.id.slice(0, 12)}</p>
-            </div>
-            <p className="text-xs font-bold text-ink">{new Date(order.created_at).toLocaleDateString('fr-FR')}</p>
-          </div>
-
-          <div className="p-5 bg-stone-50 rounded-2xl border-2 border-dashed border-stone-100">
-            <p className="text-xs font-bold text-stone-400 uppercase mb-2 tracking-wide">Client</p>
-            <p className="text-sm font-bold uppercase text-ink">{order.customer_name}</p>
-            <p className="text-xs font-bold text-stone-400">{order.customer_phone}</p>
-          </div>
-
-          <div className="space-y-4">
-            <p className="text-xs font-bold text-stone-400 uppercase tracking-wide border-b border-stone-100 pb-2">Détails articles</p>
-            {order.items?.map((item, idx) => (
-              <div key={idx} className="flex justify-between text-xs">
-                <span className="font-medium text-stone-600">{item.name} <span className="text-orange-500 font-bold ml-1">x{item.quantity}</span></span>
-                <span className="font-bold text-ink">{(item.sale_price * item.quantity).toLocaleString()} F</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="pt-6 border-t border-stone-100 flex justify-between items-end">
-            <span className="text-xs font-bold uppercase tracking-wide text-stone-400">Total payé</span>
-            <span className="text-3xl font-bold text-ink tracking-tight">{order.total_amount?.toLocaleString()} <span className="text-sm font-medium text-stone-400 ml-1">FCFA</span></span>
-          </div>
-        </div>
-        <div className="p-6 bg-stone-50 grid grid-cols-2 gap-3">
-          <PDFDownloadLink document={<InvoicePDF order={order} />} fileName={`facture-${order.customer_name}.pdf`} className="w-full">
-            {({ loading }) => (
-              <button disabled={loading} className="w-full py-4 bg-white border border-stone-200 rounded-xl text-xs font-bold uppercase flex items-center justify-center gap-2 hover:bg-stone-100 transition-all">
-                {loading ? <Loader2 className="animate-spin" size={14} /> : <Printer size={14} />} PDF
-              </button>
-            )}
-          </PDFDownloadLink>
-          <button onClick={onClose} className="w-full py-4 bg-ink text-white rounded-xl text-xs font-bold uppercase hover:bg-orange-500 transition-all">Fermer</button>
+        <div className="grid grid-cols-2 gap-3">
+          <Suspense fallback={<button className="shop-btn-ghost w-full" disabled><Loader2 size={16} className="animate-spin" /> PDF</button>}>
+            <InvoiceDownload order={order} />
+          </Suspense>
+          <a
+            href={`https://wa.me/${String(order.customer_phone || '').replace(/[^\d]/g, '').replace(/^(?!226)(\d{8})$/, '226$1')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shop-btn w-full bg-[#25D366] text-white hover:bg-[#1fb857]"
+          >
+            Écrire au client
+          </a>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

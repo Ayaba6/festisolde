@@ -24,6 +24,7 @@ const COLUMNS = [
     links: [
       { name: 'À propos', to: '/about' },
       { name: 'Contact', to: '/contact' },
+      { name: 'Conditions (CGU)', to: '/cgu' },
       { name: 'Confidentialité', to: '/privacy' },
     ],
   },

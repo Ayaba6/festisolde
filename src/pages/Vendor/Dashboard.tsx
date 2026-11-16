@@ -6,6 +6,7 @@ import AddProductModal from './AddProductModal';
 import {
   Plus, ShoppingBag, Users, Wallet, Eye, Zap, ChevronRight, Package, Share2, Check, AlertTriangle, BellRing,
 } from 'lucide-react';
+import PushToggle from '../../components/vendor/PushToggle';
 import { PageHeader, StatCard, Card, SectionTitle, StatusBadge, EmptyState, PageLoader, Modal, formatF } from '../../components/vendor/ui';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -189,6 +190,8 @@ export default function Dashboard() {
 
         {/* Colonne droite */}
         <aside className="space-y-6">
+          <PushToggle />
+
           <Card className="overflow-hidden">
             <div className="bg-ink p-5 text-white">
               <p className="text-sm font-semibold text-stone-300">Lien de votre boutique</p>

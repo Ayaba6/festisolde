@@ -109,7 +109,8 @@ export default function Cart() {
         state: {
           customerName: customerInfo.name,
           whatsappUrl: whatsappUrl,
-          storeSlug: order.store_slug
+          storeSlug: order.store_slug,
+          orderId: order.order_id
         }
       });
 

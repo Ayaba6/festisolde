@@ -3,6 +3,8 @@ import { supabase } from '../../lib/supabaseClient';
 import { Loader2, Camera, Trash2, Star } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { Modal, Field } from '../../components/vendor/ui';
+import { optionsToText } from '../../lib/productOptions';
+import { removeProductImages } from '../../lib/storage';
 
 const CATEGORIES = ['Vêtements', 'Chaussures', 'Accessoires', 'Beauté', 'Électronique', 'Maison', 'Packeo', 'Grossistes', 'Liquidation', 'Autre'];
 const MAX_PHOTOS = 5;
@@ -10,9 +12,6 @@ const MAX_PHOTOS = 5;
 // Une photo = soit une URL déjà en ligne, soit un fichier à envoyer.
 type Photo = { preview: string; url?: string; file?: File };
 
-// '{}' / '{"S","M"}' / 'S, M' -> 'S, M'
-const cleanOptions = (raw: unknown) =>
-  typeof raw === 'string' ? raw.replace(/^\{|\}$/g, '').replace(/"/g, '').split(',').map((s) => s.trim()).filter(Boolean).join(', ') : '';
 
 const initialPhotos = (p: any): Photo[] => {
   if (!p) return [];
@@ -32,8 +31,8 @@ export default function AddProductModal({ storeId, productToEdit, onClose, onRef
     price: productToEdit?.price ?? '',
     sale_price: productToEdit?.sale_price ?? '',
     stock_quantity: productToEdit?.stock_quantity ?? 1,
-    colors: cleanOptions(productToEdit?.colors),
-    sizes: cleanOptions(productToEdit?.sizes),
+    colors: optionsToText(productToEdit?.colors),
+    sizes: optionsToText(productToEdit?.sizes),
   });
   const set = (k: keyof typeof formData) => (e: any) => setFormData((f) => ({ ...f, [k]: e.target.value }));
 
@@ -104,6 +103,11 @@ export default function AddProductModal({ storeId, productToEdit, onClose, onRef
         ? await supabase.from('products').update(productData).eq('id', productToEdit.id)
         : await supabase.from('products').insert([productData]);
       if (dbError) throw dbError;
+      // Photos retirées pendant la modification : on libère le stockage.
+      if (productToEdit) {
+        const removed = initialPhotos(productToEdit).map((p) => p.url).filter((u) => u && !finalImages.includes(u));
+        removeProductImages(removed);
+      }
       onRefresh();
       onClose();
     } catch (err: any) {

@@ -1,182 +1,130 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  MessageCircle, 
-  Mail, 
-  Phone, 
-  ChevronDown, 
-  ChevronUp, 
-  ShieldCheck, 
-  Truck, 
-  RefreshCcw, 
-  CreditCard,
-  ExternalLink,
-  ArrowLeft 
-} from 'lucide-react';
+import { MessageCircle, Mail, Phone, ChevronDown, ShoppingBag, CreditCard, Truck, PackageSearch, RefreshCcw, Store, Wallet } from 'lucide-react';
+import Header from './Header';
+import Footer from './Footer';
+
+// Coordonnées du support (à mettre à jour ici si elles changent)
+const SUPPORT_PHONE = '+22670189912';
+const SUPPORT_PHONE_LABEL = '+226 70 18 99 12';
+const SUPPORT_EMAIL = 'contact@festisolde.com';
+
+const FAQ = [
+  {
+    section: 'Acheter',
+    items: [
+      {
+        icon: ShoppingBag,
+        q: 'Comment passer une commande ?',
+        a: 'Ajoutez vos articles au panier (une commande concerne une seule boutique), cliquez sur « Commander », indiquez votre nom, votre numéro WhatsApp et votre quartier, puis choisissez votre mode de paiement.',
+      },
+      {
+        icon: CreditCard,
+        q: 'Quels moyens de paiement sont acceptés ?',
+        a: 'Vous pouvez payer en ligne par Orange Money, Moov Money ou carte bancaire (paiement sécurisé LigdiCash), ou bien en espèces directement au livreur à la réception.',
+      },
+      {
+        icon: Truck,
+        q: 'Comment se passe la livraison ?',
+        a: 'Chaque vendeur organise sa livraison. Après votre commande, il vous contacte sur WhatsApp pour convenir du lieu, du délai et des éventuels frais. Partager votre position GPS accélère la livraison.',
+      },
+      {
+        icon: PackageSearch,
+        q: 'Comment suivre ma commande ?',
+        a: 'Après chaque commande, un lien « Suivre ma commande » vous est proposé : il indique en temps réel si votre commande est reçue, en préparation ou livrée. Gardez-le précieusement.',
+      },
+      {
+        icon: RefreshCcw,
+        q: 'Un article ne correspond pas à l’annonce ?',
+        a: 'Contactez d’abord le vendeur depuis la page de suivi de votre commande. Si vous ne trouvez pas de solution, écrivez au support FestiSolde avec la référence de la commande : nous intervenons auprès du vendeur.',
+      },
+    ],
+  },
+  {
+    section: 'Vendre',
+    items: [
+      {
+        icon: Store,
+        q: 'Comment ouvrir ma boutique ?',
+        a: 'Cliquez sur « Vendre sur FestiSolde », créez votre compte avec le nom de votre boutique, puis ajoutez vos produits avec quelques photos. L’ouverture de la boutique est gratuite.',
+      },
+      {
+        icon: Wallet,
+        q: 'Comment suis-je payé ?',
+        a: 'Pour un paiement à la livraison, vous encaissez directement le client. Pour un paiement en ligne, le montant est ajouté à votre solde FestiSolde une fois la commande livrée ; vous demandez ensuite un retrait Orange Money, Moov Money ou Wave (minimum 500 FCFA). Une commission de 10 % s’applique au retrait.',
+      },
+    ],
+  },
+];
 
 export default function Aide() {
-  const [openFaq, setOpenFaq] = useState(null);
-
-  const faqs = [
-    {
-      question: "Comment commander un gros lot sur Festisolde ?",
-      answer: "Sélectionnez le lot qui vous intéresse, ajoutez-le au panier et validez. Pour les commandes en gros (conteneurs ou palettes), un conseiller vous contactera pour finaliser les détails logistiques après paiement de l'acompte.",
-      icon: <Truck size={18} className="text-orange-500" />
-    },
-    {
-      question: "Quels sont les modes de paiement acceptés ?",
-      answer: "Nous acceptons les paiements via Orange Money, Moov Money, Wave, ainsi que les virements bancaires pour les transactions de gros montants (supérieurs à 500.000 FCFA).",
-      icon: <CreditCard size={18} className="text-blue-500" />
-    },
-    {
-      question: "Comment vendre mes propres stocks ?",
-      answer: "Cliquez sur 'Vendre un stock' dans le menu. Créez votre boutique gratuitement, listez vos produits et commencez à vendre. Festisolde prélève une commission de 10% sur chaque vente réussie.",
-      icon: <ShieldCheck size={18} className="text-green-500" />
-    },
-    {
-      question: "Politique de retour et remboursement",
-      answer: "En cas de produit non conforme à la description, vous disposez de 48h après réception pour signaler le litige. L'argent est bloqué par Festisolde jusqu'à votre confirmation de satisfaction.",
-      icon: <RefreshCcw size={18} className="text-red-500" />
-    }
-  ];
+  const [open, setOpen] = useState<string | null>(null);
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] pb-20 font-sans">
-      
-      {/* --- HERO SECTION --- */}
-      <div className="bg-black text-white py-16 px-6 relative text-center">
-        <Link 
-          to="/" 
-          className="absolute top-6 left-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-orange-500 transition-colors group"
-        >
-          <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-          Retour Accueil
-        </Link>
+    <div className="min-h-screen bg-white text-ink">
+      <Header />
 
-        <h1 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter mb-4">
-          Centre de <span className="text-orange-500">Support</span>
-        </h1>
-        <p className="text-slate-400 text-xs md:text-sm font-bold uppercase tracking-[0.3em] max-w-2xl mx-auto">
-          Besoin d'aide pour une commande ou pour vendre vos stocks ? Nous sommes là.
-        </p>
-      </div>
+      <section className="bg-cream">
+        <div className="shop-container py-12 text-center md:py-16">
+          <p className="shop-eyebrow">Centre d’aide</p>
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight md:text-5xl">Comment pouvons-nous vous aider ?</h1>
+          <p className="mx-auto mt-3 max-w-xl text-lg text-ink-soft">Les réponses aux questions les plus fréquentes, et une équipe joignable si besoin.</p>
+        </div>
+      </section>
 
-      <div className="max-w-6xl mx-auto px-6 -mt-10">
-        
-        {/* --- CONTACT QUICK CARDS --- */}
-        {/* AJOUT : relative z-10 pour que les cartes restent au premier plan au survol */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 relative z-10">
-          <ContactCard 
-            icon={<MessageCircle size={24} />}
-            title="WhatsApp Live"
-            desc="Réponse en moins de 15min"
-            action="Démarrer le chat"
-            link="https://wa.me/22600000000"
-            color="bg-green-600"
-          />
-          <ContactCard 
-            icon={<Mail size={24} />}
-            title="Support Email"
-            desc="Pour les litiges officiels"
-            action="Envoyer un mail"
-            link="mailto:support@festisolde.com"
-            color="bg-black"
-          />
-          <ContactCard 
-            icon={<Phone size={24} />}
-            title="Ligne Directe"
-            desc="Lun - Ven | 08h - 18h"
-            action="Appeler maintenant"
-            link="tel:+22600000000"
-            color="bg-orange-600"
-          />
+      <main className="shop-container max-w-5xl py-12">
+        <div className="grid gap-4 md:grid-cols-3">
+          {[
+            { icon: MessageCircle, title: 'WhatsApp', text: 'Le plus rapide', href: `https://wa.me/${SUPPORT_PHONE.replace('+', '')}`, cta: 'Écrire sur WhatsApp', cls: 'bg-[#25D366] text-white' },
+            { icon: Phone, title: 'Téléphone', text: SUPPORT_PHONE_LABEL, href: `tel:${SUPPORT_PHONE}`, cta: 'Appeler', cls: 'bg-orange-50 text-orange-600' },
+            { icon: Mail, title: 'E-mail', text: SUPPORT_EMAIL, href: `mailto:${SUPPORT_EMAIL}`, cta: 'Envoyer un e-mail', cls: 'bg-stone-100 text-ink' },
+          ].map(({ icon: Icon, title, text, href, cta, cls }) => (
+            <a
+              key={title}
+              href={href}
+              target={href.startsWith('http') ? '_blank' : undefined}
+              rel="noopener noreferrer"
+              className="group rounded-3xl border border-stone-100 bg-white p-6 shadow-card transition hover:-translate-y-0.5 hover:shadow-lift"
+            >
+              <span className={`flex h-12 w-12 items-center justify-center rounded-2xl ${cls}`}><Icon size={22} /></span>
+              <p className="mt-4 text-lg font-bold">{title}</p>
+              <p className="text-ink-muted">{text}</p>
+              <p className="mt-4 text-sm font-bold text-orange-600 group-hover:underline">{cta} →</p>
+            </a>
+          ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          {/* FAQ SECTION */}
-          <div className="lg:col-span-2">
-            <h2 className="text-xl font-black uppercase italic tracking-tighter mb-8 flex items-center gap-3">
-              <span className="w-8 h-1 bg-orange-600 block"></span>
-              Questions Fréquentes
-            </h2>
-            
-            <div className="space-y-4">
-              {faqs.map((faq, index) => (
-                <div 
-                  key={index} 
-                  className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm transition-all hover:shadow-md"
-                >
-                  <button 
-                    onClick={() => setOpenFaq(openFaq === index ? null : index)}
-                    className="w-full px-6 py-5 flex items-center justify-between text-left"
-                  >
-                    <div className="flex items-center gap-4">
-                      {faq.icon}
-                      <span className="text-xs font-black uppercase tracking-wider text-slate-800">{faq.question}</span>
-                    </div>
-                    {openFaq === index ? <ChevronUp size={16}/> : <ChevronDown size={16}/>}
-                  </button>
-                  
-                  {openFaq === index && (
-                    <div className="px-6 pb-6 pt-0 animate-fadeIn">
-                      <p className="text-sm text-slate-500 font-medium leading-relaxed border-t border-slate-50 pt-4">
-                        {faq.answer}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ))}
+        {FAQ.map(({ section, items }) => (
+          <section key={section} className="mt-14">
+            <h2 className="shop-title">{section}</h2>
+            <div className="mt-6 divide-y divide-stone-100 rounded-3xl border border-stone-100 bg-white shadow-card">
+              {items.map(({ icon: Icon, q, a }) => {
+                const isOpen = open === q;
+                return (
+                  <div key={q}>
+                    <button
+                      onClick={() => setOpen(isOpen ? null : q)}
+                      aria-expanded={isOpen}
+                      className="flex w-full items-center gap-4 px-5 py-5 text-left"
+                    >
+                      <Icon size={20} className="shrink-0 text-orange-600" />
+                      <span className="flex-1 font-semibold">{q}</span>
+                      <ChevronDown size={18} className={`shrink-0 text-ink-muted transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isOpen && <p className="px-5 pb-5 pl-14 text-[15px] leading-relaxed text-ink-soft">{a}</p>}
+                  </div>
+                );
+              })}
             </div>
-          </div>
+          </section>
+        ))}
 
-          {/* CONTACT FORM */}
-          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl h-fit">
-            <h3 className="text-lg font-black uppercase tracking-tighter mb-6">Écrivez-nous</h3>
-            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-              <div>
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Votre Nom</label>
-                <input type="text" className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-orange-500 transition-all" />
-              </div>
-              <div>
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Objet du message</label>
-                <select className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-orange-500 transition-all">
-                  <option>Problème de commande</option>
-                  <option>Devenir Grossiste</option>
-                  <option>Litige / Remboursement</option>
-                  <option>Autre</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Message</label>
-                <textarea rows="4" className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-orange-500 transition-all"></textarea>
-              </div>
-              <button className="w-full bg-black text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 transition-all shadow-lg shadow-black/10">
-                Envoyer le message
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
+        <p className="mt-12 text-center text-ink-muted">
+          Vous êtes vendeur ? <Link to="/auth" className="font-bold text-ink underline decoration-orange-400 underline-offset-4">Accédez à votre espace</Link>
+        </p>
+      </main>
+
+      <Footer />
     </div>
-  );
-}
-
-function ContactCard({ icon, title, desc, action, link, color }) {
-  return (
-    <a 
-      href={link} 
-      target="_blank" 
-      rel="noopener noreferrer"
-      className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all group block relative hover:z-20"
-    >
-      <div className={`w-12 h-12 ${color} rounded-2xl flex items-center justify-center text-white mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
-        {icon}
-      </div>
-      <h3 className="text-sm font-black uppercase tracking-tight mb-1 text-slate-900">{title}</h3>
-      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">{desc}</p>
-      <div className="flex items-center gap-2 text-orange-600 font-black text-[9px] uppercase tracking-tighter">
-        {action} <ExternalLink size={10} />
-      </div>
-    </a>
   );
 }

@@ -1,33 +1,35 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Link, NavLink, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabaseClient';
 
 // --- COMPOSANTS & PAGES ---
 import SplashScreen from './SplashScreen';
-import Auth from './pages/Auth/Auth';
-import Register from './pages/Auth/Register';
-import Dashboard from './pages/Vendor/Dashboard';
-import ManageProducts from './pages/Vendor/ManageProducts';
-import Revenues from './pages/Vendor/Revenues';
-import WithdrawalHistory from './pages/Vendor/WithdrawalHistory';
-import StoreSettings from './pages/Store/StoreSettings';
-import AdminDashboard from './pages/Admin/AdminDashboard';
-import PublicStore from './pages/Store/PublicStore';
-import ProductDetails from './pages/Store/ProductDetails';
-import Cart from './pages/Store/Cart';
-import OrderSuccess from './pages/Store/OrderSuccess';
-import PaymentReturn from './pages/Store/PaymentReturn';
-import Settings from './components/Settings';
+const Auth = lazy(() => import('./pages/Auth/Auth'));
+const Register = lazy(() => import('./pages/Auth/Register'));
+const Dashboard = lazy(() => import('./pages/Vendor/Dashboard'));
+const ManageProducts = lazy(() => import('./pages/Vendor/ManageProducts'));
+const Revenues = lazy(() => import('./pages/Vendor/Revenues'));
+const WithdrawalHistory = lazy(() => import('./pages/Vendor/WithdrawalHistory'));
+const StoreSettings = lazy(() => import('./pages/Store/StoreSettings'));
+const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
+const PublicStore = lazy(() => import('./pages/Store/PublicStore'));
+const ProductDetails = lazy(() => import('./pages/Store/ProductDetails'));
+const Cart = lazy(() => import('./pages/Store/Cart'));
+const OrderSuccess = lazy(() => import('./pages/Store/OrderSuccess'));
+const PaymentReturn = lazy(() => import('./pages/Store/PaymentReturn'));
+const OrderTracking = lazy(() => import('./pages/Store/OrderTracking'));
+const Settings = lazy(() => import('./components/Settings'));
 import Home from './pages/Home/Home';
-import Shop from './pages/Home/components/Shop';
-import RequestBoost from './pages/Vendor/RequestBoost';
-import Analytics from './pages/Vendor/Analytics';
-import Grossistes from './pages/Home/components/Grossistes';
-import Liquidation from './pages/Home/components/Liquidation';
-import Aide from './pages/Home/components/Aide';
-import About from './pages/About';
-import Contact from './pages/Contact';
-import Privacy from './pages/Privacy';
+const Shop = lazy(() => import('./pages/Home/components/Shop'));
+const RequestBoost = lazy(() => import('./pages/Vendor/RequestBoost'));
+const Analytics = lazy(() => import('./pages/Vendor/Analytics'));
+const Grossistes = lazy(() => import('./pages/Home/components/Grossistes'));
+const Liquidation = lazy(() => import('./pages/Home/components/Liquidation'));
+const Aide = lazy(() => import('./pages/Home/components/Aide'));
+const About = lazy(() => import('./pages/About'));
+const Contact = lazy(() => import('./pages/Contact'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const Terms = lazy(() => import('./pages/Terms'));
 import ShopLayout from './components/ShopLayout';
 
 import {
@@ -181,6 +183,7 @@ export default function App() {
         )}
 
         <main className={`flex-1 ${showVendorUI ? 'mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-10 lg:pb-12 lg:pt-10' : ''}`}>
+          <Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-orange-600" size={28} /></div>}>
           <Routes>
             <Route path="/" element={isVendorSubdomain ? (user ? <Navigate to="/dashboard" replace /> : <Navigate to="/auth" replace />) : <Home />} />
             <Route path="/products" element={<Shop />} />
@@ -189,11 +192,13 @@ export default function App() {
             <Route path="/aide" element={<Aide />} />
             <Route path="/produit/:productId" element={<ProductDetails />} />
             <Route path="/panier" element={<Cart />} />
-            <Route path="/confirmation" element={<OrderSuccess />} />
+            <Route path="/confirmation" element={<ShopLayout><OrderSuccess /></ShopLayout>} />
+            <Route path="/commande/:orderId" element={<ShopLayout><OrderTracking /></ShopLayout>} />
             <Route path="/paiement/retour" element={<ShopLayout><PaymentReturn /></ShopLayout>} />
             <Route path="/about" element={<ShopLayout><About /></ShopLayout>} />
             <Route path="/contact" element={<ShopLayout><Contact /></ShopLayout>} />
             <Route path="/privacy" element={<ShopLayout><Privacy /></ShopLayout>} />
+            <Route path="/cgu" element={<ShopLayout><Terms /></ShopLayout>} />
             <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/dashboard" replace />} />
             <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/auth" />} />
@@ -208,6 +213,7 @@ export default function App() {
             <Route path="/:storeSlug" element={<PublicStore />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </Suspense>
         </main>
 
         {/* Navigation mobile */}

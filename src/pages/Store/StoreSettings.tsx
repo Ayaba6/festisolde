@@ -1,257 +1,180 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Upload, 
-  Save, 
-  Loader2, 
-  CheckCircle2,
-  Globe,
-  Camera,
-  Copy,
-  ChevronLeft
-} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import imageCompression from 'browser-image-compression';
+import { Camera, Loader2, Copy, Check, ExternalLink, AlertTriangle } from 'lucide-react';
+import { PageHeader, Card, Field, PageLoader } from '../../components/vendor/ui';
+
+const toSlug = (s: string) =>
+  s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
 export default function StoreSettings() {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const [uploadingField, setUploadingField] = useState(null); // 'logo_url' ou 'banner_url'
-  const [message, setMessage] = useState('');
-  
-  const [storeData, setStoreData] = useState({
-    id: '',
-    name: '',
-    description: '',
-    logo_url: '',
-    banner_url: '',
-    slug: '',
-  });
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ type: 'ok' | 'error'; text: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [store, setStore] = useState<any>(null);
+  const [form, setForm] = useState({ name: '', description: '' });
+  const [editSlug, setEditSlug] = useState(false);
+  const [slug, setSlug] = useState('');
 
   useEffect(() => {
-    fetchStore();
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('stores').select('*').eq('owner_id', user.id).maybeSingle();
+        if (data) {
+          setStore(data);
+          setForm({ name: data.name || '', description: data.description || '' });
+          setSlug(data.slug || '');
+        }
+      }
+      setLoading(false);
+    })();
   }, []);
 
-  async function fetchStore() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase.from('stores').select('*').eq('owner_id', user.id).single();
-      if (data) setStoreData(data);
-    }
-    setLoading(false);
-  }
+  const flash = (type: 'ok' | 'error', text: string) => {
+    setNotice({ type, text });
+    setTimeout(() => setNotice(null), 4000);
+  };
 
-  const handleFileUpload = async (e, type) => {
+  const uploadImage = async (e: React.ChangeEvent<HTMLInputElement>, field: 'logo_url' | 'banner_url') => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingField(type);
+    e.target.value = '';
+    if (!file || !store) return;
+    setUploading(field);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user?.id}/${type}-${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('store-assets')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage.from('store-assets').getPublicUrl(filePath);
-      
-      const publicUrl = urlData.publicUrl;
-      
-      // Mise à jour immédiate en DB pour cette image
-      await supabase
-        .from('stores')
-        .update({ [type]: publicUrl })
-        .eq('id', storeData.id);
-
-      setStoreData(prev => ({ ...prev, [type]: publicUrl }));
-      showFeedback('Visuel mis à jour');
-    } catch (error) {
-      console.error("Erreur upload:", error);
-    } finally {
-      setUploadingField(null);
-    }
-  };
-
-  const showFeedback = (txt) => {
-    setMessage(txt);
-    setTimeout(() => setMessage(''), 3000);
-  };
-
-  const handleSave = async () => {
-    if (!storeData.id) return;
-    setUpdating(true);
-
-    const newSlug = storeData.name
-      .toLowerCase()
-      .trim()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/\s+/g, '-')
-      .replace(/[^\w\-]+/g, '')
-      .replace(/\-\-+/g, '-');
-
-    try {
-      const { error } = await supabase
-        .from('stores')
-        .update({
-          name: storeData.name,
-          description: storeData.description,
-          slug: newSlug 
-        })
-        .eq('id', storeData.id);
-
+      const compressed = await imageCompression(file, {
+        maxSizeMB: field === 'banner_url' ? 0.9 : 0.4,
+        maxWidthOrHeight: field === 'banner_url' ? 1800 : 600,
+        useWebWorker: true,
+      });
+      const ext = compressed.type === 'image/png' ? 'png' : compressed.type === 'image/webp' ? 'webp' : 'jpg';
+      const path = `${store.owner_id}/${field}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('store-assets').upload(path, compressed);
+      if (upErr) throw upErr;
+      const url = supabase.storage.from('store-assets').getPublicUrl(path).data.publicUrl;
+      const { error } = await supabase.from('stores').update({ [field]: url }).eq('id', store.id);
       if (error) throw error;
-      setStoreData(prev => ({ ...prev, slug: newSlug }));
-      showFeedback('Profil enregistré !');
-    } catch (error) {
-      console.error(error);
+      setStore((s: any) => ({ ...s, [field]: url }));
+      flash('ok', field === 'logo_url' ? 'Logo mis à jour.' : 'Bannière mise à jour.');
+    } catch (err: any) {
+      flash('error', err?.message || 'Envoi de l’image impossible.');
     } finally {
-      setUpdating(false);
+      setUploading(null);
     }
   };
 
-  const copyToClipboard = () => {
-    const url = `festisolde.com/${storeData.slug}`;
-    navigator.clipboard.writeText(url);
-    showFeedback('Lien copié !');
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!store) return;
+    setSaving(true);
+    const update: Record<string, string> = { name: form.name.trim(), description: form.description.trim() };
+    const newSlug = toSlug(slug);
+    if (editSlug && newSlug && newSlug !== store.slug) update.slug = newSlug;
+    const { data, error } = await supabase.from('stores').update(update).eq('id', store.id).select().maybeSingle();
+    setSaving(false);
+    if (error) return flash('error', error.message.includes('duplicate') ? 'Cette adresse est déjà prise.' : error.message);
+    if (data) { setStore(data); setSlug(data.slug); }
+    setEditSlug(false);
+    flash('ok', 'Modifications enregistrées.');
   };
 
-  if (loading) return (
-    <div className="h-screen flex items-center justify-center bg-white">
-      <Loader2 className="animate-spin text-ink" size={32} />
-    </div>
-  );
+  const storeUrl = store ? `${window.location.origin}/${store.slug}` : '';
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(storeUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* indisponible */ }
+  };
+
+  if (loading) return <PageLoader />;
+  if (!store) return <p className="text-ink-muted">Aucune boutique liée à ce compte.</p>;
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10 antialiased pb-24">
-      
-      {/* TOP BAR STYLE STUDIO */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-        <div className="flex items-center gap-5">
-          <button 
-            onClick={() => navigate('/dashboard')}
-            className="p-3 bg-white border border-stone-100 rounded-2xl text-stone-400 hover:text-ink transition-all shadow-sm"
-          >
-            <ChevronLeft size={20} />
+    <div>
+      <PageHeader
+        title="Ma vitrine"
+        subtitle="Ce que voient vos clients en ouvrant votre boutique."
+        actions={<Link to={`/${store.slug}`} target="_blank" className="shop-btn-ghost"><ExternalLink size={18} /> Voir ma boutique</Link>}
+      />
+
+      {notice && (
+        <p className={`mb-6 rounded-2xl px-4 py-3 text-sm font-semibold ${notice.type === 'ok' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-700'}`} role="status">
+          {notice.text}
+        </p>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
+        {/* Aperçu visuel */}
+        <Card className="overflow-hidden">
+          <div className="relative h-44 bg-gradient-to-br from-orange-500 via-orange-600 to-ink md:h-56">
+            {store.banner_url && <img src={store.banner_url} alt="" className="h-full w-full object-cover" />}
+            <label className="absolute bottom-3 right-3 inline-flex cursor-pointer items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-sm font-bold text-ink shadow hover:bg-white">
+              {uploading === 'banner_url' ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+              {store.banner_url ? 'Changer la bannière' : 'Ajouter une bannière'}
+              <input type="file" accept="image/*" hidden disabled={!!uploading} onChange={(e) => uploadImage(e, 'banner_url')} />
+            </label>
+          </div>
+          <div className="flex items-end gap-4 px-6 pb-6">
+            <label className="relative -mt-10 h-24 w-24 shrink-0 cursor-pointer overflow-hidden rounded-3xl border-4 border-white bg-ink shadow-lift" aria-label="Changer le logo">
+              {store.logo_url
+                ? <img src={store.logo_url} alt="" className="h-full w-full object-cover" />
+                : <span className="flex h-full w-full items-center justify-center text-3xl font-extrabold text-white">{store.name?.charAt(0)?.toUpperCase()}</span>}
+              <span className="absolute inset-0 flex items-center justify-center bg-ink/50 text-white opacity-0 transition hover:opacity-100">
+                {uploading === 'logo_url' ? <Loader2 size={20} className="animate-spin" /> : <Camera size={20} />}
+              </span>
+              <input type="file" accept="image/*" hidden disabled={!!uploading} onChange={(e) => uploadImage(e, 'logo_url')} />
+            </label>
+            <div className="min-w-0 pb-1">
+              <p className="truncate text-xl font-extrabold text-ink">{form.name || store.name}</p>
+              <p className="text-sm text-ink-muted">Touchez le logo pour le changer</p>
+            </div>
+          </div>
+          <div className="border-t border-stone-100 p-6">
+            <p className="text-sm font-semibold text-ink-muted">Adresse de votre boutique</p>
+            <div className="mt-2 flex items-center gap-2 rounded-2xl bg-stone-50 p-2 pl-4">
+              <span className="min-w-0 flex-1 truncate font-semibold text-ink">festisolde.com/<span className="text-orange-600">{store.slug}</span></span>
+              <button type="button" onClick={copy} className="shop-btn-dark px-4 py-2">
+                {copied ? <Check size={16} /> : <Copy size={16} />} {copied ? 'Copié' : 'Copier'}
+              </button>
+            </div>
+          </div>
+        </Card>
+
+        {/* Formulaire */}
+        <Card as="form" onSubmit={save} className="space-y-5 p-6">
+          <Field label="Nom de la boutique">
+            <input required minLength={2} maxLength={80} className="shop-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </Field>
+          <Field label="Présentation" hint="(visible sur votre boutique)">
+            <textarea rows={5} maxLength={600} className="shop-input resize-none" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Ce que vous vendez, vos zones et délais de livraison…" />
+          </Field>
+
+          {!editSlug ? (
+            <button type="button" onClick={() => setEditSlug(true)} className="text-sm font-semibold text-ink-muted underline underline-offset-4 hover:text-ink">
+              Modifier l’adresse de la boutique
+            </button>
+          ) : (
+            <div className="space-y-2 rounded-2xl bg-amber-50 p-4">
+              <p className="flex items-start gap-2 text-sm font-semibold text-amber-900">
+                <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                Les liens déjà partagés (WhatsApp, Facebook…) ne fonctionneront plus.
+              </p>
+              <div className="flex items-center gap-1 rounded-xl border border-amber-200 bg-white pl-3">
+                <span className="shrink-0 text-sm text-ink-muted">festisolde.com/</span>
+                <input className="w-full rounded-xl py-2.5 pr-3 text-[15px] font-semibold outline-none" value={slug} onChange={(e) => setSlug(e.target.value)} aria-label="Nouvelle adresse" />
+              </div>
+              {toSlug(slug) !== slug && slug && <p className="text-sm text-ink-muted">Sera enregistrée : <strong>{toSlug(slug)}</strong></p>}
+            </div>
+          )}
+
+          <button type="submit" disabled={saving || !!uploading} className="shop-btn-primary w-full py-3.5">
+            {saving && <Loader2 size={18} className="animate-spin" />} Enregistrer
           </button>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-ink">Ma vitrine</h1>
-            <p className="text-xs font-bold text-stone-400 uppercase tracking-wide mt-1">Identité de votre enseigne</p>
-          </div>
-        </div>
-        
-        {message && (
-          <div className="flex items-center gap-2 text-emerald-600 text-xs font-bold bg-emerald-50 px-5 py-2.5 rounded-full border border-emerald-100 animate-in fade-in slide-in-from-top-2">
-            <CheckCircle2 size={14} strokeWidth={3} /> {message.toUpperCase()}
-          </div>
-        )}
-      </header>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-        
-        {/* COLONNE VISUELS (Gauches) */}
-        <div className="lg:col-span-7 space-y-8">
-          <div className="relative">
-            {/* BANNER */}
-            <div className="h-56 md:h-72 bg-stone-50 rounded-3xl overflow-hidden border border-stone-100 relative group shadow-inner">
-              {storeData.banner_url ? (
-                <img src={storeData.banner_url} className="w-full h-full object-cover" alt="Banner" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-stone-300 text-xs font-bold uppercase tracking-wide">Aucune bannière</div>
-              )}
-              <label className="absolute inset-0 bg-ink/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center cursor-pointer backdrop-blur-[2px]">
-                <div className="bg-white px-6 py-3 rounded-2xl flex items-center gap-3 text-xs font-bold text-ink shadow-xl scale-90 group-hover:scale-100 transition-transform">
-                  {uploadingField === 'banner_url' ? <Loader2 className="animate-spin" size={14}/> : <Camera size={14} />} 
-                  MODIFIER LA COUVERTURE
-                </div>
-                <input type="file" className="hidden" accept="image/*" disabled={!!uploadingField} onChange={(e) => handleFileUpload(e, 'banner_url')} />
-              </label>
-            </div>
-
-            {/* LOGO */}
-            <div className="absolute -bottom-8 left-10">
-              <div className="w-28 h-28 bg-white rounded-3xl p-1.5 shadow-2xl border border-stone-50 group/logo relative">
-                <div className="w-full h-full rounded-[1.7rem] overflow-hidden bg-stone-50 flex items-center justify-center border border-stone-100">
-                  {storeData.logo_url ? (
-                    <img src={storeData.logo_url} className="w-full h-full object-cover" alt="Logo" />
-                  ) : (
-                    <span className="text-3xl font-bold text-stone-200">{storeData.name?.charAt(0)}</span>
-                  )}
-                  <label className="absolute inset-0 bg-ink/60 opacity-0 group-hover/logo:opacity-100 transition-all flex items-center justify-center cursor-pointer backdrop-blur-[1px]">
-                    {uploadingField === 'logo_url' ? <Loader2 className="animate-spin text-white" size={20}/> : <Upload size={20} className="text-white" />}
-                    <input type="file" className="hidden" accept="image/*" disabled={!!uploadingField} onChange={(e) => handleFileUpload(e, 'logo_url')} />
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* LIEN PUBLIC STYLE "WIDGET" */}
-          <div className="pt-10">
-             <div className="bg-stone-50 border border-stone-100 p-6 rounded-3xl flex items-center justify-between transition-all hover:border-stone-200">
-                <div className="flex items-center gap-5">
-                   <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-ink shadow-sm border border-stone-100">
-                      <Globe size={20} />
-                   </div>
-                   <div className="min-w-0">
-                      <p className="text-xs font-bold text-stone-400 uppercase tracking-wide mb-0.5">Ma Vitrine Digitale</p>
-                      <p className="text-sm font-bold text-ink truncate tracking-tight">
-                          festisolde.com/<span className="text-orange-600">{storeData.slug || 'chargement...'}</span>
-                      </p>
-                   </div>
-                </div>
-                <button 
-                  onClick={copyToClipboard} 
-                  className="p-3 text-stone-400 hover:text-ink hover:bg-white hover:shadow-sm rounded-xl transition-all"
-                >
-                   <Copy size={20} />
-                </button>
-             </div>
-          </div>
-        </div>
-
-        {/* COLONNE ÉDITION (Droite) */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
-           <div className="bg-white p-8 rounded-3xl border border-stone-100 shadow-sm space-y-8">
-              <div className="space-y-3">
-                <label className="text-xs font-bold text-stone-400 uppercase tracking-wide ml-1">Nom de l'enseigne</label>
-                <input 
-                  value={storeData.name}
-                  onChange={(e) => setStoreData({...storeData, name: e.target.value})}
-                  className="w-full text-lg font-bold outline-none bg-stone-50 px-6 py-4 rounded-2xl focus:ring-4 focus:ring-stone-100 transition-all border border-transparent focus:border-stone-200 text-ink"
-                  placeholder="Ex: Boutique Horizon"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-xs font-bold text-stone-400 uppercase tracking-wide ml-1">À propos</label>
-                <textarea 
-                  rows={5}
-                  value={storeData.description}
-                  onChange={(e) => setStoreData({...storeData, description: e.target.value})}
-                  className="w-full text-sm font-bold outline-none bg-stone-50 px-6 py-4 rounded-2xl focus:ring-4 focus:ring-stone-100 transition-all border border-transparent focus:border-stone-200 resize-none leading-relaxed text-stone-600"
-                  placeholder="Décrivez votre univers, vos délais de livraison..."
-                />
-              </div>
-           </div>
-
-           <button 
-             onClick={handleSave}
-             disabled={updating || !!uploadingField}
-             className="w-full bg-ink text-white font-bold py-5 rounded-2xl text-xs tracking-wide shadow-xl hover:bg-orange-600 transition-all flex items-center justify-center gap-3 disabled:bg-stone-100 disabled:text-stone-300 group"
-           >
-             {updating ? (
-               <Loader2 className="animate-spin" size={18} />
-             ) : (
-               <Save size={18} className="group-hover:scale-110 transition-transform" />
-             )}
-             ENREGISTRER LES MODIFICATIONS
-           </button>
-        </div>
+        </Card>
       </div>
     </div>
   );

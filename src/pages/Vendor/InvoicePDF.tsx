@@ -1,4 +1,5 @@
-import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { lineUnitPrice } from '../../lib/orders';
 
 // Style spécifique pour le PDF (proche de ton design "Mon Trésor")
 const styles = StyleSheet.create({
@@ -48,7 +49,7 @@ export const InvoicePDF = ({ order }) => (
         <View key={i} style={styles.tableRow}>
           <Text style={styles.colName}>{item.name}</Text>
           <Text style={styles.colQty}>x{item.quantity}</Text>
-          <Text style={styles.colPrice}>{(item.sale_price * item.quantity).toLocaleString()} CFA</Text>
+          <Text style={styles.colPrice}>{(lineUnitPrice(item) * item.quantity).toLocaleString('fr-FR')} CFA</Text>
         </View>
       ))}
 
