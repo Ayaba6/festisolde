@@ -19,8 +19,8 @@ export default function Auth() {
       });
       if (error) throw error;
       if (data?.user) {
-        const adminUid = import.meta.env.VITE_ADMIN_UID?.trim();
-        navigate(adminUid && data.user.id === adminUid ? '/admin' : '/dashboard');
+        const { data: isAdmin } = await supabase.rpc('is_admin');
+        navigate(isAdmin ? '/admin' : '/dashboard');
       }
     } catch (error) {
       alert("Accès refusé.");

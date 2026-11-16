@@ -17,7 +17,6 @@ export default function Revenues() {
   const [searchTerm, setSearchTerm] = useState('');
   
   const [balance, setBalance] = useState(0);
-  const [storeId, setStoreId] = useState(null);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Orange Money');
@@ -56,10 +55,10 @@ export default function Revenues() {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
-      const { data: store } = await supabase.from('stores').select('id, balance').eq('owner_id', user.id).single();
+      const { data: store } = await supabase.from('stores').select('id').eq('owner_id', user.id).single();
       if (store) {
-        setBalance(store.balance || 0);
-        setStoreId(store.id);
+        const { data: wallet } = await supabase.from('wallets').select('balance').eq('store_id', store.id).maybeSingle();
+        setBalance(Number(wallet?.balance) || 0);
         const { data: salesData } = await supabase.from('orders').select('*').eq('store_id', store.id).order('created_at', { ascending: false });
         if (salesData) {
           setSales(salesData);
@@ -82,9 +81,10 @@ export default function Revenues() {
     try {
       const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
       if (error) throw error;
-      fetchSalesData(); 
+      fetchSalesData();
     } catch (error) {
-      alert("Erreur lors de la mise à jour.");
+      alert(error?.message || "Erreur lors de la mise à jour.");
+      fetchSalesData();
     }
   };
 
@@ -96,10 +96,15 @@ export default function Revenues() {
 
     setIsWithdrawing(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      await supabase.from('withdrawal_requests').insert([{ vendor_id: user.id, store_id: storeId, amount, payment_method: paymentMethod, payment_details: paymentPhone, status: 'en_cours' }]);
-      await supabase.rpc('deduct_balance', { vendor_id: user.id, amount_to_deduct: amount });
+      // Vérification du solde, débit et création de la demande en une seule opération serveur.
+      const { error } = await supabase.rpc('request_withdrawal', {
+        p_amount: amount,
+        p_method: paymentMethod,
+        p_details: paymentPhone,
+      });
+      if (error) throw error;
       setShowWithdrawModal(false);
+      setWithdrawAmount('');
       fetchSalesData();
     } catch (error) {
       alert(error.message);
@@ -222,6 +227,9 @@ export default function Revenues() {
                   </td>
                   <td className="px-8 py-5 text-center font-bold text-slate-900">
                     {sale.total_amount?.toLocaleString()} <span className="text-[9px] text-slate-400">F</span>
+                    {sale.payment_status === 'paye' && (
+                      <span className="block mt-1 text-[8px] font-bold uppercase tracking-wide text-green-600">Payé en ligne</span>
+                    )}
                   </td>
                   <td className="px-8 py-5 text-center">
                     <select 
@@ -256,7 +264,12 @@ export default function Revenues() {
                   <h3 className="text-sm font-bold text-slate-900 uppercase">{sale.customer_name}</h3>
                   <p className="text-[10px] font-bold text-orange-500 italic">{sale.customer_phone}</p>
                 </div>
-                <p className="text-lg font-bold text-slate-900 tracking-tight">{sale.total_amount?.toLocaleString()} <span className="text-[10px] font-medium text-slate-400">F</span></p>
+                <p className="text-lg font-bold text-slate-900 tracking-tight">
+                  {sale.total_amount?.toLocaleString()} <span className="text-[10px] font-medium text-slate-400">F</span>
+                  {sale.payment_status === 'paye' && (
+                    <span className="block text-[8px] font-bold uppercase tracking-wide text-green-600">Payé en ligne</span>
+                  )}
+                </p>
               </div>
               <div className="flex gap-2">
                 <select 

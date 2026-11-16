@@ -15,33 +15,17 @@ export default function Register() {
     setLoading(true);
 
     try {
+      // La boutique est créée côté serveur (trigger handle_new_user) à partir de store_name,
+      // ce qui fonctionne même si la confirmation par e-mail est activée.
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: { data: { store_name: storeName.trim() } },
       });
 
       if (authError) throw authError;
 
       if (authData.user) {
-        const slug = storeName
-          .toLowerCase()
-          .trim()
-          .replace(/[^\w\s-]/g, '')
-          .replace(/[\s_-]+/g, '-')
-          .replace(/^-+|-+$/g, '');
-
-        const { error: storeError } = await supabase
-          .from('stores')
-          .insert([
-            { 
-              name: storeName, 
-              owner_id: authData.user.id,
-              slug: slug 
-            }
-          ]);
-
-        if (storeError) throw storeError;
-
         alert('Compte créé ! Vérifiez vos e-mails pour confirmer.');
         navigate('/auth');
       }

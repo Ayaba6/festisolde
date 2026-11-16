@@ -16,6 +16,7 @@ import PublicStore from './pages/Store/PublicStore';
 import ProductDetails from './pages/Store/ProductDetails';
 import Cart from './pages/Store/Cart';
 import OrderSuccess from './pages/Store/OrderSuccess';
+import PaymentReturn from './pages/Store/PaymentReturn';
 import Settings from './components/Settings';
 import Home from './pages/Home/Home';
 import Shop from './pages/Home/components/Shop'; 
@@ -111,7 +112,6 @@ export default function App() {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const adminUid = import.meta.env.VITE_ADMIN_UID?.trim();
   const isVendorSubdomain = getSubdomain() === 'vendeur';
 
   useEffect(() => {
@@ -229,6 +229,7 @@ export default function App() {
             <Route path="/produit/:productId" element={<ProductDetails />} />
             <Route path="/panier" element={<Cart />} />
             <Route path="/confirmation" element={<OrderSuccess />} />
+            <Route path="/paiement/retour" element={<PaymentReturn />} />
             <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/dashboard" replace />} />
             <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/auth" />} />
@@ -239,7 +240,7 @@ export default function App() {
             <Route path="/withdrawal-history" element={user ? <WithdrawalHistory /> : <Navigate to="/auth" />} />
             <Route path="/ma-boutique" element={user ? <StoreSettings /> : <Navigate to="/auth" />} />
             <Route path="/settings" element={user ? <Settings /> : <Navigate to="/auth" />} />
-            <Route path="/admin" element={user?.id === adminUid ? <AdminDashboard /> : <Navigate to="/" />} />
+            <Route path="/admin" element={user ? <AdminDashboard /> : <Navigate to="/auth" />} />
             <Route path="/:storeSlug" element={<PublicStore />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

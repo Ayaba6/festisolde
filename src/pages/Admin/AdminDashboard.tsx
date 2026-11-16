@@ -46,21 +46,26 @@ export default function AdminDashboard() {
 
   async function checkAdminAndFetchData() {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    const adminIdFromEnv = import.meta.env.VITE_ADMIN_UID?.trim();
-    const currentUserId = user?.id?.trim();
-
-    if (!user || currentUserId !== adminIdFromEnv) {
+    // Le rôle admin est vérifié en base (table admins) : la RLS protège les données de toute façon.
+    const { data: isAdmin } = await supabase.rpc('is_admin');
+    if (!isAdmin) {
       setUserStatus("unauthorized");
+      setLoading(false);
       return;
     }
 
-    const { data: storesData } = await supabase.from('stores').select('*').order('created_at', { ascending: false });
+    const { data: rawStores } = await supabase.from('stores').select('*, wallets(balance)').order('created_at', { ascending: false });
     const { data: withdrawalsData } = await supabase.from('withdrawal_requests').select('*, stores(name)').order('created_at', { ascending: false });
 
-    setStores(storesData || []);
+    // Le solde vit désormais dans la table wallets.
+    const storesData = (rawStores || []).map(({ wallets, ...s }) => ({
+      ...s,
+      balance: Number(Array.isArray(wallets) ? wallets[0]?.balance : wallets?.balance) || 0,
+    }));
+
+    setStores(storesData);
     setWithdrawals(withdrawalsData || []);
-    calculateStats(storesData || [], withdrawalsData || []);
+    calculateStats(storesData, withdrawalsData || []);
     setLoading(false);
   }
 
@@ -124,24 +129,15 @@ export default function AdminDashboard() {
     if (!window.confirm(confirmMsg)) return;
 
     try {
-      const { error: updateError } = await supabase
-        .from('withdrawal_requests')
-        .update({ status: newStatus, processed_at: new Date().toISOString() })
-        .eq('id', withdrawal.id);
+      // Validation / rejet (+ remboursement du solde) en une seule opération serveur.
+      const { error } = await supabase.rpc('process_withdrawal', {
+        p_id: withdrawal.id,
+        p_decision: newStatus
+      });
+      if (error) throw error;
 
-      if (updateError) throw updateError;
-
-      if (newStatus === 'rejete') {
-        const { error: rpcError } = await supabase.rpc('increment_balance', {
-          vendor_id: withdrawal.vendor_id,
-          amount_to_add: withdrawal.amount
-        });
-        if (rpcError) throw rpcError;
-      }
-
-      const updatedWithdrawals = withdrawals.map(w => w.id === withdrawal.id ? { ...w, status: newStatus, isNew: false } : w);
-      setWithdrawals(updatedWithdrawals);
-      calculateStats(stores, updatedWithdrawals);
+      // Rechargement : les soldes ont pu changer (remboursement en cas de rejet).
+      await checkAdminAndFetchData();
       
       alert(newStatus === 'valide' ? "✅ Paiement validé !" : "❌ Retrait rejeté.");
     } catch (err) {
