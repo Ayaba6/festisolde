@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
-import { Routes, Route, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Routes, Route, Link, NavLink, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabaseClient';
 
 // --- COMPOSANTS & PAGES ---
-import SplashScreen from './SplashScreen'; 
+import SplashScreen from './SplashScreen';
 import Auth from './pages/Auth/Auth';
 import Register from './pages/Auth/Register';
 import Dashboard from './pages/Vendor/Dashboard';
@@ -19,117 +19,53 @@ import OrderSuccess from './pages/Store/OrderSuccess';
 import PaymentReturn from './pages/Store/PaymentReturn';
 import Settings from './components/Settings';
 import Home from './pages/Home/Home';
-import Shop from './pages/Home/components/Shop'; 
+import Shop from './pages/Home/components/Shop';
 import RequestBoost from './pages/Vendor/RequestBoost';
 import Analytics from './pages/Vendor/Analytics';
 import Grossistes from './pages/Home/components/Grossistes';
-import Liquidation from './pages/Home/components/Liquidation'; 
+import Liquidation from './pages/Home/components/Liquidation';
 import Aide from './pages/Home/components/Aide';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Privacy from './pages/Privacy';
 import ShopLayout from './components/ShopLayout';
 
-import { 
-  LayoutDashboard, Package, LogOut, ExternalLink, Wallet, 
-  Palette, Settings as SettingsIcon, Menu, X, PlusCircle, Zap, 
-  ChevronDown, ChevronLeft, ChevronRight, BarChart3, Loader2 
+import {
+  LayoutDashboard, Package, LogOut, ExternalLink, Wallet,
+  Palette, Settings as SettingsIcon, Menu, X, Zap, BarChart3, Loader2,
 } from 'lucide-react';
 
-// --- UTILITAIRES ---
-const ScrollToTop = () => {
-  const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
-  return null;
-};
+const getSubdomain = () => window.location.hostname.split('.')[0];
 
-const getSubdomain = () => {
-  const hostname = window.location.hostname;
-  return hostname.split('.')[0]; 
-};
+// Pages de l'espace vendeur (affichées avec le menu latéral).
+const VENDOR_NAV = [
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', short: 'Accueil' },
+  { to: '/products-manage', icon: Package, label: 'Mes produits', short: 'Produits' },
+  { to: '/revenus', icon: Wallet, label: 'Ventes & finances', short: 'Ventes' },
+  { to: '/analytics', icon: BarChart3, label: 'Statistiques', short: 'Stats' },
+  { to: '/marketing', icon: Zap, label: 'Booster mes ventes', short: 'Boost' },
+];
+const VENDOR_SECONDARY = [
+  { to: '/ma-boutique', icon: Palette, label: 'Ma vitrine' },
+  { to: '/settings', icon: SettingsIcon, label: 'Paramètres' },
+];
+const VENDOR_PATHS = [...VENDOR_NAV, ...VENDOR_SECONDARY].map((l) => l.to).concat('/withdrawal-history');
 
-// --- HEADER VENDEUR ---
-const VendorHeader = ({ user, storeSlug, onOpenMenu, onSignOut }) => {
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  return (
-    <header className="h-16 bg-white/70 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-6 sticky top-0 z-30">
-      <div className="flex items-center gap-4">
-        <button onClick={onOpenMenu} className="md:hidden p-2 text-slate-900 hover:bg-slate-50 rounded-xl transition-colors">
-          <Menu size={20} />
-        </button>
-        <div className="hidden md:flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
-            Console <span className="text-slate-900 ml-1">v2.0</span>
-          </span>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-4">
-        {storeSlug && (
-          <Link 
-            to={`/${storeSlug}`} 
-            className="flex items-center gap-2 px-4 py-2 bg-slate-950 text-white rounded-xl text-[11px] font-semibold transition-all hover:bg-slate-800 active:scale-95 shadow-sm"
-          >
-            <ExternalLink size={14} />
-            <span className="hidden sm:inline">Ma Boutique</span>
-          </Link>
-        )}
-        
-        <div className="relative" ref={dropdownRef}>
-          <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="flex items-center gap-2 p-1 hover:bg-slate-50 rounded-full transition-all">
-            <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-900 text-xs font-bold border border-slate-200 uppercase">
-              {user?.email?.charAt(0)}
-            </div>
-            <ChevronDown size={14} className={`text-slate-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
-          </button>
-
-          {isProfileOpen && (
-            <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in zoom-in duration-200">
-              <div className="px-4 py-3 border-b border-slate-50 mb-1">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Compte</p>
-                <p className="text-sm font-semibold truncate text-slate-900">{user?.email}</p>
-              </div>
-              <Link to="/settings" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-                <SettingsIcon size={16} /> Réglages
-              </Link>
-              <button onClick={onSignOut} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors">
-                <LogOut size={16} /> Déconnexion
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </header>
-  );
-};
-
-// --- COMPOSANT PRINCIPAL ---
 export default function App() {
-  const [user, setUser] = useState(null);
-  const [storeSlug, setStoreSlug] = useState(""); 
+  const [user, setUser] = useState<any>(null);
+  const [store, setStore] = useState<{ name: string; slug: string; logo_url?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === 'true');
 
   const location = useLocation();
   const navigate = useNavigate();
   const isVendorSubdomain = getSubdomain() === 'vendeur';
 
   useEffect(() => {
-    localStorage.setItem('sidebar-collapsed', isCollapsed);
-  }, [isCollapsed]);
-
-  useEffect(() => {
-    const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
-    };
-    initAuth();
-
+    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setIsMobileMenuOpen(false);
@@ -138,17 +74,18 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (user) {
-      supabase.from('stores').select('slug').eq('owner_id', user.id).maybeSingle()
-        .then(({ data }) => data && setStoreSlug(data.slug));
-    }
+    if (!user) { setStore(null); return; }
+    supabase.from('stores').select('name, slug, logo_url').eq('owner_id', user.id).maybeSingle()
+      .then(({ data }) => setStore(data));
   }, [user]);
 
-  const showVendorUI = !!((isVendorSubdomain || location.pathname.startsWith('/dashboard')) && user);
+  useEffect(() => { setIsMobileMenuOpen(false); }, [location.pathname]);
+
+  const showVendorUI = !!user && VENDOR_PATHS.includes(location.pathname);
 
   if (loading) return (
-    <div className="h-screen flex items-center justify-center bg-[#FDFDFD]">
-      <Loader2 className="animate-spin text-orange-500" size={32} />
+    <div className="flex h-screen items-center justify-center bg-white">
+      <Loader2 className="animate-spin text-orange-600" size={32} />
     </div>
   );
 
@@ -157,76 +94,96 @@ export default function App() {
     navigate(isVendorSubdomain ? '/auth' : '/');
   };
 
-  const SidebarLink = ({ to, icon: Icon, label, colorClass = "" }) => {
-    const isActive = location.pathname === to;
-    return (
-      <Link to={to} onClick={() => setIsMobileMenuOpen(false)}
-        className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-semibold text-sm transition-all mb-1
-        ${isActive ? 'bg-orange-500 text-white shadow-lg shadow-orange-100' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'} 
-        ${colorClass} ${isCollapsed ? 'justify-center px-0' : ''}`}
-      >
-        <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className="shrink-0" /> 
-        {!isCollapsed && <span className="truncate">{label}</span>}
-      </Link>
-    );
-  };
+  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+    `flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-semibold transition ${
+      isActive ? 'bg-orange-50 text-orange-700' : 'text-ink-soft hover:bg-stone-100 hover:text-ink'
+    }`;
 
-  const SidebarContent = () => (
-    <nav className="flex flex-col h-full py-4 px-4">
-      <div className="space-y-1 flex-1">
-        <SidebarLink to="/dashboard" icon={LayoutDashboard} label="Tableau de bord" />
-        <SidebarLink to="/products-manage" icon={Package} label="Inventaire" />
-        <SidebarLink to="/analytics" icon={BarChart3} label="Statistiques" />
-        <SidebarLink to="/revenus" icon={Wallet} label="Finance" />
-        <div className="my-4 h-px bg-slate-100 mx-4" />
-        <SidebarLink to="/marketing" icon={Zap} label="Boosters" colorClass="text-orange-600" />
-        <SidebarLink to="/ma-boutique" icon={Palette} label="Personnalisation" />
-        <SidebarLink to="/settings" icon={SettingsIcon} label="Paramètres" />
+  const sidebar = (
+    <div className="flex h-full flex-col">
+      <div className="flex h-16 items-center gap-2.5 px-5">
+        <img src="/logo-festisolde.png" alt="FestiSolde" className="h-8 w-auto" />
+        <span className="rounded-md bg-ink px-1.5 py-0.5 text-[11px] font-bold text-white">Vendeur</span>
       </div>
-    </nav>
+
+      {store && (
+        <div className="mx-4 mb-4 flex items-center gap-3 rounded-2xl border border-stone-100 bg-stone-50 p-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-ink text-sm font-bold text-white">
+            {store.logo_url ? <img src={store.logo_url} alt="" className="h-full w-full object-cover" /> : store.name?.charAt(0)?.toUpperCase()}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-ink">{store.name}</p>
+            <Link to={`/${store.slug}`} target="_blank" className="inline-flex items-center gap-1 text-xs font-semibold text-orange-600 hover:underline">
+              Voir ma boutique <ExternalLink size={11} />
+            </Link>
+          </div>
+        </div>
+      )}
+
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3" aria-label="Espace vendeur">
+        {VENDOR_NAV.map(({ to, icon: Icon, label }) => (
+          <NavLink key={to} to={to} className={navLinkClass}>
+            <Icon size={19} /> {label}
+          </NavLink>
+        ))}
+        <p className="px-3 pb-1 pt-6 text-xs font-bold uppercase tracking-[0.14em] text-stone-400">Ma boutique</p>
+        {VENDOR_SECONDARY.map(({ to, icon: Icon, label }) => (
+          <NavLink key={to} to={to} className={navLinkClass}>
+            <Icon size={19} /> {label}
+          </NavLink>
+        ))}
+      </nav>
+
+      <div className="border-t border-stone-100 p-3">
+        <p className="truncate px-3 pb-2 text-xs text-ink-muted">{user?.email}</p>
+        <button onClick={handleSignOut} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-semibold text-ink-soft transition hover:bg-red-50 hover:text-red-600">
+          <LogOut size={19} /> Déconnexion
+        </button>
+      </div>
+    </div>
   );
 
   return (
-    <div className="flex min-h-screen bg-[#FDFDFD] text-slate-900 antialiased font-sans">
-      <ScrollToTop />
+    <div className="flex min-h-screen bg-[#FDFDFD] text-ink antialiased">
       <SplashScreen />
 
       {showVendorUI && (
-        <aside className={`bg-white hidden md:flex flex-col sticky top-0 h-screen border-r border-slate-100 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-72'} z-40`}>
-          <div className={`p-8 mb-4 flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
-            <div className="w-10 h-10 bg-slate-950 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold shadow-lg">S</div>
-            {!isCollapsed && (
-              <div className="flex flex-col"><span className="font-bold text-sm uppercase tracking-tighter">Studio Pro</span><span className="text-[10px] text-slate-400 font-medium">Console Vendeur</span></div>
-            )}
-          </div>
-          <button onClick={() => setIsCollapsed(!isCollapsed)} className="absolute -right-3 top-24 bg-white border border-slate-100 rounded-full p-1 shadow-sm hover:text-orange-500 z-50 text-slate-400">
-            {isCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
-          </button>
-          <SidebarContent />
+        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-stone-100 bg-white lg:block">
+          {sidebar}
         </aside>
       )}
 
-      {/* MOBILE MENU */}
       {showVendorUI && isMobileMenuOpen && (
-        <div className="fixed inset-0 z-[60] md:hidden flex">
-          <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
-          <aside className="relative h-full w-72 bg-white p-6 shadow-2xl flex flex-col animate-in slide-in-from-left">
-            <div className="flex justify-between items-center mb-10">
-              <span className="font-bold uppercase tracking-tighter text-orange-600 text-xl">Studio</span>
-              <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 bg-slate-50 rounded-full"><X size={20} /></button>
-            </div>
-            <SidebarContent />
+        <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal="true" aria-label="Menu vendeur">
+          <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 w-[82%] max-w-xs bg-white shadow-2xl">
+            <button onClick={() => setIsMobileMenuOpen(false)} className="absolute right-3 top-3 rounded-full p-2 hover:bg-stone-100" aria-label="Fermer le menu">
+              <X size={20} />
+            </button>
+            {sidebar}
           </aside>
         </div>
       )}
 
-      <div className="flex-1 flex flex-col min-w-0 relative">
-        {showVendorUI && <VendorHeader user={user} storeSlug={storeSlug} onOpenMenu={() => setIsMobileMenuOpen(true)} onSignOut={handleSignOut} />}
-        
-        <main className={`flex-1 ${showVendorUI ? 'p-6 md:p-10 pb-32' : ''}`}>
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        {showVendorUI && (
+          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-stone-100 bg-white/90 px-4 backdrop-blur-md lg:hidden">
+            <button onClick={() => setIsMobileMenuOpen(true)} className="-ml-1 rounded-full p-2 text-ink hover:bg-stone-100" aria-label="Ouvrir le menu">
+              <Menu size={22} />
+            </button>
+            <img src="/logo-festisolde.png" alt="FestiSolde" className="h-7 w-auto" />
+            {store ? (
+              <Link to={`/${store.slug}`} target="_blank" className="rounded-full p-2 text-ink hover:bg-stone-100" aria-label="Voir ma boutique">
+                <ExternalLink size={20} />
+              </Link>
+            ) : <span className="w-9" />}
+          </header>
+        )}
+
+        <main className={`flex-1 ${showVendorUI ? 'mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-10 lg:pb-12 lg:pt-10' : ''}`}>
           <Routes>
             <Route path="/" element={isVendorSubdomain ? (user ? <Navigate to="/dashboard" replace /> : <Navigate to="/auth" replace />) : <Home />} />
-            <Route path="/products" element={<Shop />} /> 
+            <Route path="/products" element={<Shop />} />
             <Route path="/grossistes" element={<Grossistes />} />
             <Route path="/liquidation" element={<Liquidation />} />
             <Route path="/aide" element={<Aide />} />
@@ -253,19 +210,24 @@ export default function App() {
           </Routes>
         </main>
 
-        {/* BOTTOM NAV MOBILE */}
+        {/* Navigation mobile */}
         {showVendorUI && (
-          <nav className="md:hidden fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-sm h-16 bg-slate-950/90 backdrop-blur-lg shadow-2xl rounded-2xl flex items-center justify-around px-2 z-40 border border-white/10">
-            {[
-              { to: "/dashboard", icon: LayoutDashboard },
-              { to: "/analytics", icon: BarChart3 },
-              { to: "/products-manage", icon: PlusCircle, special: true },
-              { to: "/marketing", icon: Zap },
-              { to: "/revenus", icon: Wallet }
-            ].map((item, index) => (
-              <Link key={index} to={item.to} className={`p-2 transition-all ${location.pathname === item.to ? 'text-orange-500 scale-110' : 'text-slate-400'}`}>
-                <item.icon size={item.special ? 28 : 20} strokeWidth={2.5} />
-              </Link>
+          <nav
+            className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-stone-100 bg-white/95 backdrop-blur-md lg:hidden"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+            aria-label="Navigation vendeur"
+          >
+            {VENDOR_NAV.map(({ to, icon: Icon, short }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) =>
+                  `flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition ${isActive ? 'text-orange-600' : 'text-ink-muted'}`
+                }
+              >
+                <Icon size={21} />
+                {short}
+              </NavLink>
             ))}
           </nav>
         )}

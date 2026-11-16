@@ -122,7 +122,7 @@ export default function Revenues() {
       case 'livré': return 'bg-green-50 text-green-600 border-green-100';
       case 'annulé': return 'bg-red-50 text-red-600 border-red-100';
       case 'en cours': return 'bg-blue-50 text-blue-600 border-blue-100';
-      default: return 'bg-slate-50 text-slate-500 border-slate-100';
+      default: return 'bg-stone-50 text-stone-500 border-stone-100';
     }
   };
 
@@ -140,39 +140,39 @@ export default function Revenues() {
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate('/dashboard')}
-            className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-slate-900 transition-all hover:shadow-sm"
+            className="p-3 bg-white border border-stone-100 rounded-2xl text-stone-400 hover:text-ink transition-all hover:shadow-sm"
           >
             <ChevronLeft size={20} />
           </button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Trésorerie</h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Suivi des revenus et retraits</p>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-ink">Ventes &amp; finances</h1>
+            <p className="text-xs font-bold text-stone-400 uppercase tracking-wide mt-0.5">Suivi des revenus et retraits</p>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
-          <button onClick={() => navigate('/withdrawal-history')} className="flex-1 md:flex-none px-4 py-3 bg-white border border-slate-100 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-slate-50">
+          <button onClick={() => navigate('/withdrawal-history')} className="flex-1 md:flex-none px-4 py-3 bg-white border border-stone-100 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-stone-50">
             <Clock size={14} /> Historique
           </button>
-          <button onClick={() => setShowExportModal(true)} className="flex-1 md:flex-none px-4 py-3 bg-slate-950 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-slate-800 transition-all">
+          <button onClick={() => setShowExportModal(true)} className="flex-1 md:flex-none px-4 py-3 bg-ink text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-stone-800 transition-all">
             <Download size={14} /> Exporter
           </button>
         </div>
       </div>
 
       {/* PORTEFEUILLE STYLE STUDIO */}
-      <div className="bg-slate-950 rounded-[2.5rem] p-8 text-white relative overflow-hidden group">
+      <div className="bg-ink rounded-3xl p-8 text-white relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-2">Solde disponible</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-stone-500 mb-2">Solde disponible</p>
             <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-              {balance.toLocaleString()} <span className="text-sm font-medium text-slate-500 ml-1">FCFA</span>
+              {balance.toLocaleString()} <span className="text-sm font-medium text-stone-500 ml-1">FCFA</span>
             </h2>
           </div>
           <button 
             onClick={() => setShowWithdrawModal(true)}
-            className="w-full md:w-auto bg-orange-500 hover:bg-white hover:text-slate-950 text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-wide transition-all active:scale-95 flex items-center justify-center gap-3 shadow-lg shadow-orange-950/20"
+            className="w-full md:w-auto bg-orange-500 hover:bg-white hover:text-stone-950 text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-wide transition-all active:scale-95 flex items-center justify-center gap-3 shadow-lg shadow-orange-950/20"
           >
             <Wallet size={18} /> Effectuer un retrait
           </button>
@@ -190,52 +190,52 @@ export default function Revenues() {
       {/* LISTE DES TRANSACTIONS */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">Ventes récentes</h3>
+          <h3 className="text-sm font-bold uppercase tracking-wide text-stone-400">Ventes récentes</h3>
           <div className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={14} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-300" size={14} />
             <input 
               type="text" 
               placeholder="Rechercher..." 
-              className="pl-9 pr-4 py-2 border border-slate-100 rounded-xl text-xs font-medium outline-none focus:border-orange-500 w-64"
+              className="pl-9 pr-4 py-2 border border-stone-100 rounded-xl text-xs font-medium outline-none focus:border-orange-500 w-64"
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
 
         {/* TABLEAU DESKTOP */}
-        <div className="hidden md:block bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+        <div className="hidden md:block bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden">
           <table className="w-full text-left">
-            <thead className="bg-slate-50/50">
-              <tr className="border-b border-slate-50">
-                <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase">Commande</th>
-                <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase">Client</th>
-                <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase text-center">Montant</th>
-                <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase text-center">Statut</th>
-                <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase text-right">Action</th>
+            <thead className="bg-stone-50/50">
+              <tr className="border-b border-stone-50">
+                <th className="px-8 py-4 text-xs font-bold text-stone-400 uppercase">Commande</th>
+                <th className="px-8 py-4 text-xs font-bold text-stone-400 uppercase">Client</th>
+                <th className="px-8 py-4 text-xs font-bold text-stone-400 uppercase text-center">Montant</th>
+                <th className="px-8 py-4 text-xs font-bold text-stone-400 uppercase text-center">Statut</th>
+                <th className="px-8 py-4 text-xs font-bold text-stone-400 uppercase text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-stone-50">
               {filteredSales.map((sale) => (
-                <tr key={sale.id} className="hover:bg-slate-50/30 transition-all">
+                <tr key={sale.id} className="hover:bg-stone-50/30 transition-all">
                   <td className="px-8 py-5">
-                    <p className="text-xs font-bold text-slate-900">{new Date(sale.created_at).toLocaleDateString('fr-FR')}</p>
-                    <p className="text-[9px] text-slate-400 font-medium uppercase tracking-tighter">#{sale.id.slice(0,8)}</p>
+                    <p className="text-xs font-bold text-ink">{new Date(sale.created_at).toLocaleDateString('fr-FR')}</p>
+                    <p className="text-xs text-stone-400 font-medium uppercase tracking-tight">#{sale.id.slice(0,8)}</p>
                   </td>
                   <td className="px-8 py-5">
-                    <p className="text-xs font-bold text-slate-900 uppercase">{sale.customer_name}</p>
-                    <p className="text-[10px] text-orange-500 font-bold italic">{sale.customer_phone}</p>
+                    <p className="text-xs font-bold text-ink uppercase">{sale.customer_name}</p>
+                    <p className="text-xs text-orange-500 font-bold">{sale.customer_phone}</p>
                   </td>
-                  <td className="px-8 py-5 text-center font-bold text-slate-900">
-                    {sale.total_amount?.toLocaleString()} <span className="text-[9px] text-slate-400">F</span>
+                  <td className="px-8 py-5 text-center font-bold text-ink">
+                    {sale.total_amount?.toLocaleString()} <span className="text-xs text-stone-400">F</span>
                     {sale.payment_status === 'paye' && (
-                      <span className="block mt-1 text-[8px] font-bold uppercase tracking-wide text-green-600">Payé en ligne</span>
+                      <span className="block mt-1 text-xs font-bold uppercase tracking-wide text-green-600">Payé en ligne</span>
                     )}
                   </td>
                   <td className="px-8 py-5 text-center">
                     <select 
                       value={sale.status || 'nouveau'}
                       onChange={(e) => handleStatusChange(sale.id, e.target.value)}
-                      className={`px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase outline-none ${getStatusStyle(sale.status)}`}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-bold uppercase outline-none ${getStatusStyle(sale.status)}`}
                     >
                       <option value="nouveau">Nouveau</option>
                       <option value="en cours">En cours</option>
@@ -244,7 +244,7 @@ export default function Revenues() {
                     </select>
                   </td>
                   <td className="px-8 py-5 text-right">
-                    <button onClick={() => setSelectedOrder(sale)} className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all">
+                    <button onClick={() => setSelectedOrder(sale)} className="p-2 text-stone-400 hover:text-ink hover:bg-stone-100 rounded-lg transition-all">
                       <FileText size={16} />
                     </button>
                   </td>
@@ -257,17 +257,17 @@ export default function Revenues() {
         {/* MOBILE CARDS */}
         <div className="md:hidden space-y-3">
           {filteredSales.map((sale) => (
-            <div key={sale.id} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+            <div key={sale.id} className="bg-white p-5 rounded-3xl border border-stone-100 shadow-sm space-y-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase italic mb-1">{new Date(sale.created_at).toLocaleDateString('fr-FR')}</p>
-                  <h3 className="text-sm font-bold text-slate-900 uppercase">{sale.customer_name}</h3>
-                  <p className="text-[10px] font-bold text-orange-500 italic">{sale.customer_phone}</p>
+                  <p className="text-xs font-bold text-stone-400 uppercase mb-1">{new Date(sale.created_at).toLocaleDateString('fr-FR')}</p>
+                  <h3 className="text-sm font-bold text-ink uppercase">{sale.customer_name}</h3>
+                  <p className="text-xs font-bold text-orange-500">{sale.customer_phone}</p>
                 </div>
-                <p className="text-lg font-bold text-slate-900 tracking-tight">
-                  {sale.total_amount?.toLocaleString()} <span className="text-[10px] font-medium text-slate-400">F</span>
+                <p className="text-lg font-bold text-ink tracking-tight">
+                  {sale.total_amount?.toLocaleString()} <span className="text-xs font-medium text-stone-400">F</span>
                   {sale.payment_status === 'paye' && (
-                    <span className="block text-[8px] font-bold uppercase tracking-wide text-green-600">Payé en ligne</span>
+                    <span className="block text-xs font-bold uppercase tracking-wide text-green-600">Payé en ligne</span>
                   )}
                 </p>
               </div>
@@ -275,14 +275,14 @@ export default function Revenues() {
                 <select 
                   value={sale.status || 'nouveau'}
                   onChange={(e) => handleStatusChange(sale.id, e.target.value)}
-                  className={`flex-1 px-4 py-2.5 rounded-xl border text-[10px] font-bold uppercase outline-none ${getStatusStyle(sale.status)}`}
+                  className={`flex-1 px-4 py-2.5 rounded-xl border text-xs font-bold uppercase outline-none ${getStatusStyle(sale.status)}`}
                 >
                   <option value="nouveau">Nouveau</option>
                   <option value="en cours">En cours</option>
                   <option value="livré">Livré ✅</option>
                   <option value="annulé">Annulé ❌</option>
                 </select>
-                <button onClick={() => setSelectedOrder(sale)} className="p-3 bg-slate-900 text-white rounded-xl"><FileText size={18} /></button>
+                <button onClick={() => setSelectedOrder(sale)} className="p-3 bg-ink text-white rounded-xl"><FileText size={18} /></button>
               </div>
             </div>
           ))}
@@ -291,51 +291,51 @@ export default function Revenues() {
 
       {/* MODAL RETRAIT */}
       {showWithdrawModal && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative">
-            <button onClick={() => setShowWithdrawModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900"><X size={20} /></button>
-            <h2 className="text-xl font-bold text-slate-900 mb-6">Demander un retrait</h2>
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-ink/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl relative">
+            <button onClick={() => setShowWithdrawModal(false)} className="absolute top-6 right-6 text-stone-400 hover:text-ink"><X size={20} /></button>
+            <h2 className="text-xl font-bold text-ink mb-6">Demander un retrait</h2>
             
             <div className="space-y-4">
-              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 text-center">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Montant disponible</p>
-                <p className="text-3xl font-bold text-slate-900">{balance.toLocaleString()} FCFA</p>
+              <div className="bg-stone-50 p-5 rounded-2xl border border-stone-100 text-center">
+                <p className="text-xs font-bold text-stone-400 uppercase tracking-wide mb-1">Montant disponible</p>
+                <p className="text-3xl font-bold text-ink">{balance.toLocaleString()} FCFA</p>
               </div>
 
               <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex gap-3">
                 <Info size={16} className="text-blue-500 shrink-0 mt-0.5" />
-                <p className="text-[10px] font-medium text-blue-800 leading-tight">
+                <p className="text-xs font-medium text-blue-800 leading-tight">
                   Frais de service : <span className="font-bold">10%</span> déduits à la validation.
                 </p>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Montant à retirer</label>
-                <input type="number" className="w-full p-4 bg-slate-50 border border-transparent focus:border-orange-500 rounded-xl text-sm font-bold outline-none" placeholder="Ex: 5000" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} />
+                <label className="text-xs font-bold uppercase text-stone-400 ml-1">Montant à retirer</label>
+                <input type="number" className="w-full p-4 bg-stone-50 border border-transparent focus:border-orange-500 rounded-xl text-sm font-bold outline-none" placeholder="Ex: 5000" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} />
                 {requestedAmount > 0 && (
-                  <p className="text-[10px] font-bold text-green-600 mt-2 px-1">NET À RECEVOIR : {netAmount.toLocaleString()} FCFA</p>
+                  <p className="text-xs font-bold text-green-600 mt-2 px-1">NET À RECEVOIR : {netAmount.toLocaleString()} FCFA</p>
                 )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Méthode</label>
-                  <select className="w-full p-4 bg-slate-50 border border-transparent rounded-xl text-[10px] font-bold uppercase outline-none" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                  <label className="text-xs font-bold uppercase text-stone-400 ml-1">Méthode</label>
+                  <select className="w-full p-4 bg-stone-50 border border-transparent rounded-xl text-xs font-bold uppercase outline-none" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
                     <option>Orange Money</option>
                     <option>Moov Money</option>
                     <option>Wave</option>
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Numéro</label>
-                  <input type="tel" className="w-full p-4 bg-slate-50 border border-transparent focus:border-orange-500 rounded-xl text-sm font-bold outline-none" placeholder="01020304" value={paymentPhone} onChange={(e) => setPaymentPhone(e.target.value)} />
+                  <label className="text-xs font-bold uppercase text-stone-400 ml-1">Numéro</label>
+                  <input type="tel" className="w-full p-4 bg-stone-50 border border-transparent focus:border-orange-500 rounded-xl text-sm font-bold outline-none" placeholder="01020304" value={paymentPhone} onChange={(e) => setPaymentPhone(e.target.value)} />
                 </div>
               </div>
 
               <button 
                 disabled={isWithdrawing || !withdrawAmount || requestedAmount < 500}
                 onClick={handleWithdrawRequest}
-                className="w-full py-4 bg-slate-950 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-orange-500 transition-all disabled:bg-slate-200"
+                className="w-full py-4 bg-ink text-white rounded-xl text-xs font-bold uppercase tracking-wide hover:bg-orange-500 transition-all disabled:bg-stone-200"
               >
                 {isWithdrawing ? "Envoi..." : "Confirmer le retrait"}
               </button>
@@ -346,27 +346,27 @@ export default function Revenues() {
 
       {/* EXPORT MODAL */}
       {showExportModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative">
-            <button onClick={() => setShowExportModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900"><X size={20} /></button>
-            <h2 className="text-xl font-bold text-slate-900 mb-6">Exporter mes ventes</h2>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-ink/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl relative">
+            <button onClick={() => setShowExportModal(false)} className="absolute top-6 right-6 text-stone-400 hover:text-ink"><X size={20} /></button>
+            <h2 className="text-xl font-bold text-ink mb-6">Exporter mes ventes</h2>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Début</label>
-                  <input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} className="w-full p-3 bg-slate-50 rounded-xl text-[10px] font-bold outline-none" />
+                  <label className="text-xs font-bold text-stone-400 uppercase ml-1">Début</label>
+                  <input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} className="w-full p-3 bg-stone-50 rounded-xl text-xs font-bold outline-none" />
                 </div>
                 <div>
-                  <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Fin</label>
-                  <input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} className="w-full p-3 bg-slate-50 rounded-xl text-[10px] font-bold outline-none" />
+                  <label className="text-xs font-bold text-stone-400 uppercase ml-1">Fin</label>
+                  <input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} className="w-full p-3 bg-stone-50 rounded-xl text-xs font-bold outline-none" />
                 </div>
               </div>
-              <button onClick={() => {}} className="w-full flex items-center justify-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100 hover:bg-slate-100 transition-all">
+              <button onClick={() => {}} className="w-full flex items-center justify-center gap-3 p-4 bg-stone-50 rounded-xl border border-stone-100 hover:bg-stone-100 transition-all">
                 <FileSpreadsheet size={18} className="text-green-600" />
-                <span className="text-[10px] font-bold uppercase">Télécharger le CSV</span>
+                <span className="text-xs font-bold uppercase">Télécharger le CSV</span>
               </button>
-              <div className="pt-4 border-t border-slate-50 text-center">
-                <p className="text-[9px] font-bold text-slate-400 uppercase mb-1">CA sur la période</p>
+              <div className="pt-4 border-t border-stone-50 text-center">
+                <p className="text-xs font-bold text-stone-400 uppercase mb-1">CA sur la période</p>
                 <p className="text-2xl font-bold text-orange-500 tracking-tight">{previewData.reduce((acc, curr) => acc + (curr.total_amount || 0), 0).toLocaleString()} F</p>
               </div>
             </div>
@@ -381,15 +381,15 @@ export default function Revenues() {
 
 function StatCard({ label, value, unit, icon }) {
   return (
-    <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm group hover:-translate-y-1 transition-all">
+    <div className="bg-white p-5 rounded-3xl border border-stone-100 shadow-sm group hover:-translate-y-1 transition-all">
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-8 h-8 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center group-hover:bg-orange-50 group-hover:text-orange-500 transition-colors">
+        <div className="w-8 h-8 bg-stone-50 text-stone-400 rounded-xl flex items-center justify-center group-hover:bg-orange-50 group-hover:text-orange-500 transition-colors">
           {icon}
         </div>
-        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+        <p className="text-xs font-bold text-stone-400 uppercase tracking-wide">{label}</p>
       </div>
-      <p className="text-xl font-bold text-slate-900 tracking-tight">
-        {value} <span className="text-[9px] font-medium text-slate-400">{unit}</span>
+      <p className="text-xl font-bold text-ink tracking-tight">
+        {value} <span className="text-xs font-medium text-stone-400">{unit}</span>
       </p>
     </div>
   );
@@ -397,51 +397,51 @@ function StatCard({ label, value, unit, icon }) {
 
 function ModalFacture({ order, onClose }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-        <div className="p-6 border-b border-slate-50 flex justify-between items-center">
-          <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 italic">Facture Client</h2>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-900"><X size={20} /></button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95">
+        <div className="p-6 border-b border-stone-50 flex justify-between items-center">
+          <h2 className="text-xs font-bold uppercase tracking-wide text-stone-400">Facture Client</h2>
+          <button onClick={onClose} className="p-2 text-stone-400 hover:text-ink"><X size={20} /></button>
         </div>
         <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-2xl font-bold text-orange-500 tracking-tighter">FACTURE</h3>
-              <p className="text-[10px] font-medium text-slate-400 uppercase">ID: {order.id.slice(0, 12)}</p>
+              <h3 className="text-2xl font-bold text-orange-500 tracking-tight">FACTURE</h3>
+              <p className="text-xs font-medium text-stone-400 uppercase">ID: {order.id.slice(0, 12)}</p>
             </div>
-            <p className="text-xs font-bold text-slate-900">{new Date(order.created_at).toLocaleDateString('fr-FR')}</p>
+            <p className="text-xs font-bold text-ink">{new Date(order.created_at).toLocaleDateString('fr-FR')}</p>
           </div>
 
-          <div className="p-5 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100">
-            <p className="text-[8px] font-bold text-slate-400 uppercase mb-2 tracking-widest">Client</p>
-            <p className="text-sm font-bold uppercase text-slate-900">{order.customer_name}</p>
-            <p className="text-xs font-bold text-slate-400 italic">{order.customer_phone}</p>
+          <div className="p-5 bg-stone-50 rounded-2xl border-2 border-dashed border-stone-100">
+            <p className="text-xs font-bold text-stone-400 uppercase mb-2 tracking-wide">Client</p>
+            <p className="text-sm font-bold uppercase text-ink">{order.customer_name}</p>
+            <p className="text-xs font-bold text-stone-400">{order.customer_phone}</p>
           </div>
 
           <div className="space-y-4">
-            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Détails articles</p>
+            <p className="text-xs font-bold text-stone-400 uppercase tracking-wide border-b border-stone-100 pb-2">Détails articles</p>
             {order.items?.map((item, idx) => (
               <div key={idx} className="flex justify-between text-xs">
-                <span className="font-medium text-slate-600">{item.name} <span className="text-orange-500 font-bold ml-1">x{item.quantity}</span></span>
-                <span className="font-bold text-slate-900">{(item.sale_price * item.quantity).toLocaleString()} F</span>
+                <span className="font-medium text-stone-600">{item.name} <span className="text-orange-500 font-bold ml-1">x{item.quantity}</span></span>
+                <span className="font-bold text-ink">{(item.sale_price * item.quantity).toLocaleString()} F</span>
               </div>
             ))}
           </div>
 
-          <div className="pt-6 border-t border-slate-100 flex justify-between items-end">
-            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Total payé</span>
-            <span className="text-3xl font-bold text-slate-900 tracking-tighter">{order.total_amount?.toLocaleString()} <span className="text-sm font-medium text-slate-400 ml-1">FCFA</span></span>
+          <div className="pt-6 border-t border-stone-100 flex justify-between items-end">
+            <span className="text-xs font-bold uppercase tracking-wide text-stone-400">Total payé</span>
+            <span className="text-3xl font-bold text-ink tracking-tight">{order.total_amount?.toLocaleString()} <span className="text-sm font-medium text-stone-400 ml-1">FCFA</span></span>
           </div>
         </div>
-        <div className="p-6 bg-slate-50 grid grid-cols-2 gap-3">
+        <div className="p-6 bg-stone-50 grid grid-cols-2 gap-3">
           <PDFDownloadLink document={<InvoicePDF order={order} />} fileName={`facture-${order.customer_name}.pdf`} className="w-full">
             {({ loading }) => (
-              <button disabled={loading} className="w-full py-4 bg-white border border-slate-200 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-2 hover:bg-slate-100 transition-all">
+              <button disabled={loading} className="w-full py-4 bg-white border border-stone-200 rounded-xl text-xs font-bold uppercase flex items-center justify-center gap-2 hover:bg-stone-100 transition-all">
                 {loading ? <Loader2 className="animate-spin" size={14} /> : <Printer size={14} />} PDF
               </button>
             )}
           </PDFDownloadLink>
-          <button onClick={onClose} className="w-full py-4 bg-slate-950 text-white rounded-xl text-[10px] font-bold uppercase hover:bg-orange-500 transition-all">Fermer</button>
+          <button onClick={onClose} className="w-full py-4 bg-ink text-white rounded-xl text-xs font-bold uppercase hover:bg-orange-500 transition-all">Fermer</button>
         </div>
       </div>
     </div>

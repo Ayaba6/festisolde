@@ -1,103 +1,99 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
-import { Loader2, ArrowRight, Store } from 'lucide-react';
+import { Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import AuthLayout from './AuthLayout';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ 
-        email: email.trim(), 
-        password: password 
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
       });
-      if (error) throw error;
+      if (authError) throw authError;
       if (data?.user) {
         const { data: isAdmin } = await supabase.rpc('is_admin');
         navigate(isAdmin ? '/admin' : '/dashboard');
       }
-    } catch (error) {
-      alert("Accès refusé.");
+    } catch (err) {
+      setError(
+        err?.message?.includes('Email not confirmed')
+          ? 'Confirmez d’abord votre adresse e-mail (lien reçu par mail).'
+          : 'E-mail ou mot de passe incorrect.'
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] flex flex-col items-center justify-center p-6 font-sans antialiased text-slate-900">
-      
-      {/* Background Decor */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[10%] -right-[10%] w-[40%] h-[40%] bg-orange-50 rounded-full blur-[120px] opacity-60"></div>
-        <div className="absolute -bottom-[10%] -left-[10%] w-[30%] h-[30%] bg-slate-100 rounded-full blur-[100px]"></div>
-      </div>
-
-      <div className="w-full max-w-md z-10">
-        {/* Header section */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-orange-500 text-white shadow-xl shadow-orange-100 mb-6">
-            <Store size={24} />
-          </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 mb-2">
-            Studio Pro
-          </h1>
-          <p className="text-slate-500 font-medium">Heureux de vous revoir.</p>
-        </div>
-
-        {/* Form Card */}
-        <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 ml-1">Email</label>
-              <input 
-                type="email" 
-                placeholder="nom@exemple.com"
-                className="w-full bg-slate-50 border-none rounded-xl py-4 px-5 text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 ml-1">Mot de passe</label>
-              <input 
-                type="password" 
-                placeholder="••••••••"
-                className="w-full bg-slate-50 border-none rounded-xl py-4 px-5 text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            <button 
-              type="submit"
-              disabled={loading}
-              className="w-full bg-slate-950 text-white rounded-xl py-4 font-semibold flex items-center justify-center gap-2 mt-6 hover:bg-orange-600 transition-all active:scale-[0.98]"
-            >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : "Se connecter"}
-              {!loading && <ArrowRight size={18} />}
-            </button>
-          </form>
-        </div>
-
-        {/* Footer Link */}
-        <div className="mt-8 text-center">
-          <Link 
-            to="/register"
-            className="text-sm font-medium text-slate-400 hover:text-orange-500 transition-colors"
-          >
-            Pas encore de compte ? <span className="text-slate-900 underline decoration-orange-500/30 underline-offset-4">Créer un profil</span>
+    <AuthLayout
+      title="Bon retour 👋"
+      subtitle="Connectez-vous pour gérer votre boutique."
+      footer={
+        <>
+          Pas encore vendeur ?{' '}
+          <Link to="/register" className="font-bold text-ink underline decoration-orange-400 underline-offset-4 hover:text-orange-600">
+            Ouvrir ma boutique
           </Link>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <form onSubmit={handleLogin} className="space-y-5" noValidate={false}>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-semibold text-ink">Adresse e-mail</span>
+          <input
+            type="email"
+            autoComplete="email"
+            placeholder="vous@exemple.com"
+            className="shop-input"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-semibold text-ink">Mot de passe</span>
+          <span className="relative block">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
+              className="shop-input pr-12"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-ink-muted hover:text-ink"
+              aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </span>
+        </label>
+
+        {error && (
+          <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700" role="alert">{error}</p>
+        )}
+
+        <button type="submit" disabled={loading} className="shop-btn-dark w-full py-3.5 text-[15px]">
+          {loading ? <Loader2 className="animate-spin" size={20} /> : <>Se connecter <ArrowRight size={18} /></>}
+        </button>
+      </form>
+    </AuthLayout>
   );
 }

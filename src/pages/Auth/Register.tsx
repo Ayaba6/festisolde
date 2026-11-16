@@ -1,134 +1,123 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2, Store, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Loader2, ArrowRight, MailCheck } from 'lucide-react';
+import AuthLayout from './AuthLayout';
+
+// Aperçu de l'adresse de la boutique (le serveur fait la version définitive).
+const previewSlug = (name: string) =>
+  name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 
 export default function Register() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [storeName, setStoreName] = useState('');
-  const navigate = useNavigate();
+  const [error, setError] = useState('');
+  const [sentTo, setSentTo] = useState('');
 
-  const handleRegister = async (e) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
+    setError('');
     try {
       // La boutique est créée côté serveur (trigger handle_new_user) à partir de store_name,
       // ce qui fonctionne même si la confirmation par e-mail est activée.
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
+        email: email.trim(),
         password,
         options: { data: { store_name: storeName.trim() } },
       });
-
       if (authError) throw authError;
-
-      if (authData.user) {
-        alert('Compte créé ! Vérifiez vos e-mails pour confirmer.');
-        navigate('/auth');
-      }
-    } catch (error) {
-      alert(error.message);
+      if (authData.user) setSentTo(email.trim());
+    } catch (err: any) {
+      setError(
+        err?.message?.includes('already registered')
+          ? 'Un compte existe déjà avec cette adresse. Connectez-vous.'
+          : err?.message || 'Inscription impossible pour le moment.'
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  if (sentTo) {
+    return (
+      <AuthLayout title="Vérifiez vos e-mails" subtitle={`Nous avons envoyé un lien de confirmation à ${sentTo}.`}>
+        <div className="rounded-2xl bg-green-50 p-5 text-green-800">
+          <MailCheck size={28} />
+          <p className="mt-3 text-[15px]">
+            Cliquez sur le lien reçu pour activer votre boutique <strong>{storeName}</strong>, puis connectez-vous.
+            Pensez à regarder dans les spams.
+          </p>
+        </div>
+        <Link to="/auth" className="shop-btn-dark mt-6 w-full py-3.5">Aller à la connexion</Link>
+      </AuthLayout>
+    );
+  }
+
+  const slug = previewSlug(storeName);
+
   return (
-    <div className="min-h-screen bg-[#FDFDFD] flex flex-col items-center justify-center p-6 font-sans antialiased text-slate-900">
-      
-      {/* Background Decor */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-orange-50 rounded-full blur-[120px] opacity-60"></div>
-        <div className="absolute -top-[10%] -left-[10%] w-[30%] h-[30%] bg-slate-100 rounded-full blur-[100px]"></div>
-      </div>
-
-      {/* Back Button */}
-      <Link 
-        to="/auth" 
-        className="fixed top-8 left-8 flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-slate-900 transition-colors z-20"
-      >
-        <ArrowLeft size={18} />
-        <span>Retour</span>
-      </Link>
-
-      <div className="w-full max-w-md z-10">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-slate-900 text-white shadow-xl mb-6">
-            <Sparkles size={22} className="text-orange-400" />
-          </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 mb-2">
-            Créer votre studio
-          </h1>
-          <p className="text-slate-500 font-medium text-sm">
-            Rejoignez l'aventure en quelques secondes.
-          </p>
-        </div>
-
-        <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
-          <form onSubmit={handleRegister} className="space-y-4">
-            
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 ml-1">Nom de la boutique</label>
-              <input 
-                type="text" 
-                placeholder="Ex: Maison Minimaliste"
-                className="w-full bg-slate-50 border-none rounded-xl py-4 px-5 text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all"
-                value={storeName}
-                onChange={(e) => setStoreName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 ml-1">Email professionnel</label>
-              <input 
-                type="email" 
-                placeholder="hello@votre-store.com"
-                className="w-full bg-slate-50 border-none rounded-xl py-4 px-5 text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 ml-1">Mot de passe</label>
-              <input 
-                type="password" 
-                placeholder="••••••••"
-                className="w-full bg-slate-50 border-none rounded-xl py-4 px-5 text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
-              />
-            </div>
-
-            <button 
-              type="submit"
-              disabled={loading}
-              className="w-full bg-orange-500 text-white rounded-xl py-4 font-semibold flex items-center justify-center gap-2 mt-6 hover:bg-orange-600 transition-all active:scale-[0.98] shadow-lg shadow-orange-100"
-            >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : "Lancer ma boutique"}
-            </button>
-          </form>
-        </div>
-
-        <div className="mt-8 text-center">
-          <p className="text-xs text-slate-400 mb-4 px-8 leading-relaxed">
-            En créant un compte, vous acceptez nos <span className="text-slate-900 font-medium">Conditions d'Utilisation</span>.
-          </p>
-          <Link 
-            to="/auth"
-            className="text-sm font-medium text-slate-900 underline decoration-orange-500/30 underline-offset-4"
-          >
-            Déjà partenaire ? Connectez-vous
+    <AuthLayout
+      title="Ouvrez votre boutique"
+      subtitle="Gratuit, sans engagement. Prête en 2 minutes."
+      footer={
+        <>
+          Déjà vendeur ?{' '}
+          <Link to="/auth" className="font-bold text-ink underline decoration-orange-400 underline-offset-4 hover:text-orange-600">
+            Se connecter
           </Link>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <form onSubmit={handleRegister} className="space-y-5">
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-semibold text-ink">Nom de la boutique</span>
+          <input
+            type="text"
+            placeholder="Ex : Belle en Pagne"
+            className="shop-input"
+            value={storeName}
+            onChange={(e) => setStoreName(e.target.value)}
+            required
+            minLength={2}
+            maxLength={80}
+          />
+          {slug && (
+            <span className="mt-1.5 block truncate text-sm text-ink-muted">
+              Votre adresse : <span className="font-semibold text-ink">festisolde.com/{slug}</span>
+            </span>
+          )}
+        </label>
+
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-semibold text-ink">Adresse e-mail</span>
+          <input type="email" autoComplete="email" placeholder="vous@exemple.com" className="shop-input" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        </label>
+
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-semibold text-ink">Mot de passe</span>
+          <input type="password" autoComplete="new-password" className="shop-input" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+          <span className="mt-1.5 block text-sm text-ink-muted">8 caractères minimum.</span>
+        </label>
+
+        {error && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700" role="alert">{error}</p>}
+
+        <button type="submit" disabled={loading} className="shop-btn-primary w-full py-3.5 text-[15px]">
+          {loading ? <Loader2 className="animate-spin" size={20} /> : <>Créer ma boutique <ArrowRight size={18} /></>}
+        </button>
+
+        <p className="text-center text-xs leading-relaxed text-ink-muted">
+          En créant un compte, vous acceptez nos conditions d’utilisation et notre{' '}
+          <Link to="/privacy" className="underline">politique de confidentialité</Link>.
+        </p>
+      </form>
+    </AuthLayout>
   );
 }

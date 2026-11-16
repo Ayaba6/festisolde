@@ -1,215 +1,224 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { 
-  X, Save, Loader2, Image as ImageIcon, 
-  Plus, Trash2, Camera
-} from 'lucide-react';
+import { Loader2, Camera, Trash2, Star } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
+import { Modal, Field } from '../../components/vendor/ui';
 
-export default function AddProductModal({ storeId, productToEdit, onClose, onRefresh }) {
+const CATEGORIES = ['Vêtements', 'Chaussures', 'Accessoires', 'Beauté', 'Électronique', 'Maison', 'Packeo', 'Grossistes', 'Liquidation', 'Autre'];
+const MAX_PHOTOS = 5;
+
+// Une photo = soit une URL déjà en ligne, soit un fichier à envoyer.
+type Photo = { preview: string; url?: string; file?: File };
+
+// '{}' / '{"S","M"}' / 'S, M' -> 'S, M'
+const cleanOptions = (raw: unknown) =>
+  typeof raw === 'string' ? raw.replace(/^\{|\}$/g, '').replace(/"/g, '').split(',').map((s) => s.trim()).filter(Boolean).join(', ') : '';
+
+const initialPhotos = (p: any): Photo[] => {
+  if (!p) return [];
+  const list: string[] = Array.isArray(p.images) && p.images.length ? p.images : p.image_url ? [p.image_url] : [];
+  return list.filter(Boolean).map((url) => ({ preview: url, url }));
+};
+
+export default function AddProductModal({ storeId, productToEdit, onClose, onRefresh }: any) {
   const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState('');
   const [productType, setProductType] = useState(productToEdit?.product_type || 'simple');
-  const [imageFiles, setImageFiles] = useState([]);
-  const [previews, setPreviews] = useState(
-    productToEdit ? (Array.isArray(productToEdit.images) ? productToEdit.images : [productToEdit.image_url]) : []
-  );
-
+  const [photos, setPhotos] = useState<Photo[]>(initialPhotos(productToEdit));
   const [formData, setFormData] = useState({
     name: productToEdit?.name || '',
     description: productToEdit?.description || '',
     category: productToEdit?.category || '',
-    price: productToEdit?.price || '',
-    sale_price: productToEdit?.sale_price || '',
-    stock_quantity: productToEdit?.stock_quantity || '1',
-    colors: productToEdit?.colors || '', 
-    sizes: productToEdit?.sizes || ''    
+    price: productToEdit?.price ?? '',
+    sale_price: productToEdit?.sale_price ?? '',
+    stock_quantity: productToEdit?.stock_quantity ?? 1,
+    colors: cleanOptions(productToEdit?.colors),
+    sizes: cleanOptions(productToEdit?.sizes),
   });
+  const set = (k: keyof typeof formData) => (e: any) => setFormData((f) => ({ ...f, [k]: e.target.value }));
 
-  const categories = ["Vêtements", "Chaussures", "Accessoires", "Beauté", "Électronique", "Maison", "Packeo", "Grossistes", "Liquidation", "Autre"];
-
-  // Style des inputs modernisé : fini les bordures noires, place au Slate-50 épuré
-  const inputStyle = "w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-semibold text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-orange-500/20 transition-all outline-none";
-
-  const handleImageChange = async (e) => {
-    const files = Array.from(e.target.files);
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []).slice(0, MAX_PHOTOS - photos.length);
+    e.target.value = '';
     if (!files.length) return;
     setProcessing(true);
-    const options = { maxSizeMB: 0.8, maxWidthOrHeight: 1200, useWebWorker: true };
     try {
       const results = await Promise.all(
         files.map(async (file) => {
-          const compressed = await imageCompression(file, options);
+          const compressed = await imageCompression(file, { maxSizeMB: 0.8, maxWidthOrHeight: 1200, useWebWorker: true });
           return { file: compressed, preview: URL.createObjectURL(compressed) };
         })
       );
-      setImageFiles(prev => [...prev, ...results.map(r => r.file)]);
-      setPreviews(prev => [...prev, ...results.map(r => r.preview)]);
+      setPhotos((prev) => [...prev, ...results]);
     } catch (err) {
       console.error(err);
+      setError('Une photo n’a pas pu être traitée. Essayez avec une autre image.');
     } finally {
       setProcessing(false);
     }
   };
 
-  const handleSubmit = async (e) => {
+  const makeCover = (i: number) => setPhotos((prev) => [prev[i], ...prev.filter((_, idx) => idx !== i)]);
+  const removePhoto = (i: number) => setPhotos((prev) => prev.filter((_, idx) => idx !== i));
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (previews.length === 0) return alert("Ajoutez au moins une photo !");
-    
+    setError('');
+    const price = parseFloat(String(formData.price)) || 0;
+    const salePrice = formData.sale_price === '' ? null : parseFloat(String(formData.sale_price));
+    if (photos.length === 0) return setError('Ajoutez au moins une photo.');
+    if (salePrice !== null && salePrice >= price) return setError('Le prix promo doit être inférieur au prix normal.');
+
     setProcessing(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Utilisateur non connecté");
+      if (!user) throw new Error('Session expirée, reconnectez-vous.');
 
-      let finalImages = previews.filter(p => p.startsWith('http'));
-
-      for (const file of imageFiles) {
-        const path = `${user.id}/${Date.now()}-${Math.random()}.jpg`;
-        const { error: uploadError } = await supabase.storage.from('product-images').upload(path, file);
+      // On garde l'ordre choisi (la 1re photo est la photo principale).
+      const finalImages: string[] = [];
+      for (const photo of photos) {
+        if (photo.url) { finalImages.push(photo.url); continue; }
+        const ext = photo.file?.type === 'image/png' ? 'png' : photo.file?.type === 'image/webp' ? 'webp' : 'jpg';
+        const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: uploadError } = await supabase.storage.from('product-images').upload(path, photo.file!);
         if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path);
-        finalImages.push(urlData.publicUrl);
+        finalImages.push(supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl);
       }
 
       const productData = {
         store_id: storeId,
-        name: formData.name,
-        description: formData.description || null,
+        name: formData.name.trim(),
+        description: formData.description.trim() || null,
         category: formData.category,
-        price: parseFloat(formData.price) || 0,
-        sale_price: formData.sale_price && formData.sale_price !== '' ? parseFloat(formData.sale_price) : null,
-        stock_quantity: parseInt(formData.stock_quantity) || 0,
-        colors: formData.colors || null,
-        sizes: formData.sizes || null,
+        price,
+        sale_price: salePrice,
+        stock_quantity: parseInt(String(formData.stock_quantity)) || 0,
+        colors: formData.colors.trim() || null,
+        sizes: formData.sizes.trim() || null,
         image_url: finalImages[0] || null,
         images: finalImages,
         product_type: productType,
       };
 
-      const { error } = productToEdit 
+      const { error: dbError } = productToEdit
         ? await supabase.from('products').update(productData).eq('id', productToEdit.id)
-        : await supabase.from('products').insert([{ ...productData, sold_count: 0 }]);
-
-      if (error) throw error;
+        : await supabase.from('products').insert([productData]);
+      if (dbError) throw dbError;
       onRefresh();
       onClose();
-    } catch (err) {
-      alert(`Erreur: ${err.message}`);
+    } catch (err: any) {
+      setError(err?.message || 'Enregistrement impossible.');
     } finally {
       setProcessing(false);
     }
   };
 
+  const discount = (() => {
+    const p = parseFloat(String(formData.price));
+    const s = parseFloat(String(formData.sale_price));
+    return p > 0 && s > 0 && s < p ? Math.round(((p - s) / p) * 100) : 0;
+  })();
+
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-        
-        {/* Header épuré */}
-        <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-white">
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900">
-              {productToEdit ? 'Modifier' : 'Nouvel article'}
-            </h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Édition de votre inventaire</p>
-          </div>
-          <button onClick={onClose} className="p-2.5 hover:bg-slate-50 rounded-full text-slate-400 transition-colors">
-            <X size={20} />
-          </button>
+    <Modal
+      title={productToEdit ? 'Modifier le produit' : 'Nouveau produit'}
+      subtitle={productToEdit ? productToEdit.name : 'Il sera visible immédiatement dans votre boutique.'}
+      onClose={onClose}
+    >
+      <form onSubmit={handleSubmit} className="space-y-6 p-6">
+        {/* Type */}
+        <div className="grid grid-cols-2 gap-1 rounded-2xl bg-stone-100 p-1" role="radiogroup" aria-label="Type de produit">
+          {[
+            ['simple', 'Article simple'],
+            ['pack', 'Pack / lot'],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              role="radio"
+              aria-checked={productType === id}
+              onClick={() => setProductType(id)}
+              className={`rounded-xl py-2.5 text-sm font-bold transition ${productType === id ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 overflow-y-auto space-y-8">
-          
-          {/* Switch Type de Produit Premium */}
-          <div className="flex gap-2 p-1.5 bg-slate-50 rounded-2xl">
-            <button 
-              type="button" 
-              onClick={() => setProductType('simple')} 
-              className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all ${productType === 'simple' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              SIMPLE
-            </button>
-            <button 
-              type="button" 
-              onClick={() => setProductType('pack')} 
-              className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all ${productType === 'pack' ? 'bg-orange-500 text-white shadow-lg shadow-orange-100' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              PACK (LOT)
-            </button>
-          </div>
-
-          {/* Galerie Photo Style Studio */}
-          <div className="space-y-3">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 ml-1">Photos de l'article (max 5)</label>
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
-              {previews.length < 5 && (
-                <button 
-                  type="button" 
-                  onClick={() => document.getElementById('file-upload').click()} 
-                  className="aspect-square border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2 text-slate-300 hover:text-orange-500 hover:border-orange-500/30 hover:bg-orange-50/30 transition-all group"
-                >
-                  <div className="p-2 bg-slate-50 rounded-full group-hover:bg-orange-100 transition-colors">
-                    <Camera size={20} />
-                  </div>
-                  <input id="file-upload" type="file" accept="image/*" multiple hidden onChange={handleImageChange} />
-                </button>
-              )}
-              {previews.map((src, i) => (
-                <div key={i} className="relative aspect-square group">
-                  <img src={src} className="w-full h-full object-cover rounded-2xl border border-slate-100 shadow-sm" />
-                  <button 
-                    type="button" 
-                    onClick={() => { setPreviews(p => p.filter((_, idx) => idx !== i)); setImageFiles(f => f.filter((_, idx) => idx !== i)); }} 
-                    className="absolute -top-2 -right-2 bg-white text-red-500 rounded-full p-1.5 shadow-xl border border-slate-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Trash2 size={12}/>
+        {/* Photos */}
+        <div>
+          <p className="mb-2 text-sm font-semibold text-ink">
+            Photos <span className="font-normal text-ink-muted">({photos.length}/{MAX_PHOTOS}) · la première est la photo principale</span>
+          </p>
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+            {photos.map((ph, i) => (
+              <div key={ph.preview} className="group relative aspect-square overflow-hidden rounded-2xl bg-stone-100">
+                <img src={ph.preview} alt="" className="h-full w-full object-cover" />
+                {i === 0 && <span className="absolute left-1.5 top-1.5 rounded-full bg-ink px-2 py-0.5 text-[11px] font-bold text-white">Principale</span>}
+                <div className="absolute inset-x-1.5 bottom-1.5 flex justify-end gap-1">
+                  {i !== 0 && (
+                    <button type="button" onClick={() => makeCover(i)} className="rounded-full bg-white/95 p-1.5 text-ink shadow" aria-label="Mettre en photo principale">
+                      <Star size={14} />
+                    </button>
+                  )}
+                  <button type="button" onClick={() => removePhoto(i)} className="rounded-full bg-white/95 p-1.5 text-red-600 shadow" aria-label="Retirer la photo">
+                    <Trash2 size={14} />
                   </button>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="space-y-1">
-               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Informations de base</label>
-               <input required className={inputStyle} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Nom de l'article (ex: Veste en lin)" />
-            </div>
-            
-            <textarea className={`${inputStyle} h-28 resize-none`} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Description détaillée..." />
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-400 ml-1">PRIX DE VENTE (FCFA)</label>
-                <input type="number" required className={inputStyle} value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} placeholder="0" />
               </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-orange-500/70 ml-1">PRIX PROMO (OPTIONNEL)</label>
-                <input type="number" className={`${inputStyle} text-orange-600 bg-orange-50/30`} value={formData.sale_price} onChange={e => setFormData({...formData, sale_price: e.target.value})} placeholder="0" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <input className={inputStyle} value={formData.colors} onChange={e => setFormData({...formData, colors: e.target.value})} placeholder="Couleurs (Noir, Blanc...)" />
-              <input className={inputStyle} value={formData.sizes} onChange={e => setFormData({...formData, sizes: e.target.value})} placeholder="Tailles (M, L, XL...)" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <select required className={inputStyle} value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
-                <option value="">CATÉGORIE</option>
-                {categories.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <input type="number" required className={inputStyle} value={formData.stock_quantity} onChange={e => setFormData({...formData, stock_quantity: e.target.value})} placeholder="Stock disponible" />
-            </div>
+            ))}
+            {photos.length < MAX_PHOTOS && (
+              <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-stone-200 text-ink-muted transition hover:border-orange-400 hover:bg-orange-50/50 hover:text-orange-600">
+                {processing ? <Loader2 size={22} className="animate-spin" /> : <Camera size={22} />}
+                <span className="text-xs font-semibold">Ajouter</span>
+                <input type="file" accept="image/*" multiple hidden onChange={handleImageChange} />
+              </label>
+            )}
           </div>
+        </div>
 
-          <button 
-            disabled={processing} 
-            type="submit" 
-            className="w-full bg-slate-950 text-white py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-slate-800 active:scale-[0.98] transition-all disabled:bg-slate-200 disabled:text-slate-400 mt-4 shadow-xl shadow-slate-200"
-          >
-            {processing ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-            {processing ? "PUBLICATION EN COURS..." : productToEdit ? "MODIFIER L'ARTICLE" : "METTRE EN VENTE"}
+        <Field label="Nom du produit">
+          <input required maxLength={120} className="shop-input" value={formData.name} onChange={set('name')} placeholder="Ex : Robe en pagne wax, taille unique" />
+        </Field>
+
+        <Field label="Description" hint="(facultatif)">
+          <textarea className="shop-input h-28 resize-none" value={formData.description} onChange={set('description')} placeholder="Matière, dimensions, état, conseils…" />
+        </Field>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Prix normal (F CFA)">
+            <input type="number" min={0} inputMode="numeric" required className="shop-input" value={formData.price} onChange={set('price')} placeholder="10 000" />
+          </Field>
+          <Field label="Prix promo" hint={discount ? `(-${discount} %)` : '(facultatif)'}>
+            <input type="number" min={0} inputMode="numeric" className="shop-input" value={formData.sale_price} onChange={set('sale_price')} placeholder="7 500" />
+          </Field>
+          <Field label="Catégorie">
+            <select required className="shop-input" value={formData.category} onChange={set('category')}>
+              <option value="">Choisir…</option>
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </Field>
+          <Field label="Quantité en stock">
+            <input type="number" min={0} inputMode="numeric" required className="shop-input" value={formData.stock_quantity} onChange={set('stock_quantity')} />
+          </Field>
+          <Field label="Couleurs" hint="(séparées par des virgules)">
+            <input className="shop-input" value={formData.colors} onChange={set('colors')} placeholder="Noir, Blanc" />
+          </Field>
+          <Field label="Tailles" hint="(séparées par des virgules)">
+            <input className="shop-input" value={formData.sizes} onChange={set('sizes')} placeholder="M, L, XL" />
+          </Field>
+        </div>
+
+        {error && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700" role="alert">{error}</p>}
+
+        <div className="sticky bottom-0 -mx-6 -mb-6 flex gap-3 border-t border-stone-100 bg-white px-6 py-4">
+          <button type="button" onClick={onClose} className="shop-btn-ghost">Annuler</button>
+          <button disabled={processing} type="submit" className="shop-btn-primary flex-1">
+            {processing && <Loader2 className="animate-spin" size={18} />}
+            {processing ? 'Enregistrement…' : productToEdit ? 'Enregistrer' : 'Mettre en vente'}
           </button>
-        </form>
-      </div>
-    </div>
+        </div>
+      </form>
+    </Modal>
   );
 }
