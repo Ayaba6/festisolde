@@ -9,6 +9,7 @@ import Footer from './components/Footer';
 import PartnersMarquee from './components/PartnersMarquee';
 import { ProductCard, ProductCardSkeleton } from '../Store/ProductCard';
 import { FESTIVAL, festivalPhase } from '../../lib/festival';
+import { ONLINE_PAYMENT } from '../../lib/config';
 
 // Tuiles catégories (images compressées dans /public/categories)
 const CATEGORY_TILES = [
@@ -151,7 +152,7 @@ export default function Home() {
         <ol className="mt-10 grid gap-4 md:grid-cols-3">
           {[
             { icon: Store, title: 'Choisissez vos articles', text: 'Parcourez les boutiques et ajoutez au panier les produits qui vous plaisent.' },
-            { icon: Wallet, title: 'Payez comme vous voulez', text: 'Orange Money, Moov Money ou carte en ligne, ou bien en espèces à la livraison.' },
+            { icon: Wallet, title: ONLINE_PAYMENT ? 'Payez comme vous voulez' : 'Payez à la livraison', text: ONLINE_PAYMENT ? 'Orange Money, Moov Money ou carte en ligne, ou bien en espèces à la livraison.' : 'Vous payez en espèces à la livraison, une fois le produit entre vos mains.' },
             { icon: MessageCircle, title: 'Le vendeur vous livre', text: 'Il reçoit votre commande sur WhatsApp et organise la livraison avec vous.' },
           ].map(({ icon: Icon, title, text }, i) => (
             <li key={title} className="relative rounded-3xl border border-stone-100 bg-white p-6 shadow-card">
@@ -176,7 +177,7 @@ export default function Home() {
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-orange-400">Vendeurs &amp; grossistes</p>
               <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">Écoulez votre stock plus vite.</h2>
               <p className="mt-4 max-w-lg text-lg text-stone-300">
-                Créez votre boutique gratuitement, recevez vos commandes sur WhatsApp et soyez payé par Mobile Money.
+                Créez votre boutique gratuitement, recevez vos commandes sur WhatsApp{ONLINE_PAYMENT ? ' et soyez payé par Mobile Money' : ' et encaissez à la livraison'}.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row md:flex-col md:items-end">

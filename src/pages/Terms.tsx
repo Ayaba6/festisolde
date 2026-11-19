@@ -27,7 +27,7 @@ export default function Terms() {
       <section>
         <h2>3. Paiement</h2>
         <ul>
-          <li><strong>En ligne</strong> (Orange Money, Moov Money, carte) via notre prestataire sécurisé LigdiCash : la commande est confirmée dès validation du paiement.</li>
+          <li><strong>En ligne</strong>, lorsque ce mode est proposé sur le site (Orange Money, Moov Money, carte) via notre prestataire sécurisé LigdiCash : la commande est confirmée dès validation du paiement.</li>
           <li><strong>À la livraison</strong> : l’acheteur règle le vendeur en espèces à la réception.</li>
         </ul>
       </section>

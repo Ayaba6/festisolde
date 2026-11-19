@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useCart } from '@/context/CartContext';
 import { Search, ShoppingBag, Menu, X, User, ShieldCheck, ArrowRight, PartyPopper } from 'lucide-react';
 import { FESTIVAL, festivalPhase } from '@/lib/festival';
+import { ONLINE_PAYMENT } from '@/lib/config';
 
 const NAV_LINKS = [
   { name: 'Catalogue', path: '/products' },
@@ -90,7 +91,7 @@ export default function Header({ searchQuery, setSearchQuery }) {
           ) : (
             <p className="flex items-center gap-2 truncate text-stone-300">
               <ShieldCheck size={14} className="shrink-0 text-orange-400" />
-              <span className="truncate">Paiement Orange Money, Moov Money ou à la livraison</span>
+              <span className="truncate">{ONLINE_PAYMENT ? 'Paiement Orange Money, Moov Money ou à la livraison' : 'Commande sur WhatsApp, paiement à la livraison'}</span>
             </p>
           )}
           <Link to="/auth" className="hidden shrink-0 items-center gap-1 font-semibold text-white hover:text-orange-300 sm:flex">

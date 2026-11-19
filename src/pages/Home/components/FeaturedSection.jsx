@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, BadgePercent, Truck, Smartphone } from 'lucide-react';
+import { ONLINE_PAYMENT } from '../../../lib/config';
 
 /**
  * Hero de la page d'accueil : promesse claire + 2 actions + preuves de confiance.
@@ -27,7 +28,7 @@ export default function FeaturedSection() {
 
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-soft">
             Mode, beauté, électronique, lots en gros… Des prix cassés sur des stocks réels,
-            payés en toute sécurité par Mobile Money ou à la livraison.
+            {ONLINE_PAYMENT ? ' payés en toute sécurité par Mobile Money ou à la livraison.' : ' payés en espèces à la livraison.'}
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -42,7 +43,9 @@ export default function FeaturedSection() {
           <ul className="mt-10 grid max-w-xl grid-cols-1 gap-4 text-sm sm:grid-cols-3">
             {[
               { icon: BadgePercent, title: 'Prix déstockage', text: 'Prix cassés' },
-              { icon: Smartphone, title: 'Orange & Moov', text: 'Paiement sécurisé' },
+              ONLINE_PAYMENT
+                ? { icon: Smartphone, title: 'Orange & Moov', text: 'Paiement sécurisé' }
+                : { icon: Smartphone, title: 'Sur WhatsApp', text: 'Commande en direct' },
               { icon: Truck, title: 'Livraison', text: 'Payez à réception' },
             ].map(({ icon: Icon, title, text }) => (
               <li key={title} className="flex items-center gap-3">

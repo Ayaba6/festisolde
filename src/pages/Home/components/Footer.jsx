@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Mail, MapPin, Phone, ArrowRight } from 'lucide-react';
+import { ONLINE_PAYMENT } from '../../../lib/config';
 
 const COLUMNS = [
   {
@@ -90,7 +91,7 @@ export default function Footer() {
         <div className="mt-14 flex flex-col gap-6 border-t border-white/10 pt-8 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-stone-500">© {new Date().getFullYear()} FestiSolde. Tous droits réservés.</p>
           <div className="flex flex-wrap items-center gap-2" aria-label="Moyens de paiement acceptés">
-            {['Orange Money', 'Moov Money', 'Carte bancaire', 'À la livraison'].map((m) => (
+            {(ONLINE_PAYMENT ? ['Orange Money', 'Moov Money', 'Carte bancaire', 'À la livraison'] : ['Paiement à la livraison', 'Commande sur WhatsApp']).map((m) => (
               <span key={m} className="rounded-md border border-white/10 px-2.5 py-1 text-xs font-semibold text-stone-400">
                 {m}
               </span>

@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
+import { ONLINE_PAYMENT } from '../../lib/config';
 
 const BENEFITS = [
   'Votre boutique en ligne en 2 minutes',
   'Commandes reçues directement sur WhatsApp',
-  'Paiements Orange Money et Moov Money',
+  ONLINE_PAYMENT ? 'Paiements Orange Money et Moov Money' : 'Vous encaissez directement à la livraison',
 ];
 
 // Mise en page commune connexion / inscription : visuel de marque + formulaire.

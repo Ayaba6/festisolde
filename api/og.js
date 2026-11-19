@@ -52,7 +52,7 @@ export default async function handler(req, res) {
   const { type, id, slug } = req.query || {};
   const fallback = {
     title: 'FestiSolde — Les bonnes affaires du Burkina',
-    description: 'Déstockage, promotions et vente en gros, en direct des vendeurs. Paiement Orange Money, Moov Money ou à la livraison.',
+    description: 'Déstockage, promotions et vente en gros, en direct des vendeurs. Commande sur WhatsApp, paiement à la livraison.',
     image: `${SITE}/og-default.jpg`,
     url: SITE,
   };

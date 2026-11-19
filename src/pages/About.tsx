@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import { BadgePercent, Smartphone, Store, MessageCircle, ArrowRight } from 'lucide-react';
+import { ONLINE_PAYMENT } from '../lib/config';
 
 const VALUES = [
   { icon: BadgePercent, title: 'Des prix vraiment cassés', text: 'Fins de séries, déstockages, lots en gros : les vendeurs écoulent leurs stocks, vous faites de bonnes affaires.' },
   { icon: Store, title: 'En direct des vendeurs', text: 'Pas d’intermédiaire caché : chaque produit appartient à une boutique que vous pouvez contacter.' },
-  { icon: Smartphone, title: 'Pensé pour le mobile', text: 'Commande en quelques clics, paiement Orange Money ou Moov Money, ou en espèces à la livraison.' },
+  { icon: Smartphone, title: 'Pensé pour le mobile', text: ONLINE_PAYMENT ? 'Commande en quelques clics, paiement Orange Money ou Moov Money, ou en espèces à la livraison.' : 'Commande en quelques clics depuis votre téléphone, paiement en espèces à la livraison.' },
   { icon: MessageCircle, title: 'Simple comme un message', text: 'Le vendeur reçoit votre commande sur WhatsApp et organise la livraison avec vous.' },
 ];
 

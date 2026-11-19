@@ -34,7 +34,7 @@ export default function Privacy() {
         <ul>
           <li><strong>Acheteurs :</strong> nom, numéro WhatsApp, ville/quartier et, si vous l’acceptez, votre position GPS, afin que le vendeur puisse vous livrer.</li>
           <li><strong>Vendeurs :</strong> adresse e-mail, nom et visuels de la boutique, numéro WhatsApp, numéro de réception des retraits.</li>
-          <li><strong>Paiements en ligne :</strong> traités par notre prestataire LigdiCash. FestiSolde ne reçoit ni ne conserve vos codes Mobile Money ou numéros de carte.</li>
+          <li><strong>Paiements en ligne</strong> (lorsqu’ils sont proposés) : traités par notre prestataire LigdiCash. FestiSolde ne reçoit ni ne conserve vos codes Mobile Money ou numéros de carte.</li>
           <li><strong>Statistiques :</strong> nombre de vues des produits et des boutiques, sans identification des visiteurs.</li>
         </ul>
       </section>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MessageCircle, Mail, Phone, ChevronDown, ShoppingBag, CreditCard, Truck, PackageSearch, RefreshCcw, Store, Wallet } from 'lucide-react';
 import Header from './Header';
 import Footer from './Footer';
+import { ONLINE_PAYMENT } from '../../../lib/config';
 
 // Coordonnées du support (à mettre à jour ici si elles changent)
 const SUPPORT_PHONE = '+22670189912';
@@ -21,7 +22,9 @@ const FAQ = [
       {
         icon: CreditCard,
         q: 'Quels moyens de paiement sont acceptés ?',
-        a: 'Vous pouvez payer en ligne par Orange Money, Moov Money ou carte bancaire (paiement sécurisé LigdiCash), ou bien en espèces directement au livreur à la réception.',
+        a: ONLINE_PAYMENT
+          ? 'Vous pouvez payer en ligne par Orange Money, Moov Money ou carte bancaire (paiement sécurisé LigdiCash), ou bien en espèces directement au livreur à la réception.'
+          : 'Pour le moment, vous payez en espèces directement au livreur, à la réception de votre commande. Le paiement en ligne par Orange Money et Moov Money arrive bientôt.',
       },
       {
         icon: Truck,

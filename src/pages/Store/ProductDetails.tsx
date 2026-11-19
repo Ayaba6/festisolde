@@ -8,6 +8,7 @@ import Header from '../Home/components/Header';
 import Footer from '../Home/components/Footer';
 import { ProductCard, getProductImages, formatPrice } from './ProductCard';
 import { parseOptions } from '../../lib/productOptions';
+import { ONLINE_PAYMENT } from '@/lib/config';
 
 
 export default function ProductDetails() {
@@ -316,7 +317,7 @@ export default function ProductDetails() {
             <ul className="mt-8 grid gap-3 rounded-2xl bg-stone-50 p-5 text-sm sm:grid-cols-2">
               <li className="flex items-start gap-3">
                 <ShieldCheck size={20} className="shrink-0 text-orange-600" />
-                <span><span className="font-bold">Paiement sécurisé</span><br /><span className="text-ink-muted">Orange Money, Moov Money, carte</span></span>
+                <span><span className="font-bold">{ONLINE_PAYMENT ? 'Paiement sécurisé' : 'Paiement à la réception'}</span><br /><span className="text-ink-muted">{ONLINE_PAYMENT ? 'Orange Money, Moov Money, carte' : 'En espèces, à la livraison'}</span></span>
               </li>
               <li className="flex items-start gap-3">
                 <Truck size={20} className="shrink-0 text-orange-600" />
