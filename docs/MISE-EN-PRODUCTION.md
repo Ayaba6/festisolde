@@ -23,6 +23,7 @@ Puis, dans **SQL Editor**, exécuter les fichiers de `supabase/migrations/` **da
 2. `20261116010000_securite_storage.sql` — règles des images
 3. `20261116020000_paiements_ligdicash.sql` — paiements en ligne
 4. `20261116030000_suivi_taches_notifications.sql` — suivi de commande, tâches automatiques, abonnements push
+5. `20261119000000_festival_slug.sql` — réserve l'adresse /festival
 
 Ensuite :
 

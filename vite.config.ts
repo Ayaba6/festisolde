@@ -22,7 +22,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
         // Les gros morceaux réservés aux vendeurs (export PDF…) ne sont pas
         // pré-téléchargés chez tous les visiteurs : ils restent chargés à la demande.
-        globIgnores: ['**/InvoiceDownload-*.js', '**/InvoicePDF-*.js', 'festisolde-logo.png', 'og-default.jpg'],
+        globIgnores: ['**/InvoiceDownload-*.js', '**/InvoicePDF-*.js', 'festisolde-logo.png', 'og-default.jpg', 'festival/**'],
         maximumFileSizeToCacheInBytes: 3000000,
       }
     })

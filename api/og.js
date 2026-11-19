@@ -75,6 +75,13 @@ export default async function handler(req, res) {
           url: `${SITE}/produit/${id}`,
         };
       }
+    } else if (type === 'store' && slug === 'festival') {
+      meta = {
+        title: 'Festival FestiSolde — du 18 au 27 décembre 2026',
+        description: 'Le festival des soldes de fin d’année à Dassasgho, près du canal (Ouagadougou) : 50 stands, prix cassés, espace enfants, jeux et tombola.',
+        image: `${SITE}/festival/og-festival.jpg`,
+        url: `${SITE}/festival`,
+      };
     } else if (type === 'store' && SLUG_RE.test(slug || '')) {
       const s = await query(`stores?slug=eq.${slug}&select=name,description,logo_url,banner_url,slug`);
       if (s) {

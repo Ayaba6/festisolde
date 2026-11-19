@@ -30,6 +30,7 @@ const About = lazy(() => import('./pages/About'));
 const Contact = lazy(() => import('./pages/Contact'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
+const Festival = lazy(() => import('./pages/Festival'));
 import ShopLayout from './components/ShopLayout';
 
 import {
@@ -190,6 +191,7 @@ export default function App() {
             <Route path="/grossistes" element={<Grossistes />} />
             <Route path="/liquidation" element={<Liquidation />} />
             <Route path="/aide" element={<Aide />} />
+            <Route path="/festival" element={<Festival />} />
             <Route path="/produit/:productId" element={<ProductDetails />} />
             <Route path="/panier" element={<Cart />} />
             <Route path="/confirmation" element={<ShopLayout><OrderSuccess /></ShopLayout>} />

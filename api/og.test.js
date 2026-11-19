@@ -45,4 +45,11 @@ describe('api/og (aperçus des liens partagés)', () => {
     expect(spy).not.toHaveBeenCalled();
     expect(og(body, 'title')).toContain('FestiSolde');
   });
+  it('donne un aperçu dédié à la page du festival, sans interroger la base', async () => {
+    const spy = vi.spyOn(globalThis, 'fetch');
+    const { body } = await call({ type: 'store', slug: 'festival' });
+    expect(spy).not.toHaveBeenCalled();
+    expect(og(body, 'title')).toMatch(/^Festival FestiSolde/);
+    expect(og(body, 'image').endsWith('/festival/og-festival.jpg')).toBe(true);
+  });
 });

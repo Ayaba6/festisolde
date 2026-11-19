@@ -8,6 +8,7 @@ import FeaturedSection from './components/FeaturedSection';
 import Footer from './components/Footer';
 import PartnersMarquee from './components/PartnersMarquee';
 import { ProductCard, ProductCardSkeleton } from '../Store/ProductCard';
+import { FESTIVAL, festivalPhase } from '../../lib/festival';
 
 // Tuiles catégories (images compressées dans /public/categories)
 const CATEGORY_TILES = [
@@ -46,6 +47,30 @@ export default function Home() {
       <Header />
 
       <FeaturedSection />
+
+      {/* Annonce du festival (disparaît après la dernière journée) */}
+      {festivalPhase() !== 'apres' && (
+        <section className="shop-container pt-10 md:pt-14">
+          <Link
+            to="/festival"
+            className="group relative flex flex-col gap-5 overflow-hidden rounded-3xl bg-ink p-6 text-white md:flex-row md:items-center md:justify-between md:p-10"
+          >
+            <img src="/festival/foule.webp" alt="" className="absolute inset-0 h-full w-full object-cover opacity-25" />
+            <div className="relative">
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-orange-400">{FESTIVAL.edition}</p>
+              <p className="mt-2 text-3xl font-extrabold tracking-tight md:text-5xl">
+                FESTI<span className="text-orange-400">SOLDE</span>
+              </p>
+              <p className="mt-2 text-stone-200 md:text-lg">
+                {FESTIVAL.datesLabel} · {FESTIVAL.place} · espace enfants, jeux et tombola
+              </p>
+            </div>
+            <span className="shop-btn-primary relative shrink-0">
+              Découvrir le festival <ArrowRight size={18} className="transition group-hover:translate-x-1" />
+            </span>
+          </Link>
+        </section>
+      )}
 
       {/* Catégories */}
       <section className="shop-container py-14 md:py-20" aria-labelledby="cat-title">

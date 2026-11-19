@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { Link, NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useCart } from '@/context/CartContext';
-import { Search, ShoppingBag, Menu, X, User, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Search, ShoppingBag, Menu, X, User, ShieldCheck, ArrowRight, PartyPopper } from 'lucide-react';
+import { FESTIVAL, festivalPhase } from '@/lib/festival';
 
 const NAV_LINKS = [
   { name: 'Catalogue', path: '/products' },
+  { name: 'Festival', path: '/festival' },
   { name: 'Grossistes', path: '/grossistes' },
   { name: 'Liquidation', path: '/liquidation' },
   { name: 'Aide', path: '/aide' },
@@ -80,10 +82,17 @@ export default function Header({ searchQuery, setSearchQuery }) {
       {/* Bandeau de réassurance */}
       <div className="bg-ink text-white">
         <div className="shop-container flex h-9 items-center justify-between gap-4 text-xs font-medium">
-          <p className="flex items-center gap-2 truncate text-stone-300">
-            <ShieldCheck size={14} className="shrink-0 text-orange-400" />
-            <span className="truncate">Paiement Orange Money, Moov Money ou à la livraison</span>
-          </p>
+          {festivalPhase() !== 'apres' ? (
+            <Link to="/festival" className="flex items-center gap-2 truncate font-semibold text-white hover:text-orange-300">
+              <PartyPopper size={14} className="shrink-0 text-orange-400" />
+              <span className="truncate">Festival FestiSolde · {FESTIVAL.datesLabel.replace('Du ', 'du ')} à {FESTIVAL.place.split(',')[0]}</span>
+            </Link>
+          ) : (
+            <p className="flex items-center gap-2 truncate text-stone-300">
+              <ShieldCheck size={14} className="shrink-0 text-orange-400" />
+              <span className="truncate">Paiement Orange Money, Moov Money ou à la livraison</span>
+            </p>
+          )}
           <Link to="/auth" className="hidden shrink-0 items-center gap-1 font-semibold text-white hover:text-orange-300 sm:flex">
             Vendre sur FestiSolde <ArrowRight size={13} />
           </Link>
