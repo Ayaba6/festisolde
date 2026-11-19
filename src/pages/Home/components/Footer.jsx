@@ -69,10 +69,13 @@ export default function Footer() {
                 <li className="flex items-start gap-2.5">
                   <MapPin size={16} className="mt-0.5 shrink-0 text-orange-400" /> Ouagadougou, Burkina Faso
                 </li>
-                <li>
-                  <a href="tel:+22670189912" className="flex items-center gap-2.5 hover:text-white">
-                    <Phone size={16} className="shrink-0 text-orange-400" /> +226 70 18 99 12
-                  </a>
+                <li className="flex items-start gap-2.5">
+                  <Phone size={16} className="mt-0.5 shrink-0 text-orange-400" />
+                  <span className="flex flex-col gap-1">
+                    {['70 18 99 12', '78 00 82 45', '78 95 71 50'].map((n) => (
+                      <a key={n} href={`tel:+226${n.replace(/\s/g, '')}`} className="hover:text-white">+226 {n}</a>
+                    ))}
+                  </span>
                 </li>
                 <li>
                   <a href="mailto:contact@festisolde.com" className="flex items-center gap-2.5 hover:text-white">

@@ -18,14 +18,17 @@ Deno.serve(async (req) => {
     const db = adminClient();
     const { data: pay } = await db
       .from("payments")
-      .select("amount, order_id, orders(id, items, total_amount, customer_city, stores(slug, whatsapp_number))")
+      .select("amount, order_id, stand_id, orders(id, items, total_amount, customer_city, stores(slug, whatsapp_number)), festival_stands(category, amount_paid, status)")
       .eq("id", payment_id)
       .single();
 
     // deno-lint-ignore no-explicit-any
     const order = (pay as any)?.orders;
+    // deno-lint-ignore no-explicit-any
+    const stand = (pay as any)?.festival_stands;
     return json(req, {
       status,
+      stand: stand && { category: stand.category, amount_paid: stand.amount_paid, status: stand.status },
       order: order && {
         id: order.id,
         reference: String(order.id).slice(0, 8).toUpperCase(),

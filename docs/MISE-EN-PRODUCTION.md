@@ -24,6 +24,7 @@ Puis, dans **SQL Editor**, exécuter les fichiers de `supabase/migrations/` **da
 3. `20261116020000_paiements_ligdicash.sql` — paiements en ligne
 4. `20261116030000_suivi_taches_notifications.sql` — suivi de commande, tâches automatiques, abonnements push
 5. `20261119000000_festival_slug.sql` — réserve l'adresse /festival
+6. `20261120000000_festival_stands.sql` — réservation et paiement des stands du festival
 
 Ensuite :
 
@@ -39,6 +40,7 @@ npx supabase secrets set LIGDICASH_API_KEY=xxx LIGDICASH_AUTH_TOKEN=xxx SITE_URL
 npx supabase functions deploy ligdicash-create
 npx supabase functions deploy ligdicash-verify
 npx supabase functions deploy ligdicash-callback --no-verify-jwt
+npx supabase functions deploy festival-stand-pay
 ```
 
 - [ ] Faire un vrai paiement de 100 FCFA et vérifier : commande « Payée en ligne », page de retour OK,

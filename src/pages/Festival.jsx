@@ -7,6 +7,7 @@ import Header from './Home/components/Header';
 import Footer from './Home/components/Footer';
 import { FESTIVAL, festivalPhase, countdown, totalPlaces, standWhatsappUrl } from '@/lib/festival';
 import { formatPrice } from './Store/ProductCard';
+import { supabase } from '@/lib/supabaseClient';
 
 const ANIMATIONS = [
   { icon: Smile, title: 'Espace enfants', text: 'Des jeux pour les petits pendant que les grands font leurs achats.' },
@@ -27,6 +28,8 @@ const STAND_INCLUDES = [
   'La publicité commune : affiches et réseaux sociaux',
   'Votre nom sur un lot de la grande tombola',
 ];
+
+const placesLabel = (left) => (left <= 0 ? 'Complet' : `${left} place${left > 1 ? 's' : ''} libre${left > 1 ? 's' : ''}`);
 
 function useNow(intervalMs = 30000) {
   const [now, setNow] = useState(() => new Date());
@@ -51,6 +54,16 @@ export default function Festival() {
   const phase = festivalPhase(now);
   const left = countdown(now);
   const standUrl = standWhatsappUrl();
+  const [taken, setTaken] = useState({});
+  const [exhibitors, setExhibitors] = useState([]);
+
+  // Places restantes et exposants confirmés (sans effet si la base n'est pas encore à jour).
+  useEffect(() => {
+    supabase.rpc('get_festival_availability').then(({ data }) => {
+      if (data) setTaken(Object.fromEntries(data.map((c) => [c.category, c.taken])));
+    });
+    supabase.rpc('get_festival_exhibitors').then(({ data }) => setExhibitors(data || []));
+  }, []);
 
   useEffect(() => {
     document.title = `Festival ${FESTIVAL.name} — ${FESTIVAL.datesLabel}`;
@@ -176,10 +189,38 @@ export default function Festival() {
             <li key={c.name} className="rounded-3xl border border-stone-100 bg-white p-5 text-center shadow-card">
               <p className="text-lg font-extrabold">{c.name}</p>
               <p className="mt-1 text-sm text-ink-muted">{c.places} stands</p>
+              {phase === 'avant' && taken[c.name] !== undefined && (
+                <p className={`mt-2 text-xs font-extrabold ${c.places - taken[c.name] <= 0 ? 'text-red-600' : 'text-orange-700'}`}>
+                  {placesLabel(c.places - taken[c.name])}
+                </p>
+              )}
             </li>
           ))}
         </ul>
       </section>
+
+      {/* Exposants confirmés */}
+      {exhibitors.length > 0 && (
+        <section className="shop-container pb-14 md:pb-20" aria-labelledby="liste-title">
+          <p className="shop-eyebrow">{exhibitors.length} exposant{exhibitors.length > 1 ? 's' : ''} confirmé{exhibitors.length > 1 ? 's' : ''}</p>
+          <h2 id="liste-title" className="shop-title mt-2">Les exposants</h2>
+          <ul className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {exhibitors.map((e) => (
+              <li key={e.store_id}>
+                <Link to={`/${e.slug}`} className="flex h-full items-center gap-3 rounded-2xl border border-stone-100 bg-white p-3 shadow-card transition hover:shadow-lift">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-ink text-sm font-bold text-white">
+                    {e.logo_url ? <img src={e.logo_url} alt="" className="h-full w-full object-cover" loading="lazy" /> : e.name?.charAt(0)?.toUpperCase()}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-bold">{e.name}</span>
+                    <span className="block text-xs text-ink-muted">{e.category}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Exposants */}
       {phase !== 'apres' && (
@@ -207,7 +248,7 @@ export default function Festival() {
               <p className="mt-1 font-bold text-orange-700">soit {formatPrice(FESTIVAL.standPrice / 10)} par jour</p>
 
               <ol className="mt-6 space-y-3 border-t border-stone-100 pt-6">
-                <li className="flex gap-3"><span className="font-extrabold text-orange-700">1</span> Contactez-nous sur WhatsApp ou par téléphone</li>
+                <li className="flex gap-3"><span className="font-extrabold text-orange-700">1</span> <span>Réservez depuis votre <Link to="/festival/mon-stand" className="font-bold underline">espace vendeur</Link>, ou contactez-nous sur WhatsApp</span></li>
                 <li className="flex gap-3"><span className="font-extrabold text-orange-700">2</span> Acompte de {formatPrice(FESTIVAL.deposit)}, solde avant le {FESTIVAL.balanceDeadline}</li>
                 <li className="flex gap-3"><span className="font-extrabold text-orange-700">3</span> Les {FESTIVAL.firstChoiceCount} premiers inscrits choisissent leur emplacement</li>
               </ol>

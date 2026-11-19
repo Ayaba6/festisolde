@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { useCart } from '../../context/CartContext';
 import { ProductCard, ProductCardSkeleton } from './ProductCard';
-import { Share2, Check, ShoppingBag, BadgeCheck, MessageCircle, Search, PackageOpen, ArrowRight } from 'lucide-react';
+import { Share2, Check, ShoppingBag, BadgeCheck, MessageCircle, Search, PackageOpen, ArrowRight, PartyPopper } from 'lucide-react';
 
 export default function PublicStore() {
   const { storeSlug } = useParams();
@@ -16,6 +16,7 @@ export default function PublicStore() {
   const [copied, setCopied] = useState(false);
   const [category, setCategory] = useState('Tout');
   const [query, setQuery] = useState('');
+  const [festivalStand, setFestivalStand] = useState(null);
 
   const cartCount = cart?.reduce((acc, item) => acc + item.quantity, 0) || 0;
 
@@ -42,6 +43,9 @@ export default function PublicStore() {
 
       if (storeData) {
         setStore(storeData);
+        // Badge « Exposant Festival » (stand avec acompte ou payé)
+        supabase.rpc('get_festival_exhibitors').then(({ data }) =>
+          setFestivalStand(data?.find((e) => e.store_id === storeData.id)?.category ?? null));
         const { data: productsData } = await supabase
           .from('products')
           .select('*, stores(name, slug)')
@@ -170,6 +174,11 @@ export default function PublicStore() {
                 {products.length} article{products.length > 1 ? 's' : ''}
                 {store.is_verified ? ' · Vendeur vérifié' : ''}
               </p>
+              {festivalStand && (
+                <Link to="/festival" className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1 text-xs font-bold text-white hover:bg-ink-soft">
+                  <PartyPopper size={13} className="text-orange-400" /> Exposant Festival FestiSolde · {festivalStand}
+                </Link>
+              )}
             </div>
           </div>
 

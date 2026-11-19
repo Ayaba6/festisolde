@@ -3,8 +3,9 @@ import { supabase } from '../../lib/supabaseClient';
 import { 
   Trash2, ShieldCheck, Store, Loader2, 
   Wallet, CheckCircle2, Clock, XCircle, TrendingUp,
-  Activity, EyeOff, Eye, Percent, ArrowLeft, Bell
+  Activity, EyeOff, Eye, Percent, ArrowLeft, Bell, PartyPopper
 } from 'lucide-react';
+import AdminFestival from './AdminFestival';
 
 const COMMISSION_RATE = 0.10;
 
@@ -166,6 +167,7 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-2 bg-stone-100 p-1.5 rounded-2xl relative">
             <TabButton active={activeTab === 'stores'} onClick={() => setActiveTab('stores')} label="Boutiques" icon={<Store size={14}/>} />
             <TabButton active={activeTab === 'withdrawals'} onClick={() => { setActiveTab('withdrawals'); setSearchTerm(''); }} label="Retraits" icon={<Wallet size={14}/>} />
+            <TabButton active={activeTab === 'festival'} onClick={() => setActiveTab('festival')} label="Festival" icon={<PartyPopper size={14}/>} />
             {globalStats.pendingWithdrawals > 0 && (
               <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-orange-600 text-xs font-extrabold text-white animate-bounce">
                 {globalStats.pendingWithdrawals}
@@ -183,6 +185,7 @@ export default function AdminDashboard() {
           <AdminStatCard label="Total Sorti" value={globalStats.totalWithdrawals} unit="FCFA" icon={<TrendingUp className="text-green-600"/>} color="bg-green-50" />
         </div>
 
+        {activeTab === 'festival' ? <AdminFestival /> : (<>
         <div className="mb-6 max-w-md">
            <input 
              type="text" 
@@ -228,6 +231,7 @@ export default function AdminDashboard() {
           </table>
           {filteredData.length === 0 && <EmptyState />}
         </div>
+        </>)}
       </main>
     </div>
   );

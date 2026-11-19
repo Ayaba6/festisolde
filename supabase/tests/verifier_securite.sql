@@ -120,6 +120,47 @@ begin
   if v_n = 0 then raise notice 'OK  un vendeur ne peut pas modifier les produits des autres';
   else v_fail := v_fail + 1; raise warning 'ÉCHEC un vendeur modifie le produit d''un autre'; end if;
 
+  -- ---------- Festival : stands (toujours en tant qu'AUTRE VENDEUR) ----------
+  declare
+    v_stand festival_stands%rowtype;
+    v_pay   uuid;
+  begin
+    v_stand := reserve_festival_stand('Femme');
+    if v_stand.status = 'reserve' and v_stand.amount_paid = 0 then raise notice 'OK  un vendeur réserve un stand (non payé)';
+    else v_fail := v_fail + 1; raise warning 'ÉCHEC réservation de stand : %', v_stand.status; end if;
+
+    begin
+      insert into festival_stands (store_id, category, amount_paid, status) values (v_store, 'Homme', 45000, 'paye');
+      v_fail := v_fail + 1; raise warning 'ÉCHEC un vendeur crée un stand « payé » directement';
+    exception when others then raise notice 'OK  impossible de créer un stand payé sans payer';
+    end;
+
+    begin
+      perform admin_record_stand_payment(v_stand.id, 45000, 'triche');
+      v_fail := v_fail + 1; raise warning 'ÉCHEC un vendeur enregistre lui-même un paiement de stand';
+    exception when others then raise notice 'OK  seul l''admin enregistre un paiement hors ligne';
+    end;
+
+    begin
+      perform festival_prepare_payment(v_stand.id, v_other);
+      v_fail := v_fail + 1; raise warning 'ÉCHEC festival_prepare_payment est appelable depuis le navigateur';
+    exception when others then raise notice 'OK  le montant à payer n''est calculé que côté serveur';
+    end;
+
+    reset role;
+
+    -- Paiement en ligne confirmé (comme le ferait l'Edge Function)
+    insert into payments (stand_id, amount) values (v_stand.id, 22500) returning id into v_pay;
+    perform confirm_payment(v_pay, 'completed', 22500, 'test', 'ref-test', false);
+    select * into v_stand from festival_stands where id = v_stand.id;
+    if v_stand.status = 'acompte' and v_stand.amount_paid = 22500 then raise notice 'OK  l''acompte payé garantit la place';
+    else v_fail := v_fail + 1; raise warning 'ÉCHEC après acompte : % / %', v_stand.status, v_stand.amount_paid; end if;
+
+    select count(*) into v_n from get_festival_exhibitors() where store_id = v_stand.store_id;
+    if v_n = 1 then raise notice 'OK  la boutique apparaît dans les exposants';
+    else v_fail := v_fail + 1; raise warning 'ÉCHEC exposant absent de la liste'; end if;
+  end;
+
   reset role;
 
   if v_fail = 0 then raise notice '==> TOUS LES TESTS SONT PASSÉS';

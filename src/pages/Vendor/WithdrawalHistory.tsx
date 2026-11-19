@@ -43,7 +43,7 @@ export default function WithdrawalHistory() {
   const handleClaim = (w) => {
     const date = new Date(w.created_at).toLocaleDateString('fr-FR');
     const message = `Bonjour, je souhaite faire une réclamation pour mon retrait du ${date}. \nMontant: ${w.amount} CFA \nID: #${w.id.slice(0, 8)} \nStatut: ${w.status}`;
-    const whatsappUrl = `https://wa.me/225XXXXXXXX?text=${encodeURIComponent(message)}`; // Remplace par ton numéro
+    const whatsappUrl = `https://wa.me/22670189912?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 

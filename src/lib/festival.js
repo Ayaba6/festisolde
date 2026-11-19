@@ -45,6 +45,13 @@ export function countdown(now = new Date(), festival = FESTIVAL) {
   return { days: Math.floor(minutes / 1440), hours: Math.floor((minutes % 1440) / 60), minutes: minutes % 60 };
 }
 
+/** Prochain montant à payer pour un stand : l'acompte, puis le solde (même règle que festival_prepare_payment en base). */
+export function standAmountDue(paid, festival = FESTIVAL) {
+  const p = Math.max(0, Number(paid) || 0);
+  if (p >= festival.standPrice) return 0;
+  return p < festival.deposit ? festival.deposit - p : festival.standPrice - p;
+}
+
 /** Lien WhatsApp pré-rempli pour réserver un stand. */
 export function standWhatsappUrl(festival = FESTIVAL) {
   const text = `Bonjour FestiSolde, je souhaite réserver un stand pour le festival (${festival.datesLabel.toLowerCase()}).`;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { FESTIVAL, festivalPhase, countdown, totalPlaces, standWhatsappUrl } from '../festival';
+import { FESTIVAL, festivalPhase, countdown, totalPlaces, standWhatsappUrl, standAmountDue } from '../festival';
 
 describe('festival', () => {
   it('compte 50 places au total', () => {
@@ -22,5 +22,13 @@ describe('festival', () => {
     const url = standWhatsappUrl();
     expect(url.startsWith(`https://wa.me/${FESTIVAL.whatsapp}?text=`)).toBe(true);
     expect(decodeURIComponent(url)).toContain('réserver un stand');
+  });
+
+  it('demande l’acompte, puis le solde, puis plus rien', () => {
+    expect(standAmountDue(0)).toBe(22500);
+    expect(standAmountDue(10000)).toBe(12500);
+    expect(standAmountDue(22500)).toBe(22500);
+    expect(standAmountDue(30000)).toBe(15000);
+    expect(standAmountDue(45000)).toBe(0);
   });
 });

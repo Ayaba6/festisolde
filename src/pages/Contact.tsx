@@ -36,7 +36,7 @@ export default function Contact() {
             <ContactCard 
               icon={<Phone className="text-orange-600" />}
               title="Téléphone"
-              detail="+226 70 18 99 12"
+              detail={<span className="flex flex-col gap-1">{['70 18 99 12', '78 00 82 45', '78 95 71 50'].map((n) => <a key={n} href={`tel:+226${n.replace(/\s/g, '')}`} className="hover:text-orange-600">+226 {n}</a>)}</span>}
               sub="Appel direct & Support"
             />
             <ContactCard 

@@ -31,11 +31,12 @@ const Contact = lazy(() => import('./pages/Contact'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
 const Festival = lazy(() => import('./pages/Festival'));
+const FestivalStand = lazy(() => import('./pages/Vendor/FestivalStand'));
 import ShopLayout from './components/ShopLayout';
 
 import {
   LayoutDashboard, Package, LogOut, ExternalLink, Wallet,
-  Palette, Settings as SettingsIcon, Menu, X, Zap, BarChart3, Loader2,
+  Palette, Settings as SettingsIcon, Menu, X, Zap, BarChart3, Loader2, PartyPopper,
 } from 'lucide-react';
 
 const getSubdomain = () => window.location.hostname.split('.')[0];
@@ -49,6 +50,7 @@ const VENDOR_NAV = [
   { to: '/marketing', icon: Zap, label: 'Booster mes ventes', short: 'Boost' },
 ];
 const VENDOR_SECONDARY = [
+  { to: '/festival/mon-stand', icon: PartyPopper, label: 'Mon stand festival' },
   { to: '/ma-boutique', icon: Palette, label: 'Ma vitrine' },
   { to: '/settings', icon: SettingsIcon, label: 'Paramètres' },
 ];
@@ -192,6 +194,7 @@ export default function App() {
             <Route path="/liquidation" element={<Liquidation />} />
             <Route path="/aide" element={<Aide />} />
             <Route path="/festival" element={<Festival />} />
+            <Route path="/festival/mon-stand" element={user ? <FestivalStand /> : <Navigate to="/auth" />} />
             <Route path="/produit/:productId" element={<ProductDetails />} />
             <Route path="/panier" element={<Cart />} />
             <Route path="/confirmation" element={<ShopLayout><OrderSuccess /></ShopLayout>} />

@@ -7,6 +7,7 @@ import {
   Plus, ShoppingBag, Users, Wallet, Eye, Zap, ChevronRight, Package, Share2, Check, AlertTriangle, BellRing,
 } from 'lucide-react';
 import PushToggle from '../../components/vendor/PushToggle';
+import FestivalBanner from '../../components/vendor/FestivalBanner';
 import { PageHeader, StatCard, Card, SectionTitle, StatusBadge, EmptyState, PageLoader, Modal, formatF } from '../../components/vendor/ui';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -109,6 +110,8 @@ export default function Dashboard() {
           </>
         }
       />
+
+      <FestivalBanner storeId={store.id} />
 
       {/* À traiter */}
       {(newOrders.length > 0 || lowStock.length > 0 || !store.whatsapp_number) && (
