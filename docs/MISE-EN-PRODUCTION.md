@@ -43,6 +43,7 @@ npx supabase functions deploy ligdicash-callback --no-verify-jwt
 npx supabase functions deploy festival-stand-pay
 ```
 
+- [ ] Vercel : `VITE_ONLINE_PAYMENT=true` puis redéployer (sans cette variable, le paiement en ligne reste masqué).
 - [ ] Faire un vrai paiement de 100 FCFA et vérifier : commande « Payée en ligne », page de retour OK,
   logs de `ligdicash-callback` sans erreur (Supabase > Edge Functions > Logs).
 

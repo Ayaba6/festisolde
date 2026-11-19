@@ -6,6 +6,7 @@ import {
 import { supabase } from '../../lib/supabaseClient';
 import { FESTIVAL, standAmountDue as nextAmount } from '../../lib/festival';
 import { PageHeader, Card, PageLoader, formatF } from '../../components/vendor/ui';
+import { ONLINE_PAYMENT } from '../../lib/config';
 
 const STATUS = {
   reserve: { label: 'Place réservée, acompte à payer', tone: 'bg-amber-50 text-amber-800 ring-amber-200' },
@@ -169,16 +170,21 @@ export default function FestivalStand() {
           )}
 
           {stand.status !== 'paye' ? (
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <button onClick={payOnline} disabled={!!busy} className="shop-btn-primary">
+            <div className={`mt-6 grid gap-3 ${ONLINE_PAYMENT ? 'sm:grid-cols-2' : ''}`}>
+              {ONLINE_PAYMENT && <button onClick={payOnline} disabled={!!busy} className="shop-btn-primary">
                 {busy === 'pay' ? <Loader2 className="animate-spin" size={18} /> : <Smartphone size={18} />}
                 Payer {stand.status === 'reserve' ? 'l’acompte' : 'le solde'} : {formatF(nextAmount(paid))}
-              </button>
-              <a href={whatsappUrl()} target="_blank" rel="noopener noreferrer" className="shop-btn border border-stone-200 hover:bg-stone-50">
-                <MessageCircle size={18} /> Payer en direct (WhatsApp)
+              </button>}
+              <a href={whatsappUrl()} target="_blank" rel="noopener noreferrer" className={ONLINE_PAYMENT ? 'shop-btn border border-stone-200 hover:bg-stone-50' : 'shop-btn bg-[#25d366] text-ink hover:brightness-95 sm:w-fit'}>
+                <MessageCircle size={18} />
+                {ONLINE_PAYMENT
+                  ? 'Payer en direct (WhatsApp)'
+                  : `Payer ${stand.status === 'reserve' ? 'l’acompte' : 'le solde'} (${formatF(nextAmount(paid))}) via WhatsApp`}
               </a>
               <p className="text-xs text-ink-muted sm:col-span-2">
-                En ligne : Orange Money, Moov Money ou carte, via LigdiCash. En direct : espèces ou Mobile Money, enregistré par l’équipe FestiSolde.
+                {ONLINE_PAYMENT
+                  ? 'En ligne : Orange Money, Moov Money ou carte, via LigdiCash. En direct : espèces ou Mobile Money, enregistré par l’équipe FestiSolde.'
+                  : 'Contactez-nous sur WhatsApp pour régler en espèces ou par Mobile Money : l’équipe FestiSolde enregistre votre paiement et votre page se met à jour.'}
                 {stand.status === 'acompte' && <> Solde à régler avant le {FESTIVAL.balanceDeadline}.</>}
               </p>
             </div>

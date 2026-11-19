@@ -6,13 +6,14 @@ import { getProductImages, formatPrice } from './ProductCard';
 import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { buildOrderWhatsappUrl, cleanPhone } from '../../lib/whatsapp';
+import { ONLINE_PAYMENT } from '../../lib/config';
 
 export default function Cart() {
   const { cart, removeFromCart, getCartTotal, addToCart, clearCart } = useCart();
   const navigate = useNavigate();
 
   const [isOrdering, setIsOrdering] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('ligdicash'); // 'ligdicash' | 'livraison'
+  const [paymentMethod, setPaymentMethod] = useState(ONLINE_PAYMENT ? 'ligdicash' : 'livraison'); // 'ligdicash' | 'livraison'
   const [loading, setLoading] = useState(false);
   const [locationLink, setLocationLink] = useState(null); // Stocke le lien Maps
 
@@ -141,9 +142,9 @@ export default function Cart() {
   );
 
   const paymentOptions = [
-    { id: 'ligdicash', label: 'Payer maintenant', hint: 'Orange Money, Moov Money ou carte', icon: CreditCard },
+    ONLINE_PAYMENT && { id: 'ligdicash', label: 'Payer maintenant', hint: 'Orange Money, Moov Money ou carte', icon: CreditCard },
     { id: 'livraison', label: 'Payer à la livraison', hint: 'En espèces, commande envoyée sur WhatsApp', icon: MessageCircle },
-  ];
+  ].filter(Boolean);
 
   return (
     <div className="min-h-screen bg-stone-50/70 text-ink">
