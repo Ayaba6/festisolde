@@ -1,31 +1,19 @@
 {
+  "id": "/",
   "short_name": "FestiSolde",
-  "name": "FestiSolde - Déstockage & Liquidation",
-  "description": "La première plateforme de déstockage certifiée au Burkina Faso.",
+  "name": "FestiSolde — Les bonnes affaires du Burkina",
+  "description": "Déstockage, promotions et vente en gros, en direct des vendeurs du Burkina Faso.",
+  "lang": "fr",
   "icons": [
-    {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "pwa-192x192.png",
-      "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "pwa-512x512.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "any"
-    }
+    { "src": "icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
   ],
   "start_url": "/",
-  "display": "standalone",
-  "theme_color": "#0F1115", 
-  "background_color": "#0F1115",
-  "orientation": "portrait",
   "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#ffffff",
+  "background_color": "#e02424",
   "categories": ["shopping"]
 }

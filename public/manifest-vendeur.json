@@ -1,31 +1,18 @@
 {
+  "id": "/dashboard",
   "short_name": "Festi Studio",
-  "name": "FestiSolde Studio - Gestion Vendeur",
-  "description": "Gérez votre boutique et vos stocks sur FestiSolde.",
+  "name": "FestiSolde Studio — Espace vendeur",
+  "description": "Gérez votre boutique, vos commandes et votre stand sur FestiSolde.",
+  "lang": "fr",
   "icons": [
-    {
-      "src": "studio-favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "studio-pwa-192x192.png",
-      "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "any"
-    },
-    {
-      "src": "studio-pwa-512x512.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "maskable"
-    }
+    { "src": "studio-pwa-192x192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "studio-pwa-512x512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" }
   ],
   "start_url": "/dashboard",
-  "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#000000",
-  "orientation": "portrait",
   "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
   "categories": ["business"]
 }

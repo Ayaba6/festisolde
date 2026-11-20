@@ -13,7 +13,7 @@ export default defineConfig({
       */
       manifest: false, 
       injectRegister: 'auto',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'],
       // Service worker écrit à la main (src/sw.js) pour gérer les notifications push.
       strategies: 'injectManifest',
       srcDir: 'src',
