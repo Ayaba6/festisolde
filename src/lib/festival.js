@@ -11,6 +11,7 @@ export const FESTIVAL = {
   city: 'Ouagadougou',
   phones: ['78 00 82 45', '78 95 71 50'],
   whatsapp: '22678008245',
+  facebookEvent: 'https://www.facebook.com/share/1Jj3jQ9R5B/',
   standPrice: 45000,
   deposit: 22500,
   balanceDeadline: '10 décembre',

@@ -100,6 +100,9 @@ export default function Festival() {
             <span className="inline-flex items-center gap-2">
               <MapPin size={20} className="text-orange-400" /> {FESTIVAL.place}, {FESTIVAL.city}
             </span>
+            <span className="inline-flex w-fit items-center rounded-full bg-orange-500 px-3 py-1 text-sm font-extrabold text-ink">
+              Entrée gratuite
+            </span>
           </div>
 
           {phase === 'avant' && left && (
@@ -133,6 +136,11 @@ export default function Festival() {
             <Link to="/products" className="shop-btn border border-white/30 text-white hover:bg-white/10">
               Voir les bonnes affaires <ArrowRight size={18} />
             </Link>
+            {phase !== 'apres' && (
+              <a href={FESTIVAL.facebookEvent} target="_blank" rel="noopener noreferrer" className="shop-btn bg-[#1877f2] text-white hover:brightness-110">
+                <CalendarDays size={18} /> Je suis intéressé sur Facebook
+              </a>
+            )}
           </div>
         </div>
       </section>
