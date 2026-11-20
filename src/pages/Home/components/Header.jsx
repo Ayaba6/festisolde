@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Link, NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useCart } from '@/context/CartContext';
-import { Search, ShoppingBag, Menu, X, User, ShieldCheck, ArrowRight, PartyPopper } from 'lucide-react';
+import { Search, ShoppingBag, Menu, User, ShieldCheck, ArrowRight, PartyPopper } from 'lucide-react';
 import { FESTIVAL, festivalPhase } from '@/lib/festival';
 import { ONLINE_PAYMENT } from '@/lib/config';
+import MobileMenu from './MobileMenu';
 
 const NAV_LINKS = [
   { name: 'Catalogue', path: '/products' },
@@ -173,50 +174,12 @@ export default function Header({ searchQuery, setSearchQuery }) {
 
       {/* Menu mobile */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-[70] lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
-          <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
-          <div className="absolute inset-y-0 left-0 flex w-[86%] max-w-sm flex-col bg-white shadow-2xl">
-            <div className="flex h-16 items-center justify-between border-b border-stone-100 px-5">
-              <img src="/logo-festisolde.png" alt="FestiSolde" className="h-8 w-auto" />
-              <button onClick={() => setIsMenuOpen(false)} className="rounded-full p-2 hover:bg-stone-100" aria-label="Fermer le menu">
-                <X size={22} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-5 py-6">
-              <nav className="space-y-1" aria-label="Navigation mobile">
-                {NAV_LINKS.map((link) => (
-                  <NavLink
-                    key={link.path}
-                    to={link.path}
-                    onClick={() => setIsMenuOpen(false)}
-                    className={({ isActive }) =>
-                      `block rounded-xl px-3 py-3 text-base font-semibold ${isActive ? 'bg-orange-50 text-orange-600' : 'text-ink hover:bg-stone-50'}`
-                    }
-                  >
-                    {link.name}
-                  </NavLink>
-                ))}
-              </nav>
-              {categories.length > 0 && (
-                <>
-                  <p className="mb-3 mt-8 px-3 text-xs font-bold uppercase tracking-[0.14em] text-stone-400">Catégories</p>
-                  <div className="flex flex-wrap gap-2 px-1">
-                    {categories.map((cat) => (
-                      <button key={cat} onClick={() => goToCategory(cat)} className="rounded-full border border-stone-200 px-3.5 py-2 text-sm font-medium text-ink-soft">
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="border-t border-stone-100 p-5">
-              <Link to="/auth" onClick={() => setIsMenuOpen(false)} className="shop-btn-primary w-full">
-                Vendre sur FestiSolde
-              </Link>
-            </div>
-          </div>
-        </div>
+        <MobileMenu
+          onClose={() => setIsMenuOpen(false)}
+          categories={categories}
+          onCategory={goToCategory}
+          cartCount={cartCount}
+        />
       )}
     </header>
   );
