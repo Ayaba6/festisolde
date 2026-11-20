@@ -120,6 +120,18 @@ begin
   if v_n = 0 then raise notice 'OK  un vendeur ne peut pas modifier les produits des autres';
   else v_fail := v_fail + 1; raise warning 'ÉCHEC un vendeur modifie le produit d''un autre'; end if;
 
+  begin
+    perform admin_overview();
+    v_fail := v_fail + 1; raise warning 'ÉCHEC un vendeur lit le tableau de bord admin';
+  exception when others then raise notice 'OK  le tableau de bord admin est réservé à l''admin';
+  end;
+
+  begin
+    perform admin_store_detail(v_store);
+    v_fail := v_fail + 1; raise warning 'ÉCHEC un vendeur lit la fiche (e-mail) d''une autre boutique';
+  exception when others then raise notice 'OK  la fiche propriétaire est réservée à l''admin';
+  end;
+
   -- ---------- Festival : stands (toujours en tant qu'AUTRE VENDEUR) ----------
   declare
     v_stand festival_stands%rowtype;

@@ -214,7 +214,7 @@ export default function App() {
             <Route path="/withdrawal-history" element={user ? <WithdrawalHistory /> : <Navigate to="/auth" />} />
             <Route path="/ma-boutique" element={user ? <StoreSettings /> : <Navigate to="/auth" />} />
             <Route path="/settings" element={user ? <Settings /> : <Navigate to="/auth" />} />
-            <Route path="/admin" element={user ? <AdminDashboard /> : <Navigate to="/auth" />} />
+            <Route path="/admin/*" element={user ? <AdminDashboard /> : <Navigate to="/auth" />} />
             <Route path="/:storeSlug" element={<PublicStore />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

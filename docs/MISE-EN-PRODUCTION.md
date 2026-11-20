@@ -25,6 +25,7 @@ Puis, dans **SQL Editor**, exécuter les fichiers de `supabase/migrations/` **da
 4. `20261116030000_suivi_taches_notifications.sql` — suivi de commande, tâches automatiques, abonnements push
 5. `20261119000000_festival_slug.sql` — réserve l'adresse /festival
 6. `20261120000000_festival_stands.sql` — réservation et paiement des stands du festival
+7. `20261121000000_admin_pilotage.sql` — tableau de pilotage administrateur
 
 Ensuite :
 
